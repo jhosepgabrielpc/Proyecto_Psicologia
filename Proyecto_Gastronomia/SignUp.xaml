@@ -1,0 +1,103 @@
+﻿<Window x:Class="Proyecto_Gastronomia.SignUp"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Proyecto_Gastronomia"
+        mc:Ignorable="d"
+        Title="SignUp" Height="750" Width="1000"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None" ResizeMode="NoResize">
+
+    <Grid>
+        <Grid.Background>
+            <ImageBrush ImageSource="/Imagenes/fondo_sign_up.png" Stretch="UniformToFill"/>
+        </Grid.Background>
+
+        <!-- Botón de Atrás (Texto: <<<) - Posicionado en la esquina superior izquierda -->
+        <Button Content="&lt;&lt;&lt;"
+                HorizontalAlignment="Left" VerticalAlignment="Top"
+                Style="{StaticResource TextButtonStyle}"
+                Foreground="White"
+                FontSize="24"
+                FontWeight="Bold"
+                Width="60" Height="40"
+                Margin="10,10,0,0"
+                Click="btnAtras_Click"/>
+
+        <!-- Botón de Salir (Texto: X) - Posicionado en la esquina superior derecha -->
+        <Button Content="X"
+                HorizontalAlignment="Right" VerticalAlignment="Top"
+                Style="{StaticResource TextButtonStyle}"
+                Foreground="White"
+                FontSize="24"
+                FontWeight="Bold"
+                Width="40" Height="40"
+                Margin="0,10,10,0"
+                Click="btnSalir_Click"/>
+
+        <Border Width="450" Height="690" HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Background="White"
+                CornerRadius="20"
+                Effect="{StaticResource RecipeCardShadowEffect}">
+            <!-- CORREGIDO: Usando la clave correcta 'RecipeCardShadowEffect' -->
+            <Grid>
+                <StackPanel Margin="40">
+                    <TextBlock Text="Sign Up"
+                               Foreground="#606060"
+                               FontSize="32"
+                               FontWeight="SemiBold"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,30"/>
+
+                    <TextBlock Text="Usuario:"
+                               Foreground="#505050"
+                               FontSize="16"
+                               Margin="0,0,0,5"/>
+                    <TextBox x:Name="txtNomUsr_SignUp" Style="{StaticResource InputTextBoxStyle}" Margin="0,0,0,20"/>
+
+                    <TextBlock Text="Correo Electrónico:"
+                               Foreground="#505050"
+                               FontSize="16"
+                               Margin="0,0,0,5"/>
+                    <TextBox x:Name="txtCorreoUsr_SignUp" Style="{StaticResource InputTextBoxStyle}" Margin="0,0,0,20"/>
+
+                    <TextBlock Text="Número de Celular:"
+                               Foreground="#505050"
+                               FontSize="16"
+                               Margin="0,0,0,5"/>
+                    <TextBox x:Name="txtNCelUsr_SignUp" Style="{StaticResource InputTextBoxStyle}"
+                             Margin="0,0,0,20" InputScope="Number"/>
+
+                    <TextBlock Text="Contraseña:"
+                               Foreground="#505050"
+                               FontSize="16"
+                               Margin="0,0,0,5"/>
+                    <PasswordBox x:Name="txtPassWdUsr_SignUp" Style="{StaticResource InputPasswordBoxStyle}" Margin="0,0,0,20"/>
+
+                    <TextBlock Text="Confirmar Contraseña:"
+                               Foreground="#505050"
+                               FontSize="16"
+                               Margin="0,0,0,5"/>
+                    <PasswordBox x:Name="txtConfirmPassWdUsr_SignUp" Style="{StaticResource InputPasswordBoxStyle}" Margin="0,0,0,40"/>
+
+                    <Button Content="Registrarse"
+                            Style="{StaticResource LoginButtonStyle}" HorizontalAlignment="Stretch"
+                            Margin="0,0,0,20"
+                            x:Name="btnSignUp" Click="btnSignUp_Click"/>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="¿Ya tienes cuenta?"
+                                   Foreground="#505050"
+                                   FontSize="14"/>
+                        <TextBlock Text="Inicia Sesión"
+                                   Style="{StaticResource SignUpLinkTextStyle}"
+                                   Margin="5,0,0,0"
+                                   x:Name="txtLoginLink" MouseDown="LoginTextBlock_MouseDown"/>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

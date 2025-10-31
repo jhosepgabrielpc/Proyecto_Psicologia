@@ -1,0 +1,126 @@
+﻿<Window x:Class="Proyecto_Gastronomia.Login"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Proyecto_Gastronomia"
+        mc:Ignorable="d"
+        Title="Login" Height="600" Width="1000"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None" ResizeMode="NoResize">
+
+    <Grid>
+        <Grid.Background>
+            <ImageBrush ImageSource="/Imagenes/fondo_login.png" Stretch="UniformToFill"/>
+        </Grid.Background>
+
+        <!-- Botón de Atrás (Texto: <<<) - Posicionado en la esquina superior izquierda -->
+        <Button Content="&lt;&lt;&lt;"
+                HorizontalAlignment="Left" VerticalAlignment="Top"
+                Style="{StaticResource TextButtonStyle}"
+                Foreground="White"
+                FontSize="24"
+                FontWeight="Bold"
+                Width="60" Height="40"
+                Margin="10,10,0,0"
+                Click="btnAtras_Click"/>
+
+        <!-- Botón de Salir (Texto: X) - Posicionado en la esquina superior derecha -->
+        <Button Content="X"
+                HorizontalAlignment="Right" VerticalAlignment="Top"
+                Style="{StaticResource TextButtonStyle}"
+                Foreground="White"
+                FontSize="24"
+                FontWeight="Bold"
+                Width="40" Height="40"
+                Margin="0,10,10,0"
+                Click="btnSalir_Click"/>
+
+        <Border Width="450" Height="450"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Background="White"
+                CornerRadius="20"
+                Effect="{StaticResource ShadowEffect}">
+            <Grid x:Name="LayoutRoot">
+                <StackPanel Margin="40">
+                    <TextBlock Text="Login"
+                               Foreground="#606060"
+                               FontSize="32"
+                               FontWeight="SemiBold"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,30"/>
+
+                    <TextBlock Text="Correo Electrónico:"
+                               Foreground="#505050"
+                               FontSize="16"
+                               Margin="0,0,0,5"/>
+                    <!-- Campo para el correo electrónico (NomUsr o CorreoUsr en tu DB) -->
+                    <TextBox x:Name="txtCorreoLogin" Style="{StaticResource InputTextBoxStyle}"
+                             Margin="0,0,0,20"/>
+
+                    <TextBlock Text="Contraseña:"
+                               Foreground="#505050"
+                               FontSize="16"
+                               Margin="0,0,0,5"/>
+                    <!-- Campo para la contraseña (PassWdUsr) - Usamos PasswordBox por seguridad -->
+                    <PasswordBox x:Name="txtPassLogin" Style="{StaticResource InputPasswordBoxStyle}"
+                                 Margin="0,0,0,40"/>
+
+                    <Button Content="Iniciar Sesión"
+                            Style="{StaticResource LoginButtonStyle}"
+                            HorizontalAlignment="Stretch"
+                            Margin="0,0,0,20"
+                            x:Name="btnLogin" Click="btnLogin_Click"/>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="¿No tienes cuenta?"
+                                   Foreground="#505050"
+                                   FontSize="14"/>
+                        <TextBlock Text="Regístrate"
+                                   Style="{StaticResource SignUpLinkTextStyle}"
+                                   Margin="5,0,0,0"
+                                   x:Name="txtRegisterLink" MouseDown="RegisterTextBlock_MouseDown">
+                        </TextBlock>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+
+    <Window.Resources>
+        <!-- ASEGÚRATE DE QUE ESTA SECCIÓN ESTÉ VACÍA O ELIMINADA SI EL ESTILO YA ESTÁ EN App.xaml -->
+        <!-- Si InputPasswordBoxStyle ya está en App.xaml, elimina esto. -->
+        <Style x:Key="InputPasswordBoxStyle" TargetType="PasswordBox">
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#CCCCCC"/>
+            <Setter Property="Background" Value="#F8F8F8"/>
+            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="PasswordBox">
+                        <Border BorderThickness="{TemplateBinding BorderThickness}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="5">
+                            <ScrollViewer x:Name="PART_ContentHost" Focusable="false" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="BorderBrush" Value="#999999"/>
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="#2196F3"/>
+                                <Setter Property="Background" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+</Window>

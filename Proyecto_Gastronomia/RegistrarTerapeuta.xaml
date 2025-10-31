@@ -1,0 +1,104 @@
+﻿<Window x:Class="Proyecto_Gastronomia.RegistrarTerapeuta"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Proyecto_Gastronomia"
+        mc:Ignorable="d"
+        Title="Registrar Terapeuta" Height="750" Width="1000"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None" ResizeMode="NoResize">
+
+    <Grid>
+        <Grid.Background>
+            <ImageBrush ImageSource="Imagenes/fondo_ingredientes.jpg" Stretch="UniformToFill"/>
+        </Grid.Background>
+
+        <Button Content="&lt;&lt;&lt;"
+                HorizontalAlignment="Left" VerticalAlignment="Top"
+                Style="{StaticResource TextButtonStyle}"
+                Foreground="White"
+                FontSize="24"
+                FontWeight="Bold"
+                Width="60" Height="40"
+                Margin="10,10,0,0"
+                Click="btnAtras_Click"/>
+
+        <Button Content="X"
+                HorizontalAlignment="Right" VerticalAlignment="Top"
+                Style="{StaticResource TextButtonStyle}"
+                Foreground="White"
+                FontSize="24"
+                FontWeight="Bold"
+                Width="40" Height="40"
+                Margin="0,10,10,0"
+                Click="btnSalir_Click"/>
+
+        <Border Width="800" Height="680" HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Background="White"
+                CornerRadius="20"
+                Effect="{StaticResource RecipeCardShadowEffect}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="20">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="Registrar Terapeuta"
+                               Foreground="#606060" FontSize="32" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" Margin="0,0,0,25"/>
+
+                    <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,20,0">
+                        <TextBlock Text="Datos de la Cuenta de Usuario" Foreground="#606060" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,15"/>
+
+                        <TextBox x:Name="txtIdUsuario" Visibility="Collapsed"/>
+                        <TextBox x:Name="txtIdTerapeuta" Visibility="Collapsed"/>
+
+                        <TextBlock Text="Nombre:" Foreground="#505050" FontSize="16" Margin="0,0,0,5"/>
+                        <TextBox x:Name="txtNombre" Style="{StaticResource InputTextBoxStyle}" Margin="0,0,0,15"/>
+
+                        <TextBlock Text="Apellido:" Foreground="#505050" FontSize="16" Margin="0,0,0,5"/>
+                        <TextBox x:Name="txtApellido" Style="{StaticResource InputTextBoxStyle}" Margin="0,0,0,15"/>
+
+                        <TextBlock Text="Correo Electrónico (Login):" Foreground="#505050" FontSize="16" Margin="0,0,0,5"/>
+                        <TextBox x:Name="txtCorreo" Style="{StaticResource InputTextBoxStyle}" Margin="0,0,0,15"/>
+
+                        <TextBlock Text="Contraseña:" Foreground="#505050" FontSize="16" Margin="0,0,0,5"/>
+                        <PasswordBox x:Name="pbContrasena" Style="{StaticResource InputPasswordBoxStyle}" Margin="0,0,0,15"/>
+
+                        <TextBlock Text="Teléfono:" Foreground="#505050" FontSize="16" Margin="0,0,0,5"/>
+                        <TextBox x:Name="txtTelefono" Style="{StaticResource InputTextBoxStyle}" Margin="0,0,0,15" PreviewTextInput="NumericInput_PreviewTextInput" DataObject.Pasting="NumericInput_Pasting"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="1" Grid.Column="1" Margin="20,0,0,0">
+                        <TextBlock Text="Datos Profesionales" Foreground="#606060" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,15"/>
+
+                        <TextBlock Text="Especialidad:" Foreground="#505050" FontSize="16" Margin="0,0,0,5"/>
+                        <TextBox x:Name="txtEspecialidad" Style="{StaticResource InputTextBoxStyle}" Margin="0,0,0,15"/>
+
+                        <TextBlock Text="Nro. Licencia:" Foreground="#505050" FontSize="16" Margin="0,0,0,5"/>
+                        <TextBox x:Name="txtNroLicencia" Style="{StaticResource InputTextBoxStyle}" Margin="0,0,0,15"/>
+
+                        <TextBlock Text="Años de Experiencia:" Foreground="#505050" FontSize="16" Margin="0,0,0,5"/>
+                        <TextBox x:Name="txtExperienciaAnios" Style="{StaticResource InputTextBoxStyle}" Margin="0,0,0,15" PreviewTextInput="NumericInput_PreviewTextInput" DataObject.Pasting="NumericInput_Pasting"/>
+
+                        <CheckBox x:Name="chkEstado" Content="Cuenta Activa" Foreground="#505050" FontSize="16" IsChecked="True" Margin="0,10,0,25"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,25,0,0">
+                        <Button Content="Guardar" Style="{StaticResource LoginButtonStyle}" x:Name="btnGuardar" Click="btnGuardar_Click" Width="120" Margin="0,0,10,0"/>
+                        <Button Content="Limpiar" Style="{StaticResource LoginButtonStyle}" x:Name="btnLimpiar" Click="btnLimpiar_Click" Width="120" Margin="0,0,10,0"/>
+                        <Button Content="Volver" Style="{StaticResource LoginButtonStyle}" x:Name="btnVolver" Click="btnVolver_Click" Width="120"/>
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</Window>
