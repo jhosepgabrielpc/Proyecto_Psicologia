@@ -1,0 +1,108 @@
+﻿<Window x:Class="Proyecto_Gastronomia.Menu"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Proyecto_Gastronomia"
+        mc:Ignorable="d"
+        Title="Menú Principal" Height="600" Width="1000"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None" ResizeMode="CanResize">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="0.3*"/>
+            <!-- Columna para el título "MENÚ" y el botón SALIR -->
+            <ColumnDefinition Width="0.7*"/>
+            <!-- Columna para los botones de navegación -->
+        </Grid.ColumnDefinitions>
+
+        <!-- Columna Izquierda: Título "MENÚ" y Botón "SALIR" con fondo verde oscuro -->
+        <Grid Grid.Column="0" Background="#2A363B">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <!-- Para el título "MENÚ" (ocupará la mayor parte del espacio) -->
+                <RowDefinition Height="Auto"/>
+                <!-- Para el botón SALIR (se ajustará a su contenido en la parte inferior) -->
+            </Grid.RowDefinitions>
+
+            <!-- Título "MENÚ" -->
+            <TextBlock Grid.Row="0" Text="MENÚ"
+                       Foreground="#D1C3AD"
+                       FontSize="72"
+                       FontFamily="Georgia"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       RenderOptions.ClearTypeHint="Enabled"/>
+
+            <!-- Botón SALIR (Cierra toda la aplicación) -->
+            <Button Grid.Row="1" Content="SALIR"
+                    Style="{StaticResource TextButtonStyle}"
+                    Foreground="#D1C3AD"
+                    FontSize="20"
+                    Width="150" Height="50"
+                    Margin="0,0,0,0"
+                    Click="btnSalir_Click"/>
+        </Grid>
+
+        <!-- Columna Derecha: Cuadrícula de Botones de Navegación con fondo negro -->
+        <Grid Grid.Column="1" Background="Bisque">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <!-- Fila para Vista Usuario -->
+                <RowDefinition Height="*"/>
+                <!-- Fila para Vista Administrador -->
+                <RowDefinition Height="Auto"/>
+                <!-- ¡NUEVA FILA! Para el botón Cerrar Sesión -->
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Botón: VISTA USUARIO -->
+            <Button Grid.Row="0" Style="{StaticResource MenuOptionButtonStyle}"
+                    Click="btnVistaUsuario_Click"
+                    Margin="0,20,0,0" VerticalAlignment="Center">
+                <!-- Ajuste de margen superior -->
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <Image Source="Imagenes/menu3.jpg"
+                           Stretch="UniformToFill"
+                           Width="250" Height="150"
+                           RenderOptions.BitmapScalingMode="HighQuality"/>
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock Text="VISTA USUARIO" Style="{StaticResource MenuOptionTextStyle}"/>
+                        <Rectangle Height="1" Width="50" Fill="#D1C3AD" Margin="0,5,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+            </Button>
+
+            <!-- Panel para el botón VISTA ADMINISTRADOR (visible solo para admin) -->
+            <StackPanel x:Name="AdminOptionPanel" Grid.Row="1" Visibility="Collapsed"
+                        Margin="0,0,0,0" VerticalAlignment="Center">
+                <!-- Ajuste de margen -->
+                <Button Style="{StaticResource MenuOptionButtonStyle}"
+                        Click="btnVistaAdministrador_Click">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <Image Source="Imagenes/menu4.jpg"
+                               Stretch="UniformToFill"
+                               Width="250" Height="150"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <StackPanel Orientation="Vertical">
+                            <TextBlock Text="VISTA ADMINISTRADOR" Style="{StaticResource MenuOptionTextStyle}"/>
+                            <Rectangle Height="1" Width="50" Fill="#D1C3AD" Margin="0,5,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+
+            <!-- Botón de Cerrar Sesión (Ahora en su propia fila) -->
+            <Button Content="Cerrar Sesión"
+                    Grid.Row="2" 
+                HorizontalAlignment="Center"
+                    VerticalAlignment="Bottom"
+                    Style="{StaticResource LoginButtonStyle}"
+                    Width="200" Height="50"
+                    Margin="0,0,0,20" Click="btnLogout_Click" Background="DarkRed"/>
+        </Grid>
+    </Grid>
+</Window>

@@ -1,0 +1,82 @@
+﻿<Window x:Class="Proyecto_Gastronomia.Administrador"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Proyecto_Gastronomia"
+        mc:Ignorable="d"
+        Title="Administrador" Height="600" Width="1000"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None" ResizeMode="CanResizeWithGrip">
+
+    <Grid>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="80"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid.Background>
+            <ImageBrush ImageSource="/Imagenes/psico.png" Stretch="Fill"/>
+        </Grid.Background>
+
+        <Grid Grid.Row="0" Background="#AA1C1C1C">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="0" Content="&lt;&lt;&lt;"
+                    HorizontalAlignment="Left" VerticalAlignment="Center"
+                    Style="{StaticResource TextButtonStyle}"
+                    Foreground="White"
+                    FontSize="24" FontWeight="Bold"
+                    Width="60" Height="40"
+                    Margin="10,0,0,0"
+                    Click="btnAtras_Click"/>
+
+            <TextBlock Grid.Column="1" Text="Panel de Administración"
+                       FontSize="36" FontWeight="Bold"
+                       Foreground="#e7efc7"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"/>
+
+            <Button Grid.Column="2" Content="X"
+                    HorizontalAlignment="Right" VerticalAlignment="Center"
+                    Style="{StaticResource TextButtonStyle}"
+                    Foreground="White"
+                    FontSize="24" FontWeight="Bold"
+                    Width="40" Height="40"
+                    Margin="0,0,10,0"
+                    Click="btnSalir_Click"/>
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <Border Background="#AEC8A4" CornerRadius="25" Padding="30"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" Width="460">
+                <StackPanel>
+                    <TextBlock Text="Gestión de la Clínica"
+                               FontSize="30" FontWeight="Bold"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,20"/>
+
+                    <UniformGrid Columns="1" Rows="3" Margin="0">
+                        <Button Content="Administrar Pacientes" Height="50" Margin="5"
+                                Background="#8A784A" Foreground="White" FontWeight="Bold" FontSize="18"
+                                Click="AdministrarRecetas_Click"/>
+
+                        <Button Content="Administrar Usuarios" Height="50" Margin="5"
+                                Background="#e7efc7" Foreground="Black" FontWeight="Bold" FontSize="18"
+                                Click="AdministrarUsuarios_Click"/>
+
+                        <Button Content="Administrar Terapeutas" Height="50" Margin="5"
+                                Background="#2A363B" Foreground="White" FontWeight="Bold" FontSize="18"
+                                Click="AdministrarIngredientes_Click"/>
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+    </Grid>
+</Window>

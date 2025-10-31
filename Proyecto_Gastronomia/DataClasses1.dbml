@@ -1,0 +1,175 @@
+﻿<?xml version="1.0" encoding="utf-8"?><Database Name="mindcare" Class="DataClasses1DataContext" xmlns="http://schemas.microsoft.com/linqtosql/dbml/2007">
+  <Connection Mode="AppSettings" ConnectionString="Data Source=LAPTOP-DRC4J3TQ\GPSICOLOGICA;Initial Catalog=mindcare;Persist Security Info=True;User ID=sa;Trust Server Certificate=True" SettingsObjectName="Proyecto_Gastronomia.Properties.Settings" SettingsPropertyName="mindcareConnectionString1" Provider="System.Data.SqlClient" />
+  <Table Name="dbo.Usuarios" Member="Usuarios">
+    <Type Name="Usuarios">
+      <Column Name="id_usuario" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="id_rol" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="nombre" Type="System.String" DbType="VarChar(100) NOT NULL" CanBeNull="false" />
+      <Column Name="apellido" Type="System.String" DbType="VarChar(100) NOT NULL" CanBeNull="false" />
+      <Column Name="correo" Type="System.String" DbType="VarChar(150) NOT NULL" CanBeNull="false" />
+      <Column Name="contrasena" Type="System.String" DbType="VarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="telefono" Type="System.String" DbType="VarChar(15)" CanBeNull="true" />
+      <Column Name="estado" Type="System.Boolean" DbType="Bit" CanBeNull="true" />
+      <Column Name="fecha_registro" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Association Name="Usuarios_Pacientes" Member="Pacientes" ThisKey="id_usuario" OtherKey="id_usuario" Type="Pacientes" />
+      <Association Name="Usuarios_Terapeutas" Member="Terapeutas" ThisKey="id_usuario" OtherKey="id_usuario" Type="Terapeutas" />
+      <Association Name="Usuarios_Mensajes_Seguros" Member="Mensajes_Seguros" ThisKey="id_usuario" OtherKey="id_destinatario" Type="Mensajes_Seguros" />
+      <Association Name="Usuarios_Mensajes_Seguros1" Member="Mensajes_Seguros1" ThisKey="id_usuario" OtherKey="id_remitente" Type="Mensajes_Seguros" />
+      <Association Name="Usuarios_Notificaciones" Member="Notificaciones" ThisKey="id_usuario" OtherKey="id_usuario" Type="Notificaciones" />
+      <Association Name="Roles_Usuarios" Member="Roles" ThisKey="id_rol" OtherKey="id_rol" Type="Roles" IsForeignKey="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.Roles" Member="Roles">
+    <Type Name="Roles">
+      <Column Name="id_rol" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="nombre_rol" Type="System.String" DbType="VarChar(50) NOT NULL" CanBeNull="false" />
+      <Association Name="Roles_Usuarios" Member="Usuarios" ThisKey="id_rol" OtherKey="id_rol" Type="Usuarios" />
+    </Type>
+  </Table>
+  <Table Name="dbo.Pacientes" Member="Pacientes">
+    <Type Name="Pacientes">
+      <Column Name="id_paciente" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="id_usuario" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="id_terapeuta" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="fecha_nacimiento" Type="System.DateTime" DbType="Date" CanBeNull="true" />
+      <Column Name="genero" Type="System.String" DbType="VarChar(20)" CanBeNull="true" />
+      <Column Name="historial_clinico" Type="System.String" DbType="NVarChar(MAX)" CanBeNull="true" />
+      <Column Name="estado_tratamiento" Type="System.String" DbType="VarChar(20)" CanBeNull="true" />
+      <Column Name="fecha_inicio_tratamiento" Type="System.DateTime" DbType="Date" CanBeNull="true" />
+      <Association Name="Pacientes_Citas" Member="Citas" ThisKey="id_paciente" OtherKey="id_paciente" Type="Citas" />
+      <Association Name="Pacientes_Registros_Emocionales" Member="Registros_Emocionales" ThisKey="id_paciente" OtherKey="id_paciente" Type="Registros_Emocionales" />
+      <Association Name="Pacientes_Reportes" Member="Reportes" ThisKey="id_paciente" OtherKey="id_paciente" Type="Reportes" />
+      <Association Name="Pacientes_Resultados_Escalas" Member="Resultados_Escalas" ThisKey="id_paciente" OtherKey="id_paciente" Type="Resultados_Escalas" />
+      <Association Name="Usuarios_Pacientes" Member="Usuarios" ThisKey="id_usuario" OtherKey="id_usuario" Type="Usuarios" IsForeignKey="true" />
+      <Association Name="Terapeutas_Pacientes" Member="Terapeutas" ThisKey="id_terapeuta" OtherKey="id_terapeuta" Type="Terapeutas" IsForeignKey="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.Terapeutas" Member="Terapeutas">
+    <Type Name="Terapeutas">
+      <Column Name="id_terapeuta" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="id_usuario" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="especialidad" Type="System.String" DbType="VarChar(100)" CanBeNull="true" />
+      <Column Name="nro_licencia" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="experiencia_anios" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Association Name="Terapeutas_Pacientes" Member="Pacientes" ThisKey="id_terapeuta" OtherKey="id_terapeuta" Type="Pacientes" />
+      <Association Name="Terapeutas_Citas" Member="Citas" ThisKey="id_terapeuta" OtherKey="id_terapeuta" Type="Citas" />
+      <Association Name="Terapeutas_Reportes" Member="Reportes" ThisKey="id_terapeuta" OtherKey="id_terapeuta" Type="Reportes" />
+      <Association Name="Terapeutas_Horarios_Terapeutas" Member="Horarios_Terapeutas" ThisKey="id_terapeuta" OtherKey="id_terapeuta" Type="Horarios_Terapeutas" />
+      <Association Name="Usuarios_Terapeutas" Member="Usuarios" ThisKey="id_usuario" OtherKey="id_usuario" Type="Usuarios" IsForeignKey="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.Citas" Member="Citas">
+    <Type Name="Citas">
+      <Column Name="id_cita" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="id_paciente" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="id_terapeuta" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="fecha_hora" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="modalidad" Type="System.String" DbType="VarChar(20)" CanBeNull="true" />
+      <Column Name="estado" Type="System.String" DbType="VarChar(20)" CanBeNull="true" />
+      <Column Name="enlace_sesion" Type="System.String" DbType="VarChar(255)" CanBeNull="true" />
+      <Column Name="notas_administrativas" Type="System.String" DbType="NVarChar(MAX)" CanBeNull="true" />
+      <Column Name="fecha_creacion" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Association Name="Citas_Sesiones_Terapia" Member="Sesiones_Terapia" ThisKey="id_cita" OtherKey="id_cita" Type="Sesiones_Terapia" />
+      <Association Name="Pacientes_Citas" Member="Pacientes" ThisKey="id_paciente" OtherKey="id_paciente" Type="Pacientes" IsForeignKey="true" />
+      <Association Name="Terapeutas_Citas" Member="Terapeutas" ThisKey="id_terapeuta" OtherKey="id_terapeuta" Type="Terapeutas" IsForeignKey="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.Emociones_Modelo" Member="Emociones_Modelo">
+    <Type Name="Emociones_Modelo">
+      <Column Name="id_emocion" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="nombre" Type="System.String" DbType="VarChar(50) NOT NULL" CanBeNull="false" />
+      <Column Name="valencia" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="activacion" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="descripcion" Type="System.String" DbType="NVarChar(MAX)" CanBeNull="true" />
+      <Column Name="color_hex" Type="System.String" DbType="VarChar(7)" CanBeNull="true" />
+      <Association Name="Emociones_Modelo_Registros_Emocionales" Member="Registros_Emocionales" ThisKey="id_emocion" OtherKey="id_emocion" Type="Registros_Emocionales" />
+    </Type>
+  </Table>
+  <Table Name="dbo.Mensajes_Seguros" Member="Mensajes_Seguros">
+    <Type Name="Mensajes_Seguros">
+      <Column Name="id_mensaje" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="id_remitente" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="id_destinatario" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="mensaje" Type="System.String" DbType="NVarChar(MAX) NOT NULL" CanBeNull="false" />
+      <Column Name="leido" Type="System.Boolean" DbType="Bit" CanBeNull="true" />
+      <Column Name="fecha_envio" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Association Name="Usuarios_Mensajes_Seguros" Member="Usuarios" ThisKey="id_destinatario" OtherKey="id_usuario" Type="Usuarios" IsForeignKey="true" />
+      <Association Name="Usuarios_Mensajes_Seguros1" Member="Usuarios1" ThisKey="id_remitente" OtherKey="id_usuario" Type="Usuarios" IsForeignKey="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.Notificaciones" Member="Notificaciones">
+    <Type Name="Notificaciones">
+      <Column Name="id_notificacion" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="id_usuario" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="tipo" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="titulo" Type="System.String" DbType="VarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="mensaje" Type="System.String" DbType="NVarChar(MAX) NOT NULL" CanBeNull="false" />
+      <Column Name="leida" Type="System.Boolean" DbType="Bit" CanBeNull="true" />
+      <Column Name="fecha_creacion" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Column Name="fecha_lectura" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Association Name="Usuarios_Notificaciones" Member="Usuarios" ThisKey="id_usuario" OtherKey="id_usuario" Type="Usuarios" IsForeignKey="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.Registros_Emocionales" Member="Registros_Emocionales">
+    <Type Name="Registros_Emocionales">
+      <Column Name="id_registro" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="id_paciente" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="id_emocion" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="fecha_registro" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Column Name="valencia" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="activacion" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="notas_paciente" Type="System.String" DbType="NVarChar(MAX)" CanBeNull="true" />
+      <Association Name="Emociones_Modelo_Registros_Emocionales" Member="Emociones_Modelo" ThisKey="id_emocion" OtherKey="id_emocion" Type="Emociones_Modelo" IsForeignKey="true" />
+      <Association Name="Pacientes_Registros_Emocionales" Member="Pacientes" ThisKey="id_paciente" OtherKey="id_paciente" Type="Pacientes" IsForeignKey="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.Reportes" Member="Reportes">
+    <Type Name="Reportes">
+      <Column Name="id_reporte" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="id_paciente" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="id_terapeuta" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="tipo_reporte" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="titulo" Type="System.String" DbType="VarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="contenido" Type="System.String" DbType="NVarChar(MAX) NOT NULL" CanBeNull="false" />
+      <Column Name="periodo_inicio" Type="System.DateTime" DbType="Date" CanBeNull="true" />
+      <Column Name="periodo_fin" Type="System.DateTime" DbType="Date" CanBeNull="true" />
+      <Column Name="fecha_generacion" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Association Name="Pacientes_Reportes" Member="Pacientes" ThisKey="id_paciente" OtherKey="id_paciente" Type="Pacientes" IsForeignKey="true" />
+      <Association Name="Terapeutas_Reportes" Member="Terapeutas" ThisKey="id_terapeuta" OtherKey="id_terapeuta" Type="Terapeutas" IsForeignKey="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.Resultados_Escalas" Member="Resultados_Escalas">
+    <Type Name="Resultados_Escalas">
+      <Column Name="id_resultado" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="id_paciente" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="tipo_escala" Type="System.String" DbType="VarChar(50) NOT NULL" CanBeNull="false" />
+      <Column Name="fecha_registro" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Column Name="puntuacion_total" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="interpretacion_resultado" Type="System.String" DbType="NVarChar(MAX)" CanBeNull="true" />
+      <Association Name="Pacientes_Resultados_Escalas" Member="Pacientes" ThisKey="id_paciente" OtherKey="id_paciente" Type="Pacientes" IsForeignKey="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.Sesiones_Terapia" Member="Sesiones_Terapia">
+    <Type Name="Sesiones_Terapia">
+      <Column Name="id_sesion" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="id_cita" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="notas_terapeuta" Type="System.String" DbType="NVarChar(MAX)" CanBeNull="true" />
+      <Column Name="duracion_minutos" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="tareas_asignadas" Type="System.String" DbType="NVarChar(MAX)" CanBeNull="true" />
+      <Column Name="calidad_sesion" Type="System.String" DbType="VarChar(20)" CanBeNull="true" />
+      <Column Name="fecha_registro" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Association Name="Citas_Sesiones_Terapia" Member="Citas" ThisKey="id_cita" OtherKey="id_cita" Type="Citas" IsForeignKey="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.Horarios_Terapeutas" Member="Horarios_Terapeutas">
+    <Type Name="Horarios_Terapeutas">
+      <Column Name="id_horario" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="id_terapeuta" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="dia_semana" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="hora_inicio" Type="System.TimeSpan" DbType="Time NOT NULL" CanBeNull="false" />
+      <Column Name="hora_fin" Type="System.TimeSpan" DbType="Time NOT NULL" CanBeNull="false" />
+      <Column Name="disponible" Type="System.Boolean" DbType="Bit" CanBeNull="true" />
+      <Association Name="Terapeutas_Horarios_Terapeutas" Member="Terapeutas" ThisKey="id_terapeuta" OtherKey="id_terapeuta" Type="Terapeutas" IsForeignKey="true" />
+    </Type>
+  </Table>
+</Database>

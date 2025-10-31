@@ -1,0 +1,107 @@
+﻿<Window x:Class="Proyecto_Gastronomia.AdmiTerapeutas"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Proyecto_Gastronomia"
+        mc:Ignorable="d"
+        Title="Administrar Terapeutas"
+        Height="750" Width="1000"
+        WindowStartupLocation="CenterScreen"
+        FontFamily="Segoe UI"
+        FontSize="16"
+        Background="#FF1E1E1E"
+        WindowStyle="None" ResizeMode="CanResize">
+    <Grid>
+        <Grid.Background>
+            <ImageBrush ImageSource="Imagenes/fondo_ingredientes.jpg" Stretch="Fill" />
+        </Grid.Background>
+
+        <Button Content="&lt;&lt;&lt;"
+                HorizontalAlignment="Left" VerticalAlignment="Top"
+                Style="{StaticResource TextButtonStyle}"
+                Foreground="White" FontSize="24" FontWeight="Bold"
+                Width="60" Height="40" Margin="10,10,0,0" Click="btnAtras_Click" Panel.ZIndex="1"/>
+
+        <Button Content="X"
+                HorizontalAlignment="Right" VerticalAlignment="Top"
+                Style="{StaticResource TextButtonStyle}"
+                Foreground="White" FontSize="24" FontWeight="Bold"
+                Width="40" Height="40" Margin="0,10,10,0" Click="btnSalir_Click" Panel.ZIndex="1"/>
+
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Grid Grid.Row="0" Grid.ColumnSpan="2" Margin="0 0 0 20" Background="#AA1C1C1C">
+                <TextBlock Text="Administrar Terapeutas"
+                           FontSize="40" FontWeight="Bold" Foreground="#e7efc7"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Grid>
+
+            <Label Content="ID Usuario:" Background="Gray" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0 0 10 5" Foreground="White"/>
+            <TextBox x:Name="txtIdUsuario" Grid.Row="1" Grid.Column="1" Margin="0 0 0 5" Padding="8" FontSize="16" Background="#F9F9F9" Opacity="0.92" IsReadOnly="True" BorderThickness="1" BorderBrush="Gray"/>
+
+            <Label Content="Nombre:" Background="Gray" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Margin="0 0 10 5" Foreground="White"/>
+            <TextBox x:Name="txtNombre" Grid.Row="2" Grid.Column="1" Margin="0 0 0 5" Padding="8" FontSize="16" Background="#F9F9F9" Opacity="0.92" IsReadOnly="True" BorderThickness="1" BorderBrush="Gray"/>
+
+            <Label Content="Apellido:" Background="Gray" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Margin="0 0 10 5" Foreground="White"/>
+            <TextBox x:Name="txtApellido" Grid.Row="3" Grid.Column="1" Margin="0 0 0 5" Padding="8" FontSize="16" Background="#F9F9F9" Opacity="0.92" IsReadOnly="True" BorderThickness="1" BorderBrush="Gray"/>
+
+            <Label Content="Correo:" Background="Gray" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Margin="0 0 10 5" Foreground="White"/>
+            <TextBox x:Name="txtCorreo" Grid.Row="4" Grid.Column="1" Margin="0 0 0 5" Padding="8" FontSize="16" Background="#F9F9F9" Opacity="0.92" IsReadOnly="True" BorderThickness="1" BorderBrush="Gray"/>
+
+            <Label Content="Especialidad:" Background="Gray" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Margin="0 0 10 5" Foreground="White"/>
+            <TextBox x:Name="txtEspecialidad" Grid.Row="5" Grid.Column="1" Margin="0 0 0 5" Padding="8" FontSize="16" Background="#F9F9F9" Opacity="0.92" IsReadOnly="True" BorderThickness="1" BorderBrush="Gray"/>
+
+            <Label Content="Nro. Licencia:" Background="Gray" Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Margin="0 0 10 5" Foreground="White"/>
+            <TextBox x:Name="txtNroLicencia" Grid.Row="6" Grid.Column="1" Margin="0 0 0 5" Padding="8" FontSize="16" Background="#F9F9F9" Opacity="0.92" IsReadOnly="True" BorderThickness="1" BorderBrush="Gray"/>
+
+            <Label Content="Estado:" Background="Gray" Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" Margin="0 0 10 5" Foreground="White"/>
+            <CheckBox x:Name="chkEstado" Grid.Row="7" Grid.Column="1" VerticalAlignment="Center" Margin="0,0,0,5" Foreground="White" Content="Activo" IsEnabled="False"/>
+
+            <StackPanel Grid.Row="8" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0 20">
+                <Button Content="Nuevo" Width="130" Height="40" Margin="10"
+                        Background="#17A2B8" Foreground="White" FontWeight="SemiBold"
+                        BorderThickness="0" Cursor="Hand" Click="Nuevo_Click"/>
+                <Button Content="Editar" Width="130" Height="40" Margin="10"
+                        Background="#ffc107" Foreground="Black" FontWeight="SemiBold"
+                        BorderThickness="0" Cursor="Hand" Click="Editar_Click"/>
+                <Button Content="Desactivar" Width="130" Height="40" Margin="10"
+                        Background="#dc3545" Foreground="White" FontWeight="SemiBold"
+                        BorderThickness="0" Cursor="Hand" Click="Eliminar_Click"/>
+            </StackPanel>
+
+            <DataGrid x:Name="dgTerapeutas" Grid.Row="9" Grid.ColumnSpan="2" Margin="0 20 0 0"
+                      AutoGenerateColumns="False" SelectionMode="Single"
+                      SelectionChanged="DgTerapeutas_SelectionChanged"
+                      Background="White" RowBackground="#fdfdfd" AlternatingRowBackground="#f0f0f0"
+                      FontSize="16" GridLinesVisibility="Horizontal" HeadersVisibility="Column" Opacity="0.95"
+                      BorderBrush="#ddd" BorderThickness="1"
+                      IsReadOnly="True">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="ID" Binding="{Binding IdUsuario}" Width="60" />
+                    <DataGridTextColumn Header="Nombre" Binding="{Binding Nombre}" Width="1.5*"/>
+                    <DataGridTextColumn Header="Apellido" Binding="{Binding Apellido}" Width="1.5*"/>
+                    <DataGridTextColumn Header="Especialidad" Binding="{Binding Especialidad}" Width="2*"/>
+                    <DataGridTextColumn Header="Nro. Licencia" Binding="{Binding NroLicencia}" Width="*"/>
+                    <DataGridCheckBoxColumn Header="Activo" Binding="{Binding Estado}" Width="Auto" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+    </Grid>
+</Window>
