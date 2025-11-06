@@ -288,5 +288,8 @@
   <ItemGroup>
     <Resource Include="Imagenes\fondo_inicio_usuario.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Imagenes\terapia.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
