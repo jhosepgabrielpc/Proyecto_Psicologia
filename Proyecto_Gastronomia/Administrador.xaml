@@ -36,7 +36,7 @@
                     Margin="10,0,0,0"
                     Click="btnAtras_Click"/>
 
-            <TextBlock Grid.Column="1" Text="Panel de Administración"
+            <TextBlock Grid.Column="1" Text="Panel de Administracion"
                        FontSize="36" FontWeight="Bold"
                        Foreground="#e7efc7"
                        HorizontalAlignment="Center"

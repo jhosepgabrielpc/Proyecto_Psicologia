@@ -65,7 +65,7 @@
                       Grid.ColumnSpan="2"
                       Margin="0 0 0 20"
                       Background="#AA1C1C1C">
-                    <TextBlock Text="Administrar Pacientes"
+                    <TextBlock Text="Administrar Paciente"
                                FontSize="40"
                                FontWeight="Bold"
                                Foreground="#e7efc7"
