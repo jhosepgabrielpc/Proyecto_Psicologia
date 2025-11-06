@@ -1,22 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Configuration; // Para la cadena de conexión
-using System.Diagnostics; // Para Debug.WriteLine
+using System.Configuration;
+using System.Diagnostics;
 
 namespace Proyecto_Gastronomia
 {
     public partial class SignUp : Window
     {
-        // Ajustamos los nombres de los campos de la nueva BD
         private const int MAX_LENGTH_NOMBRE = 100;
         private const int MAX_LENGTH_CORREO = 150;
-        private const int MAX_LENGTH_CONTRASENA = 50; // Ajusta según tu BD
-
+        private const int MAX_LENGTH_CONTRASENA = 50;
         private string connectionString;
 
         public SignUp()
@@ -30,6 +27,8 @@ namespace Proyecto_Gastronomia
             return new DataClasses1DataContext(connectionString);
         }
 
+        // --- MÉTODOS DE VALIDACIÓN COMPLETOS (CORRIGE CS0161) ---
+
         // Valida el formato de correo electrónico.
         private bool EsFormatoCorreoValido(string email)
         {
@@ -37,16 +36,14 @@ namespace Proyecto_Gastronomia
             return Regex.IsMatch(email, pattern);
         }
 
-        // --- CORREGIDO ---
-        // Valida el nombre de usuario (solo formato, la BD validará unicidad de correo)
+        // Valida el nombre de usuario (solo formato)
         private string ValidateNombre(string nombre)
         {
             if (string.IsNullOrWhiteSpace(nombre)) return "El nombre no puede estar vacío.";
             if (nombre.Length > MAX_LENGTH_NOMBRE) return $"El nombre no debe exceder los {MAX_LENGTH_NOMBRE} caracteres.";
-            return null;
+            return null; // Devuelve null si es válido
         }
 
-        // --- CORREGIDO ---
         // Valida el correo electrónico (formato y unicidad).
         private string ValidateCorreoUsr(string correoUsr)
         {
@@ -70,7 +67,7 @@ namespace Proyecto_Gastronomia
                 MessageBox.Show($"Error al verificar unicidad de correo: {ex.Message}", "Error de Validación", MessageBoxButton.OK, MessageBoxImage.Error);
                 return "Error al verificar unicidad de correo.";
             }
-            return null;
+            return null; // Devuelve null si es válido
         }
 
         // Valida el número de celular (formato).
@@ -78,9 +75,7 @@ namespace Proyecto_Gastronomia
         {
             if (string.IsNullOrWhiteSpace(nCelUsr_text)) return "El número de celular no puede estar vacío.";
             if (nCelUsr_text.Length < 8) return "El número de celular debe tener 8 dígitos o más.";
-            // (Tu validación de 6 o 7 puede ser específica de Bolivia, la dejamos si quieres)
-            // if (!Regex.IsMatch(nCelUsr_text, @"^[6-7]\d{7}$")) return "El número de celular debe empezar con 6 o 7.";
-            return null;
+            return null; // Devuelve null si es válido
         }
 
         // Valida la contraseña (longitud y complejidad).
@@ -90,24 +85,24 @@ namespace Proyecto_Gastronomia
             if (passWdUsr.Length < 8) return "La contraseña debe tener al menos 8 caracteres.";
             if (passWdUsr.Length > MAX_LENGTH_CONTRASENA) return $"La contraseña no debe exceder los {MAX_LENGTH_CONTRASENA} caracteres.";
             // (Puedes añadir más validaciones de complejidad aquí si quieres)
-            return null;
+            return null; // Devuelve null si es válido
         }
 
-        // --- MÉTODO btnSignUp_Click TOTALMENTE CORREGIDO ---
+
         private void btnSignUp_Click(object sender, RoutedEventArgs e)
         {
             // Asumimos que 'txtNomUsr_SignUp' ahora es para 'Nombre'
-            // y necesitamos un campo para 'Apellido' (que no tienes en el XAML original)
-            // *** Solución temporal: Usamos el nombre para ambos ***
             string nombre = txtNomUsr_SignUp.Text.Trim();
-            string apellido = txtNomUsr_SignUp.Text.Trim(); // *** OJO: Necesitarás un campo de Apellido ***
+            // *** OJO: Necesitarás un campo de Apellido en el XAML ***
+            string apellido = txtNomUsr_SignUp.Text.Trim(); // Usamos el nombre temporalmente
 
             string correoUsr = txtCorreoUsr_SignUp.Text.Trim();
             string nCelUsr_text = txtNCelUsr_SignUp.Text.Trim();
             string passWdUsr = txtPassWdUsr_SignUp.Password;
             string confirmPassWdUsr = txtConfirmPassWdUsr_SignUp.Password;
 
-            // Validaciones de campos.
+            // --- VALIDACIONES ---
+            // (Ahora llaman a los métodos completos)
             string error = ValidateNombre(nombre);
             if (error != null) { MessageBox.Show(error, "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
             error = ValidateCorreoUsr(correoUsr);
@@ -119,7 +114,7 @@ namespace Proyecto_Gastronomia
 
             if (passWdUsr != confirmPassWdUsr)
             {
-                MessageBox.Show("Las contraseñas no coinciden. Por favor, verifique.", "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Las contraseñas no coinciden.", "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -127,8 +122,6 @@ namespace Proyecto_Gastronomia
             {
                 using (DataClasses1DataContext db = GetContext())
                 {
-                    // 1. Obtener el ID del rol "Paciente"
-                    // Ojo: Usando plural 'Roles'
                     int? rolPacienteId = db.Roles.FirstOrDefault(r => r.nombre_rol == "Paciente")?.id_rol;
                     if (rolPacienteId == null)
                     {
@@ -136,36 +129,36 @@ namespace Proyecto_Gastronomia
                         return;
                     }
 
-                    // 2. Crear el nuevo USUARIO
-                    // Ojo: Usando plural 'Usuarios' y nombres de columna nuevos
+                    // --- LÓGICA DE HASHING ---
+                    string salt = PasswordManager.GenerateSalt();
+                    string hash = PasswordManager.HashPassword(passWdUsr, salt);
+
                     Usuarios nuevoUsuario = new Usuarios
                     {
                         id_rol = rolPacienteId.Value,
                         nombre = nombre,
-                        apellido = apellido, // Usando el nombre como apellido temporalmente
+                        apellido = apellido,
                         correo = correoUsr,
                         telefono = nCelUsr_text,
-                        contrasena = passWdUsr,
-                        estado = true, // Por defecto, un nuevo usuario está activo.
+                        contrasena = hash, // Guardar el HASH
+                        salt = salt,       // Guardar el SALT
+                        estado = true,
                         fecha_registro = DateTime.Now
                     };
 
                     db.Usuarios.InsertOnSubmit(nuevoUsuario);
-                    db.SubmitChanges(); // Guarda el usuario para obtener su ID
+                    db.SubmitChanges();
 
-                    // 3. Crear el nuevo PACIENTE
-                    // Ojo: Usando plural 'Pacientes'
                     Pacientes nuevoPaciente = new Pacientes
                     {
-                        id_usuario = nuevoUsuario.id_usuario, // El ID que acabamos de crear
-                        id_terapeuta = null, // Sin terapeuta asignado al registrarse
+                        id_usuario = nuevoUsuario.id_usuario,
+                        id_terapeuta = null,
                         estado_tratamiento = "activo",
                         fecha_inicio_tratamiento = DateTime.Now
-                        // fecha_nacimiento, genero, historial_clinico son nulos por ahora
                     };
 
                     db.Pacientes.InsertOnSubmit(nuevoPaciente);
-                    db.SubmitChanges(); // Guarda el paciente
+                    db.SubmitChanges();
 
                     MessageBox.Show("Usuario registrado exitosamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
 

@@ -65,7 +65,7 @@
                     Margin="0,20,0,0" VerticalAlignment="Center">
                 <!-- Ajuste de margen superior -->
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <Image Source="Imagenes/menu3.jpg"
+                    <Image Source="/Imagenes/fondo_pacientes.png"
                            Stretch="UniformToFill"
                            Width="250" Height="150"
                            RenderOptions.BitmapScalingMode="HighQuality"/>
@@ -83,7 +83,7 @@
                 <Button Style="{StaticResource MenuOptionButtonStyle}"
                         Click="btnVistaAdministrador_Click">
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <Image Source="Imagenes/menu4.jpg"
+                        <Image Source="/Imagenes/fondo_index.png"
                                Stretch="UniformToFill"
                                Width="250" Height="150"
                                RenderOptions.BitmapScalingMode="HighQuality"/>

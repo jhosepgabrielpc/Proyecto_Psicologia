@@ -250,6 +250,7 @@ namespace Proyecto_Gastronomia
 
         private void btnAtras_Click(object sender, RoutedEventArgs e)
         {
+            // Corregido: Vuelve al panel de InicioUsuario
             InicioUsuario inicioUsuarioWindow = new InicioUsuario();
             inicioUsuarioWindow.Show();
             this.Close();

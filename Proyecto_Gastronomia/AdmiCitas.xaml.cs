@@ -231,8 +231,9 @@ namespace Proyecto_Gastronomia
 
         private void btnAtras_Click(object sender, RoutedEventArgs e)
         {
-            Administrador adminWindow = new Administrador();
-            adminWindow.Show();
+            // Corregido: Vuelve al panel de InicioUsuario
+            InicioUsuario inicioUsuarioWindow = new InicioUsuario();
+            inicioUsuarioWindow.Show();
             this.Close();
         }
 

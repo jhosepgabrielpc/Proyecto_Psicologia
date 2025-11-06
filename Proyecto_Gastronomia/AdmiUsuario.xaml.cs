@@ -10,7 +10,7 @@ using System.Diagnostics; // Añadido para Debug
 
 namespace Proyecto_Gastronomia
 {
-    // --- CLASE AÑADIDA PARA CORREGIR CS0246 ---
+    // --- CLASE DTO ---
     public class UsuarioDisplay
     {
         public int IdUsr { get; set; }
@@ -39,19 +39,20 @@ namespace Proyecto_Gastronomia
             this.MouseLeftButtonDown += Window_MouseLeftButtonDown;
         }
 
+        // --- CORRECCIÓN CS0161 ---
+        // (Método GetContext COMPLETO)
         private DataClasses1DataContext GetContext()
         {
             return new DataClasses1DataContext(connectionString);
         }
 
-        // --- MÉTODO CORREGIDO ---
         private void CargarUsuarios()
         {
             try
             {
                 using (DataClasses1DataContext db = GetContext())
                 {
-                    // 1. Traer los datos "crudos" de la BD a la memoria
+                    // 1. Traer datos crudos
                     var datosDeDB = db.Usuarios.OrderBy(u => u.nombre).Select(u => new
                     {
                         u.id_usuario,
@@ -61,15 +62,15 @@ namespace Proyecto_Gastronomia
                         u.telefono,
                         u.estado,
                         u.contrasena
-                    }).ToList(); // .ToList() ejecuta la consulta SQL y trae los datos
+                    }).ToList();
 
-                    // 2. Ahora que los datos están en memoria, SÍ PODEMOS usar TryParse
+                    // 2. Convertir en memoria
                     var usuarios = datosDeDB.Select(u => new UsuarioDisplay
                     {
                         IdUsr = u.id_usuario,
                         NomUsr = u.nombre + " " + u.apellido,
                         CorreoUsr = u.correo,
-                        NCelUsr = long.TryParse(u.telefono, out long telefono) ? telefono : 0, // Esto ahora funciona
+                        NCelUsr = long.TryParse(u.telefono, out long telefono) ? telefono : 0,
                         Estado = u.estado ?? true,
                         PassWdUsr = u.contrasena
                     }).ToList();
@@ -129,7 +130,6 @@ namespace Proyecto_Gastronomia
             {
                 using (DataClasses1DataContext db = GetContext())
                 {
-                    // Usando plural 'Usuarios' y columna 'nombre'
                     if (db.Usuarios.Any(u => u.nombre.ToLower() == nomUsr.ToLower() && u.id_usuario != currentUserId))
                     {
                         return "El nombre de usuario ya existe.";
@@ -153,7 +153,6 @@ namespace Proyecto_Gastronomia
             {
                 using (DataClasses1DataContext db = GetContext())
                 {
-                    // Usando plural 'Usuarios' y columna 'correo'
                     if (db.Usuarios.Any(u => u.correo.ToLower() == correoUsr.ToLower() && u.id_usuario != currentUserId))
                     {
                         return "El correo electrónico ya está registrado.";
@@ -182,6 +181,8 @@ namespace Proyecto_Gastronomia
             return null;
         }
 
+        // --- CORRECCIÓN CS0161 ---
+        // (Método ValidarCamposParaEdicion COMPLETO)
         private bool ValidarCamposParaEdicion()
         {
             string nomUsr = txtNomUsr.Text.Trim();
@@ -200,7 +201,7 @@ namespace Proyecto_Gastronomia
             error = ValidatePassWdUsr(passWdUsr, isOptional: true);
             if (error != null) { MessageBox.Show(error, "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning); return false; }
 
-            return true;
+            return true; // <-- Devuelve un valor en la ruta exitosa
         }
 
         #endregion
@@ -215,11 +216,7 @@ namespace Proyecto_Gastronomia
 
         private void Editar_Click(object sender, RoutedEventArgs e)
         {
-            if (selectedUserId == null)
-            {
-                MessageBox.Show("Selecciona un usuario para editar.", "No Seleccionado", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
+            if (selectedUserId == null) { MessageBox.Show("Selecciona un usuario para editar.", "No Seleccionado", MessageBoxButton.OK, MessageBoxImage.Information); return; }
             if (!ValidarCamposParaEdicion()) return;
 
             string nombre = txtNomUsr.Text.Trim();
@@ -241,9 +238,13 @@ namespace Proyecto_Gastronomia
                         userToUpdate.telefono = telefono;
                         userToUpdate.estado = estado;
 
-                        if (!string.IsNullOrWhiteSpace(newPassWdUsr))
+                        if (!string.IsNullOrWhiteSpace(newPassWdUsr) && newPassWdUsr != userToUpdate.contrasena)
                         {
-                            userToUpdate.contrasena = newPassWdUsr;
+                            string salt = PasswordManager.GenerateSalt();
+                            string hash = PasswordManager.HashPassword(newPassWdUsr, salt);
+
+                            userToUpdate.contrasena = hash;
+                            userToUpdate.salt = salt;
                         }
 
                         db.SubmitChanges();
@@ -257,6 +258,8 @@ namespace Proyecto_Gastronomia
                     }
                 }
             }
+            // --- CORRECCIÓN CS0168 ---
+            // (Usamos la variable 'ex' en el MessageBox)
             catch (Exception ex)
             {
                 MessageBox.Show($"Ocurrió un error al editar usuario: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);

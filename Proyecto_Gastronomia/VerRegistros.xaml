@@ -11,7 +11,7 @@
         Loaded="Window_Loaded">
     <Grid>
         <Grid.Background>
-            <ImageBrush ImageSource="Imagenes/fondo_recetas.jpg" Stretch="UniformToFill"/>
+            <ImageBrush ImageSource="/Imagenes/fondo_login.png" Stretch="UniformToFill"/>
         </Grid.Background>
 
         <Grid.RowDefinitions>

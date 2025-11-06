@@ -11,7 +11,7 @@
 
     <Grid>
         <Grid.Background>
-            <ImageBrush ImageSource="Imagenes/fondo_recetas.jpg" Stretch="UniformToFill"/>
+            <ImageBrush ImageSource="/Imagenes/fondo_pacientes.png" Stretch="UniformToFill"/>
         </Grid.Background>
 
         <Button Content="&lt;&lt;&lt;"

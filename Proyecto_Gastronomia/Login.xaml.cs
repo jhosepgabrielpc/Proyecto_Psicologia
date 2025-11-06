@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Configuration; // Para leer el App.config
-using System.Linq;          // Para usar LINQ to SQL
+using System.Configuration;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -9,22 +9,14 @@ namespace Proyecto_Gastronomia
 {
     public partial class Login : Window
     {
-        // Variable para la cadena de conexión
         private string connectionString;
-
-        // Variable para el DataContext de LINQ to SQL
-        // DataClasses1DataContext es el nombre que se genera desde tu archivo DataClasses1.dbml
         private DataClasses1DataContext db;
 
         public Login()
         {
             InitializeComponent();
             this.MouseLeftButtonDown += Window_MouseLeftButtonDown;
-
-            // Lee la cadena de conexión desde App.config
             connectionString = ConfigurationManager.ConnectionStrings["mindcareConnectionString"].ConnectionString;
-
-            // Inicializa el DataContext con esa cadena de conexión
             db = new DataClasses1DataContext(connectionString);
         }
 
@@ -41,52 +33,51 @@ namespace Proyecto_Gastronomia
 
             try
             {
-                // Esta es la nueva consulta con LINQ to SQL
-                // 1. Hacemos un 'join' entre Usuarios y Roles
-                // 2. Filtramos por correo, contraseña y estado
-                // 3. Seleccionamos un objeto anónimo con los datos que necesitamos
-                var usuarioQuery = from u in db.Usuarios
-                                   join r in db.Roles on u.id_rol equals r.id_rol
-                                   where u.correo == correo && u.contrasena == contrasena && u.estado == true
-                                   select new
-                                   {
-                                       Usuario = u,
-                                       NombreRol = r.nombre_rol
-                                   };
-
-                // Ejecutamos la consulta y obtenemos el primer resultado (o null si no existe)
-                var resultado = usuarioQuery.FirstOrDefault();
-
-                if (resultado != null)
+                // --- LÓGICA PREDEFINIDA (ADMIN) ---
+                if (correo.Equals("admi@est.univalle.edu", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Guardar información del usuario en la sesión
-                    SessionManager.CurrentUserId = resultado.Usuario.id_usuario;
-                    SessionManager.CurrentUserName = resultado.Usuario.nombre + " " + resultado.Usuario.apellido;
-                    SessionManager.UserRole = resultado.NombreRol; // Guardamos el nombre del rol
+                    if (contrasena == "admi-123456")
+                    {
+                        var adminUser = db.Usuarios.FirstOrDefault(u => u.correo == correo);
+                        var rol = db.Roles.FirstOrDefault(r => r.id_rol == adminUser.id_rol);
 
-                    MessageBox.Show($"¡Bienvenido, {resultado.Usuario.nombre}! Has iniciado sesión como {resultado.NombreRol}.", "Bienvenido", MessageBoxButton.OK, MessageBoxImage.Information);
+                        SessionManager.CurrentUserId = adminUser.id_usuario;
+                        SessionManager.CurrentUserName = adminUser.nombre + " " + adminUser.apellido;
+                        SessionManager.UserRole = (rol != null) ? rol.nombre_rol : "Administrador";
 
-                    // Redirige según el rol del usuario (esto es idéntico a tu lógica anterior)
-                    if (resultado.NombreRol == "Administrador")
-                    {
-                        new Administrador().Show(); // Abre la ventana del administrador
+                        MessageBox.Show($"¡Bienvenido (Admin), {adminUser.nombre}! Has iniciado sesión.", "Bienvenido", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                        // --- CORREGIDO: Redirige a Menu ---
+                        new Menu().Show();
+                        this.Close();
+                        return;
                     }
-                    else if (resultado.NombreRol == "Paciente")
+                }
+
+                // --- LÓGICA DE HASHING (OTROS USUARIOS) ---
+                var usuario = db.Usuarios.FirstOrDefault(u => u.correo == correo && u.estado == true);
+
+                if (usuario != null)
+                {
+                    if (PasswordManager.VerifyPassword(contrasena, usuario.contrasena, usuario.salt))
                     {
-                        new InicioUsuario().Show(); // Abre la ventana del usuario normal (Paciente)
-                    }
-                    else if (resultado.NombreRol == "Terapeuta")
-                    {
-                        // Tu script SQL crea este rol, así que la lógica es válida
-                        MessageBox.Show("Acceso para Terapeutas aún no implementado completamente.", "Información", MessageBoxButton.OK, MessageBoxImage.Information);
-                        new Menu().Show(); // O redirige a una ventana de terapeuta si la tienes
+                        var rol = db.Roles.FirstOrDefault(r => r.id_rol == usuario.id_rol);
+                        string nombreRol = (rol != null) ? rol.nombre_rol : "Desconocido";
+
+                        SessionManager.CurrentUserId = usuario.id_usuario;
+                        SessionManager.CurrentUserName = usuario.nombre + " " + usuario.apellido;
+                        SessionManager.UserRole = nombreRol;
+
+                        MessageBox.Show($"¡Bienvenido, {usuario.nombre}! Has iniciado sesión como {nombreRol}.", "Bienvenido", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                        // --- CORREGIDO: Redirige a Menu (ignora el rol) ---
+                        new Menu().Show();
+                        this.Close();
                     }
                     else
                     {
-                        MessageBox.Show("Tu rol no tiene una vista específica asignada.", "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        new Menu().Show();
+                        MessageBox.Show("Correo o contraseña incorrectos, o usuario inactivo.", "Error de Autenticación", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
-                    this.Close();
                 }
                 else
                 {
@@ -95,8 +86,7 @@ namespace Proyecto_Gastronomia
             }
             catch (Exception ex)
             {
-                // Este error ahora podría ser por problemas de conexión con LINQ to SQL
-                MessageBox.Show($"Ocurrió un error al intentar iniciar sesión: {ex.Message}\nPor favor, verifica la conexión a la base de datos y que las tablas 'Usuarios' y 'Roles' estén en tu archivo DataClasses1.dbml.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Ocurrió un error al intentar iniciar sesión: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -126,7 +116,6 @@ namespace Proyecto_Gastronomia
         }
     }
 
-    // La clase SessionManager no necesita cambios
     public static class SessionManager
     {
         public static int CurrentUserId { get; set; }

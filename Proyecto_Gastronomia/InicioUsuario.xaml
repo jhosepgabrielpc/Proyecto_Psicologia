@@ -10,7 +10,7 @@
         WindowStyle="None" ResizeMode="CanResize">
     <Grid>
         <Grid.Background>
-            <ImageBrush ImageSource="Imagenes/fondo_inicio_usuario.jpg" Stretch="UniformToFill"/>
+            <ImageBrush ImageSource="/Imagenes/fondo_inicio_usuario.png" Stretch="UniformToFill"/>
         </Grid.Background>
 
         <Grid.ColumnDefinitions>

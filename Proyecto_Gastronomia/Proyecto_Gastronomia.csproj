@@ -120,6 +120,7 @@
     <Compile Include="Menu.xaml.cs">
       <DependentUpon>Menu.xaml</DependentUpon>
     </Compile>
+    <Compile Include="PasswordManager.cs" />
     <Compile Include="VerRegistros.xaml.cs">
       <DependentUpon>VerRegistros.xaml</DependentUpon>
     </Compile>
@@ -232,9 +233,6 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Imagenes\fondo_inicio_usuario.jpg" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="Imagenes\fondo_departamentos.jpg" />
   </ItemGroup>
   <ItemGroup>
@@ -286,6 +284,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Imagenes\fondo_pacientes.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Imagenes\fondo_inicio_usuario.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
