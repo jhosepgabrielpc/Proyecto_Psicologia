@@ -6,6 +6,7 @@ using System.Text.RegularExpressions; // Para validación numérica
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Diagnostics; // Para Debug.WriteLine
 
 namespace Proyecto_Gastronomia
 {
@@ -13,10 +14,9 @@ namespace Proyecto_Gastronomia
     {
         private string connectionString;
         private int? _pacienteParaEditarId; // Contiene el ID si es edición.
+        private bool _modoEdicion = false; // Añadido para controlar el modo
 
-        // --- CONSTRUCTORES ---
-
-        // Constructor para NUEVO Paciente (llamado desde AdmiPacientes)
+        // Constructor para NUEVO Paciente
         public RegistrarPaciente()
         {
             InitializeComponent();
@@ -26,27 +26,32 @@ namespace Proyecto_Gastronomia
             this.MouseLeftButtonDown += Window_MouseLeftButtonDown;
         }
 
-        // Constructor para EDITAR Paciente (llamado desde AdmiPacientes)
+        // Constructor para EDITAR Paciente
         public RegistrarPaciente(int idPaciente) : this() // Llama al constructor base
         {
             _pacienteParaEditarId = idPaciente;
-            CargarDatosPacienteParaEdicion();
+            _modoEdicion = true; // Activa el modo edición
+
+            // --- CORRECCIÓN DEL ERROR TIPOGRÁFICO CS0103 ---
+            // El método se llama 'CargarDatosParaEdicion' (sin 'Paciente')
+            CargarDatosParaEdicion();
         }
 
+        // --- CORRECCIÓN DE CS0161 ---
+        // Método GetContext COMPLETO
         private DataClasses1DataContext GetContext()
         {
             return new DataClasses1DataContext(connectionString);
         }
 
-        // --- Carga de Datos ---
-
+        // --- MÉTODO COMPLETO ---
         private void CargarTerapeutas()
         {
             try
             {
                 using (DataClasses1DataContext db = GetContext())
                 {
-                    // Obtiene terapeutas activos
+                    // Ojo: Usando plurales 'Terapeutas' y 'Usuarios'
                     var terapeutas = (from t in db.Terapeutas
                                       join u in db.Usuarios on t.id_usuario equals u.id_usuario
                                       where u.estado == true
@@ -57,6 +62,7 @@ namespace Proyecto_Gastronomia
                                       }).ToList();
 
                     cmbTerapeutas.ItemsSource = terapeutas;
+                    // Ojo: Estas propiedades deben coincidir con el 'select' de arriba
                     cmbTerapeutas.DisplayMemberPath = "NombreCompleto";
                     cmbTerapeutas.SelectedValuePath = "IdTerapeuta";
                 }
@@ -67,7 +73,8 @@ namespace Proyecto_Gastronomia
             }
         }
 
-        private void CargarDatosPacienteParaEdicion()
+        // --- MÉTODO COMPLETO ---
+        private void CargarDatosParaEdicion()
         {
             if (_pacienteParaEditarId == null) return;
 
@@ -75,6 +82,7 @@ namespace Proyecto_Gastronomia
             {
                 using (DataClasses1DataContext db = GetContext())
                 {
+                    // Ojo: Usando plurales 'Pacientes' y 'Usuarios'
                     var query = (from p in db.Pacientes
                                  join u in db.Usuarios on p.id_usuario equals u.id_usuario
                                  where p.id_paciente == _pacienteParaEditarId.Value
@@ -113,8 +121,6 @@ namespace Proyecto_Gastronomia
             }
         }
 
-        // --- Botones de Acción ---
-
         private void btnGuardar_Click(object sender, RoutedEventArgs e)
         {
             if (!ValidarCampos()) return;
@@ -123,38 +129,34 @@ namespace Proyecto_Gastronomia
             {
                 using (DataClasses1DataContext db = GetContext())
                 {
-                    // --- MODO NUEVO ---
-                    if (_pacienteParaEditarId == null)
+                    if (!_modoEdicion) // --- MODO NUEVO ---
                     {
-                        // 1. Obtener el ID del rol "Paciente"
                         int? rolPacienteId = db.Roles.FirstOrDefault(r => r.nombre_rol == "Paciente")?.id_rol;
-                        if (rolPacienteId == null)
-                        {
-                            MessageBox.Show("Error crítico: No se encontró el rol 'Paciente'.", "Error de BD", MessageBoxButton.OK, MessageBoxImage.Error);
-                            return;
-                        }
+                        if (rolPacienteId == null) { MessageBox.Show("Error: Rol 'Paciente' no encontrado."); return; }
 
-                        // 2. Crear el USUARIO
+                        string salt = PasswordManager.GenerateSalt();
+                        string hash = PasswordManager.HashPassword(pbContrasena.Password, salt);
+
+                        // Ojo: Usando plural 'Usuarios'
                         Usuarios nuevoUsuario = new Usuarios
                         {
                             id_rol = rolPacienteId.Value,
                             nombre = txtNombre.Text,
                             apellido = txtApellido.Text,
                             correo = txtCorreo.Text,
-                            contrasena = pbContrasena.Password, // ¡Recuerda hashear esto en un proyecto real!
+                            contrasena = hash,
+                            salt = salt,
                             telefono = txtTelefono.Text,
                             estado = chkEstado.IsChecked ?? true,
                             fecha_registro = DateTime.Now
                         };
                         db.Usuarios.InsertOnSubmit(nuevoUsuario);
-
-                        // 3. Guardar cambios para obtener el ID del nuevo usuario
                         db.SubmitChanges();
 
-                        // 4. Crear el PACIENTE
+                        // Ojo: Usando plural 'Pacientes'
                         Pacientes nuevoPaciente = new Pacientes
                         {
-                            id_usuario = nuevoUsuario.id_usuario, // ID recién creado
+                            id_usuario = nuevoUsuario.id_usuario,
                             id_terapeuta = (int?)cmbTerapeutas.SelectedValue,
                             fecha_nacimiento = dpFechaNacimiento.SelectedDate,
                             genero = txtGenero.Text,
@@ -163,14 +165,12 @@ namespace Proyecto_Gastronomia
                             fecha_inicio_tratamiento = DateTime.Now
                         };
                         db.Pacientes.InsertOnSubmit(nuevoPaciente);
-
-                        // 5. Guardar Paciente
                         db.SubmitChanges();
                         MessageBox.Show("Paciente registrado exitosamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
-                    // --- MODO EDICIÓN ---
-                    else
+                    else // --- MODO EDICIÓN ---
                     {
+                        // Ojo: Usando plural 'Pacientes' y 'Usuarios'
                         Pacientes pacienteToUpdate = db.Pacientes.SingleOrDefault(p => p.id_paciente == _pacienteParaEditarId.Value);
                         if (pacienteToUpdate != null)
                         {
@@ -182,7 +182,6 @@ namespace Proyecto_Gastronomia
                                 usuarioToUpdate.apellido = txtApellido.Text;
                                 usuarioToUpdate.telefono = txtTelefono.Text;
                                 usuarioToUpdate.estado = chkEstado.IsChecked ?? true;
-                                // No actualizamos correo ni contraseña desde aquí
                             }
 
                             // Actualizar Paciente
@@ -197,17 +196,20 @@ namespace Proyecto_Gastronomia
                         }
                     }
 
-                    this.DialogResult = true; // Indica éxito a AdmiPacientes
+                    this.DialogResult = true;
                     this.Close();
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Ocurrió un error al guardar: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Debug.WriteLine($"Error Guardar Paciente: {ex.Message}");
                 this.DialogResult = false;
             }
         }
 
+        // --- CORRECCIÓN DE CS0161 ---
+        // Método ValidarCampos COMPLETO
         private bool ValidarCampos()
         {
             if (string.IsNullOrWhiteSpace(txtNombre.Text) ||
@@ -219,7 +221,7 @@ namespace Proyecto_Gastronomia
             }
 
             // Validar contraseña solo si es un NUEVO paciente
-            if (_pacienteParaEditarId == null && string.IsNullOrWhiteSpace(pbContrasena.Password))
+            if (!_modoEdicion && string.IsNullOrWhiteSpace(pbContrasena.Password))
             {
                 MessageBox.Show("Debe ingresar una contraseña para el nuevo paciente.", "Campos Incompletos", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
@@ -232,9 +234,10 @@ namespace Proyecto_Gastronomia
                 return false;
             }
 
-            return true;
+            return true; // Devuelve true si todo es válido
         }
 
+        // --- MÉTODO COMPLETO ---
         private void LimpiarCampos()
         {
             txtIdUsuario.Clear();
@@ -253,6 +256,7 @@ namespace Proyecto_Gastronomia
             txtHistorialClinico.Clear();
 
             _pacienteParaEditarId = null;
+            _modoEdicion = false;
             txtCorreo.IsReadOnly = false;
             pbContrasena.IsEnabled = true;
         }
@@ -261,8 +265,6 @@ namespace Proyecto_Gastronomia
         {
             LimpiarCampos();
         }
-
-        // --- Navegación y Validación ---
 
         private void btnVolver_Click(object sender, RoutedEventArgs e)
         {
@@ -281,6 +283,7 @@ namespace Proyecto_Gastronomia
             Application.Current.Shutdown();
         }
 
+        // --- MÉTODOS DE VALIDACIÓN NUMÉRICA COMPLETOS ---
         private void NumericInput_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             Regex regex = new Regex("[^0-9]+");

@@ -30,9 +30,6 @@ namespace Proyecto_Gastronomia
 		
     #region Definiciones de métodos de extensibilidad
     partial void OnCreated();
-    partial void InsertUsuarios(Usuarios instance);
-    partial void UpdateUsuarios(Usuarios instance);
-    partial void DeleteUsuarios(Usuarios instance);
     partial void InsertRoles(Roles instance);
     partial void UpdateRoles(Roles instance);
     partial void DeleteRoles(Roles instance);
@@ -69,6 +66,9 @@ namespace Proyecto_Gastronomia
     partial void InsertHorarios_Terapeutas(Horarios_Terapeutas instance);
     partial void UpdateHorarios_Terapeutas(Horarios_Terapeutas instance);
     partial void DeleteHorarios_Terapeutas(Horarios_Terapeutas instance);
+    partial void InsertUsuarios(Usuarios instance);
+    partial void UpdateUsuarios(Usuarios instance);
+    partial void DeleteUsuarios(Usuarios instance);
     #endregion
 		
 		public DataClasses1DataContext() : 
@@ -99,14 +99,6 @@ namespace Proyecto_Gastronomia
 				base(connection, mappingSource)
 		{
 			OnCreated();
-		}
-		
-		public System.Data.Linq.Table<Usuarios> Usuarios
-		{
-			get
-			{
-				return this.GetTable<Usuarios>();
-			}
 		}
 		
 		public System.Data.Linq.Table<Roles> Roles
@@ -204,440 +196,13 @@ namespace Proyecto_Gastronomia
 				return this.GetTable<Horarios_Terapeutas>();
 			}
 		}
-	}
-	
-	[global::System.Data.Linq.Mapping.TableAttribute(Name="dbo.Usuarios")]
-	public partial class Usuarios : INotifyPropertyChanging, INotifyPropertyChanged
-	{
 		
-		private static PropertyChangingEventArgs emptyChangingEventArgs = new PropertyChangingEventArgs(String.Empty);
-		
-		private int _id_usuario;
-		
-		private int _id_rol;
-		
-		private string _nombre;
-		
-		private string _apellido;
-		
-		private string _correo;
-		
-		private string _contrasena;
-		
-		private string _telefono;
-		
-		private System.Nullable<bool> _estado;
-		
-		private System.Nullable<System.DateTime> _fecha_registro;
-		
-		private EntitySet<Pacientes> _Pacientes;
-		
-		private EntitySet<Terapeutas> _Terapeutas;
-		
-		private EntitySet<Mensajes_Seguros> _Mensajes_Seguros;
-		
-		private EntitySet<Mensajes_Seguros> _Mensajes_Seguros1;
-		
-		private EntitySet<Notificaciones> _Notificaciones;
-		
-		private EntityRef<Roles> _Roles;
-		
-    #region Definiciones de métodos de extensibilidad
-    partial void OnLoaded();
-    partial void OnValidate(System.Data.Linq.ChangeAction action);
-    partial void OnCreated();
-    partial void Onid_usuarioChanging(int value);
-    partial void Onid_usuarioChanged();
-    partial void Onid_rolChanging(int value);
-    partial void Onid_rolChanged();
-    partial void OnnombreChanging(string value);
-    partial void OnnombreChanged();
-    partial void OnapellidoChanging(string value);
-    partial void OnapellidoChanged();
-    partial void OncorreoChanging(string value);
-    partial void OncorreoChanged();
-    partial void OncontrasenaChanging(string value);
-    partial void OncontrasenaChanged();
-    partial void OntelefonoChanging(string value);
-    partial void OntelefonoChanged();
-    partial void OnestadoChanging(System.Nullable<bool> value);
-    partial void OnestadoChanged();
-    partial void Onfecha_registroChanging(System.Nullable<System.DateTime> value);
-    partial void Onfecha_registroChanged();
-    #endregion
-		
-		public Usuarios()
-		{
-			this._Pacientes = new EntitySet<Pacientes>(new Action<Pacientes>(this.attach_Pacientes), new Action<Pacientes>(this.detach_Pacientes));
-			this._Terapeutas = new EntitySet<Terapeutas>(new Action<Terapeutas>(this.attach_Terapeutas), new Action<Terapeutas>(this.detach_Terapeutas));
-			this._Mensajes_Seguros = new EntitySet<Mensajes_Seguros>(new Action<Mensajes_Seguros>(this.attach_Mensajes_Seguros), new Action<Mensajes_Seguros>(this.detach_Mensajes_Seguros));
-			this._Mensajes_Seguros1 = new EntitySet<Mensajes_Seguros>(new Action<Mensajes_Seguros>(this.attach_Mensajes_Seguros1), new Action<Mensajes_Seguros>(this.detach_Mensajes_Seguros1));
-			this._Notificaciones = new EntitySet<Notificaciones>(new Action<Notificaciones>(this.attach_Notificaciones), new Action<Notificaciones>(this.detach_Notificaciones));
-			this._Roles = default(EntityRef<Roles>);
-			OnCreated();
-		}
-		
-		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_id_usuario", AutoSync=AutoSync.OnInsert, DbType="Int NOT NULL IDENTITY", IsPrimaryKey=true, IsDbGenerated=true)]
-		public int id_usuario
+		public System.Data.Linq.Table<Usuarios> Usuarios
 		{
 			get
 			{
-				return this._id_usuario;
+				return this.GetTable<Usuarios>();
 			}
-			set
-			{
-				if ((this._id_usuario != value))
-				{
-					this.Onid_usuarioChanging(value);
-					this.SendPropertyChanging();
-					this._id_usuario = value;
-					this.SendPropertyChanged("id_usuario");
-					this.Onid_usuarioChanged();
-				}
-			}
-		}
-		
-		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_id_rol", DbType="Int NOT NULL")]
-		public int id_rol
-		{
-			get
-			{
-				return this._id_rol;
-			}
-			set
-			{
-				if ((this._id_rol != value))
-				{
-					if (this._Roles.HasLoadedOrAssignedValue)
-					{
-						throw new System.Data.Linq.ForeignKeyReferenceAlreadyHasValueException();
-					}
-					this.Onid_rolChanging(value);
-					this.SendPropertyChanging();
-					this._id_rol = value;
-					this.SendPropertyChanged("id_rol");
-					this.Onid_rolChanged();
-				}
-			}
-		}
-		
-		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_nombre", DbType="VarChar(100) NOT NULL", CanBeNull=false)]
-		public string nombre
-		{
-			get
-			{
-				return this._nombre;
-			}
-			set
-			{
-				if ((this._nombre != value))
-				{
-					this.OnnombreChanging(value);
-					this.SendPropertyChanging();
-					this._nombre = value;
-					this.SendPropertyChanged("nombre");
-					this.OnnombreChanged();
-				}
-			}
-		}
-		
-		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_apellido", DbType="VarChar(100) NOT NULL", CanBeNull=false)]
-		public string apellido
-		{
-			get
-			{
-				return this._apellido;
-			}
-			set
-			{
-				if ((this._apellido != value))
-				{
-					this.OnapellidoChanging(value);
-					this.SendPropertyChanging();
-					this._apellido = value;
-					this.SendPropertyChanged("apellido");
-					this.OnapellidoChanged();
-				}
-			}
-		}
-		
-		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_correo", DbType="VarChar(150) NOT NULL", CanBeNull=false)]
-		public string correo
-		{
-			get
-			{
-				return this._correo;
-			}
-			set
-			{
-				if ((this._correo != value))
-				{
-					this.OncorreoChanging(value);
-					this.SendPropertyChanging();
-					this._correo = value;
-					this.SendPropertyChanged("correo");
-					this.OncorreoChanged();
-				}
-			}
-		}
-		
-		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_contrasena", DbType="VarChar(255) NOT NULL", CanBeNull=false)]
-		public string contrasena
-		{
-			get
-			{
-				return this._contrasena;
-			}
-			set
-			{
-				if ((this._contrasena != value))
-				{
-					this.OncontrasenaChanging(value);
-					this.SendPropertyChanging();
-					this._contrasena = value;
-					this.SendPropertyChanged("contrasena");
-					this.OncontrasenaChanged();
-				}
-			}
-		}
-		
-		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_telefono", DbType="VarChar(15)")]
-		public string telefono
-		{
-			get
-			{
-				return this._telefono;
-			}
-			set
-			{
-				if ((this._telefono != value))
-				{
-					this.OntelefonoChanging(value);
-					this.SendPropertyChanging();
-					this._telefono = value;
-					this.SendPropertyChanged("telefono");
-					this.OntelefonoChanged();
-				}
-			}
-		}
-		
-		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_estado", DbType="Bit")]
-		public System.Nullable<bool> estado
-		{
-			get
-			{
-				return this._estado;
-			}
-			set
-			{
-				if ((this._estado != value))
-				{
-					this.OnestadoChanging(value);
-					this.SendPropertyChanging();
-					this._estado = value;
-					this.SendPropertyChanged("estado");
-					this.OnestadoChanged();
-				}
-			}
-		}
-		
-		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_fecha_registro", DbType="DateTime")]
-		public System.Nullable<System.DateTime> fecha_registro
-		{
-			get
-			{
-				return this._fecha_registro;
-			}
-			set
-			{
-				if ((this._fecha_registro != value))
-				{
-					this.Onfecha_registroChanging(value);
-					this.SendPropertyChanging();
-					this._fecha_registro = value;
-					this.SendPropertyChanged("fecha_registro");
-					this.Onfecha_registroChanged();
-				}
-			}
-		}
-		
-		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="Usuarios_Pacientes", Storage="_Pacientes", ThisKey="id_usuario", OtherKey="id_usuario")]
-		public EntitySet<Pacientes> Pacientes
-		{
-			get
-			{
-				return this._Pacientes;
-			}
-			set
-			{
-				this._Pacientes.Assign(value);
-			}
-		}
-		
-		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="Usuarios_Terapeutas", Storage="_Terapeutas", ThisKey="id_usuario", OtherKey="id_usuario")]
-		public EntitySet<Terapeutas> Terapeutas
-		{
-			get
-			{
-				return this._Terapeutas;
-			}
-			set
-			{
-				this._Terapeutas.Assign(value);
-			}
-		}
-		
-		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="Usuarios_Mensajes_Seguros", Storage="_Mensajes_Seguros", ThisKey="id_usuario", OtherKey="id_destinatario")]
-		public EntitySet<Mensajes_Seguros> Mensajes_Seguros
-		{
-			get
-			{
-				return this._Mensajes_Seguros;
-			}
-			set
-			{
-				this._Mensajes_Seguros.Assign(value);
-			}
-		}
-		
-		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="Usuarios_Mensajes_Seguros1", Storage="_Mensajes_Seguros1", ThisKey="id_usuario", OtherKey="id_remitente")]
-		public EntitySet<Mensajes_Seguros> Mensajes_Seguros1
-		{
-			get
-			{
-				return this._Mensajes_Seguros1;
-			}
-			set
-			{
-				this._Mensajes_Seguros1.Assign(value);
-			}
-		}
-		
-		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="Usuarios_Notificaciones", Storage="_Notificaciones", ThisKey="id_usuario", OtherKey="id_usuario")]
-		public EntitySet<Notificaciones> Notificaciones
-		{
-			get
-			{
-				return this._Notificaciones;
-			}
-			set
-			{
-				this._Notificaciones.Assign(value);
-			}
-		}
-		
-		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="Roles_Usuarios", Storage="_Roles", ThisKey="id_rol", OtherKey="id_rol", IsForeignKey=true)]
-		public Roles Roles
-		{
-			get
-			{
-				return this._Roles.Entity;
-			}
-			set
-			{
-				Roles previousValue = this._Roles.Entity;
-				if (((previousValue != value) 
-							|| (this._Roles.HasLoadedOrAssignedValue == false)))
-				{
-					this.SendPropertyChanging();
-					if ((previousValue != null))
-					{
-						this._Roles.Entity = null;
-						previousValue.Usuarios.Remove(this);
-					}
-					this._Roles.Entity = value;
-					if ((value != null))
-					{
-						value.Usuarios.Add(this);
-						this._id_rol = value.id_rol;
-					}
-					else
-					{
-						this._id_rol = default(int);
-					}
-					this.SendPropertyChanged("Roles");
-				}
-			}
-		}
-		
-		public event PropertyChangingEventHandler PropertyChanging;
-		
-		public event PropertyChangedEventHandler PropertyChanged;
-		
-		protected virtual void SendPropertyChanging()
-		{
-			if ((this.PropertyChanging != null))
-			{
-				this.PropertyChanging(this, emptyChangingEventArgs);
-			}
-		}
-		
-		protected virtual void SendPropertyChanged(String propertyName)
-		{
-			if ((this.PropertyChanged != null))
-			{
-				this.PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
-			}
-		}
-		
-		private void attach_Pacientes(Pacientes entity)
-		{
-			this.SendPropertyChanging();
-			entity.Usuarios = this;
-		}
-		
-		private void detach_Pacientes(Pacientes entity)
-		{
-			this.SendPropertyChanging();
-			entity.Usuarios = null;
-		}
-		
-		private void attach_Terapeutas(Terapeutas entity)
-		{
-			this.SendPropertyChanging();
-			entity.Usuarios = this;
-		}
-		
-		private void detach_Terapeutas(Terapeutas entity)
-		{
-			this.SendPropertyChanging();
-			entity.Usuarios = null;
-		}
-		
-		private void attach_Mensajes_Seguros(Mensajes_Seguros entity)
-		{
-			this.SendPropertyChanging();
-			entity.Usuarios = this;
-		}
-		
-		private void detach_Mensajes_Seguros(Mensajes_Seguros entity)
-		{
-			this.SendPropertyChanging();
-			entity.Usuarios = null;
-		}
-		
-		private void attach_Mensajes_Seguros1(Mensajes_Seguros entity)
-		{
-			this.SendPropertyChanging();
-			entity.Usuarios1 = this;
-		}
-		
-		private void detach_Mensajes_Seguros1(Mensajes_Seguros entity)
-		{
-			this.SendPropertyChanging();
-			entity.Usuarios1 = null;
-		}
-		
-		private void attach_Notificaciones(Notificaciones entity)
-		{
-			this.SendPropertyChanging();
-			entity.Usuarios = this;
-		}
-		
-		private void detach_Notificaciones(Notificaciones entity)
-		{
-			this.SendPropertyChanging();
-			entity.Usuarios = null;
 		}
 	}
 	
@@ -785,9 +350,9 @@ namespace Proyecto_Gastronomia
 		
 		private EntitySet<Resultados_Escalas> _Resultados_Escalas;
 		
-		private EntityRef<Usuarios> _Usuarios;
-		
 		private EntityRef<Terapeutas> _Terapeutas;
+		
+		private EntityRef<Usuarios> _Usuarios;
 		
     #region Definiciones de métodos de extensibilidad
     partial void OnLoaded();
@@ -817,8 +382,8 @@ namespace Proyecto_Gastronomia
 			this._Registros_Emocionales = new EntitySet<Registros_Emocionales>(new Action<Registros_Emocionales>(this.attach_Registros_Emocionales), new Action<Registros_Emocionales>(this.detach_Registros_Emocionales));
 			this._Reportes = new EntitySet<Reportes>(new Action<Reportes>(this.attach_Reportes), new Action<Reportes>(this.detach_Reportes));
 			this._Resultados_Escalas = new EntitySet<Resultados_Escalas>(new Action<Resultados_Escalas>(this.attach_Resultados_Escalas), new Action<Resultados_Escalas>(this.detach_Resultados_Escalas));
-			this._Usuarios = default(EntityRef<Usuarios>);
 			this._Terapeutas = default(EntityRef<Terapeutas>);
+			this._Usuarios = default(EntityRef<Usuarios>);
 			OnCreated();
 		}
 		
@@ -1042,40 +607,6 @@ namespace Proyecto_Gastronomia
 			}
 		}
 		
-		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="Usuarios_Pacientes", Storage="_Usuarios", ThisKey="id_usuario", OtherKey="id_usuario", IsForeignKey=true)]
-		public Usuarios Usuarios
-		{
-			get
-			{
-				return this._Usuarios.Entity;
-			}
-			set
-			{
-				Usuarios previousValue = this._Usuarios.Entity;
-				if (((previousValue != value) 
-							|| (this._Usuarios.HasLoadedOrAssignedValue == false)))
-				{
-					this.SendPropertyChanging();
-					if ((previousValue != null))
-					{
-						this._Usuarios.Entity = null;
-						previousValue.Pacientes.Remove(this);
-					}
-					this._Usuarios.Entity = value;
-					if ((value != null))
-					{
-						value.Pacientes.Add(this);
-						this._id_usuario = value.id_usuario;
-					}
-					else
-					{
-						this._id_usuario = default(int);
-					}
-					this.SendPropertyChanged("Usuarios");
-				}
-			}
-		}
-		
 		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="Terapeutas_Pacientes", Storage="_Terapeutas", ThisKey="id_terapeuta", OtherKey="id_terapeuta", IsForeignKey=true)]
 		public Terapeutas Terapeutas
 		{
@@ -1106,6 +637,40 @@ namespace Proyecto_Gastronomia
 						this._id_terapeuta = default(Nullable<int>);
 					}
 					this.SendPropertyChanged("Terapeutas");
+				}
+			}
+		}
+		
+		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="Usuarios_Pacientes", Storage="_Usuarios", ThisKey="id_usuario", OtherKey="id_usuario", IsForeignKey=true)]
+		public Usuarios Usuarios
+		{
+			get
+			{
+				return this._Usuarios.Entity;
+			}
+			set
+			{
+				Usuarios previousValue = this._Usuarios.Entity;
+				if (((previousValue != value) 
+							|| (this._Usuarios.HasLoadedOrAssignedValue == false)))
+				{
+					this.SendPropertyChanging();
+					if ((previousValue != null))
+					{
+						this._Usuarios.Entity = null;
+						previousValue.Pacientes.Remove(this);
+					}
+					this._Usuarios.Entity = value;
+					if ((value != null))
+					{
+						value.Pacientes.Add(this);
+						this._id_usuario = value.id_usuario;
+					}
+					else
+					{
+						this._id_usuario = default(int);
+					}
+					this.SendPropertyChanged("Usuarios");
 				}
 			}
 		}
@@ -3913,6 +3478,465 @@ namespace Proyecto_Gastronomia
 			{
 				this.PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
 			}
+		}
+	}
+	
+	[global::System.Data.Linq.Mapping.TableAttribute(Name="dbo.Usuarios")]
+	public partial class Usuarios : INotifyPropertyChanging, INotifyPropertyChanged
+	{
+		
+		private static PropertyChangingEventArgs emptyChangingEventArgs = new PropertyChangingEventArgs(String.Empty);
+		
+		private int _id_usuario;
+		
+		private int _id_rol;
+		
+		private string _nombre;
+		
+		private string _apellido;
+		
+		private string _correo;
+		
+		private string _contrasena;
+		
+		private string _telefono;
+		
+		private System.Nullable<bool> _estado;
+		
+		private System.Nullable<System.DateTime> _fecha_registro;
+		
+		private string _salt;
+		
+		private EntitySet<Pacientes> _Pacientes;
+		
+		private EntitySet<Terapeutas> _Terapeutas;
+		
+		private EntitySet<Mensajes_Seguros> _Mensajes_Seguros;
+		
+		private EntitySet<Mensajes_Seguros> _Mensajes_Seguros1;
+		
+		private EntitySet<Notificaciones> _Notificaciones;
+		
+		private EntityRef<Roles> _Roles;
+		
+    #region Definiciones de métodos de extensibilidad
+    partial void OnLoaded();
+    partial void OnValidate(System.Data.Linq.ChangeAction action);
+    partial void OnCreated();
+    partial void Onid_usuarioChanging(int value);
+    partial void Onid_usuarioChanged();
+    partial void Onid_rolChanging(int value);
+    partial void Onid_rolChanged();
+    partial void OnnombreChanging(string value);
+    partial void OnnombreChanged();
+    partial void OnapellidoChanging(string value);
+    partial void OnapellidoChanged();
+    partial void OncorreoChanging(string value);
+    partial void OncorreoChanged();
+    partial void OncontrasenaChanging(string value);
+    partial void OncontrasenaChanged();
+    partial void OntelefonoChanging(string value);
+    partial void OntelefonoChanged();
+    partial void OnestadoChanging(System.Nullable<bool> value);
+    partial void OnestadoChanged();
+    partial void Onfecha_registroChanging(System.Nullable<System.DateTime> value);
+    partial void Onfecha_registroChanged();
+    partial void OnsaltChanging(string value);
+    partial void OnsaltChanged();
+    #endregion
+		
+		public Usuarios()
+		{
+			this._Pacientes = new EntitySet<Pacientes>(new Action<Pacientes>(this.attach_Pacientes), new Action<Pacientes>(this.detach_Pacientes));
+			this._Terapeutas = new EntitySet<Terapeutas>(new Action<Terapeutas>(this.attach_Terapeutas), new Action<Terapeutas>(this.detach_Terapeutas));
+			this._Mensajes_Seguros = new EntitySet<Mensajes_Seguros>(new Action<Mensajes_Seguros>(this.attach_Mensajes_Seguros), new Action<Mensajes_Seguros>(this.detach_Mensajes_Seguros));
+			this._Mensajes_Seguros1 = new EntitySet<Mensajes_Seguros>(new Action<Mensajes_Seguros>(this.attach_Mensajes_Seguros1), new Action<Mensajes_Seguros>(this.detach_Mensajes_Seguros1));
+			this._Notificaciones = new EntitySet<Notificaciones>(new Action<Notificaciones>(this.attach_Notificaciones), new Action<Notificaciones>(this.detach_Notificaciones));
+			this._Roles = default(EntityRef<Roles>);
+			OnCreated();
+		}
+		
+		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_id_usuario", AutoSync=AutoSync.OnInsert, DbType="Int NOT NULL IDENTITY", IsPrimaryKey=true, IsDbGenerated=true)]
+		public int id_usuario
+		{
+			get
+			{
+				return this._id_usuario;
+			}
+			set
+			{
+				if ((this._id_usuario != value))
+				{
+					this.Onid_usuarioChanging(value);
+					this.SendPropertyChanging();
+					this._id_usuario = value;
+					this.SendPropertyChanged("id_usuario");
+					this.Onid_usuarioChanged();
+				}
+			}
+		}
+		
+		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_id_rol", DbType="Int NOT NULL")]
+		public int id_rol
+		{
+			get
+			{
+				return this._id_rol;
+			}
+			set
+			{
+				if ((this._id_rol != value))
+				{
+					if (this._Roles.HasLoadedOrAssignedValue)
+					{
+						throw new System.Data.Linq.ForeignKeyReferenceAlreadyHasValueException();
+					}
+					this.Onid_rolChanging(value);
+					this.SendPropertyChanging();
+					this._id_rol = value;
+					this.SendPropertyChanged("id_rol");
+					this.Onid_rolChanged();
+				}
+			}
+		}
+		
+		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_nombre", DbType="VarChar(100) NOT NULL", CanBeNull=false)]
+		public string nombre
+		{
+			get
+			{
+				return this._nombre;
+			}
+			set
+			{
+				if ((this._nombre != value))
+				{
+					this.OnnombreChanging(value);
+					this.SendPropertyChanging();
+					this._nombre = value;
+					this.SendPropertyChanged("nombre");
+					this.OnnombreChanged();
+				}
+			}
+		}
+		
+		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_apellido", DbType="VarChar(100) NOT NULL", CanBeNull=false)]
+		public string apellido
+		{
+			get
+			{
+				return this._apellido;
+			}
+			set
+			{
+				if ((this._apellido != value))
+				{
+					this.OnapellidoChanging(value);
+					this.SendPropertyChanging();
+					this._apellido = value;
+					this.SendPropertyChanged("apellido");
+					this.OnapellidoChanged();
+				}
+			}
+		}
+		
+		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_correo", DbType="VarChar(150) NOT NULL", CanBeNull=false)]
+		public string correo
+		{
+			get
+			{
+				return this._correo;
+			}
+			set
+			{
+				if ((this._correo != value))
+				{
+					this.OncorreoChanging(value);
+					this.SendPropertyChanging();
+					this._correo = value;
+					this.SendPropertyChanged("correo");
+					this.OncorreoChanged();
+				}
+			}
+		}
+		
+		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_contrasena", DbType="VarChar(255) NOT NULL", CanBeNull=false)]
+		public string contrasena
+		{
+			get
+			{
+				return this._contrasena;
+			}
+			set
+			{
+				if ((this._contrasena != value))
+				{
+					this.OncontrasenaChanging(value);
+					this.SendPropertyChanging();
+					this._contrasena = value;
+					this.SendPropertyChanged("contrasena");
+					this.OncontrasenaChanged();
+				}
+			}
+		}
+		
+		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_telefono", DbType="VarChar(15)")]
+		public string telefono
+		{
+			get
+			{
+				return this._telefono;
+			}
+			set
+			{
+				if ((this._telefono != value))
+				{
+					this.OntelefonoChanging(value);
+					this.SendPropertyChanging();
+					this._telefono = value;
+					this.SendPropertyChanged("telefono");
+					this.OntelefonoChanged();
+				}
+			}
+		}
+		
+		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_estado", DbType="Bit")]
+		public System.Nullable<bool> estado
+		{
+			get
+			{
+				return this._estado;
+			}
+			set
+			{
+				if ((this._estado != value))
+				{
+					this.OnestadoChanging(value);
+					this.SendPropertyChanging();
+					this._estado = value;
+					this.SendPropertyChanged("estado");
+					this.OnestadoChanged();
+				}
+			}
+		}
+		
+		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_fecha_registro", DbType="DateTime")]
+		public System.Nullable<System.DateTime> fecha_registro
+		{
+			get
+			{
+				return this._fecha_registro;
+			}
+			set
+			{
+				if ((this._fecha_registro != value))
+				{
+					this.Onfecha_registroChanging(value);
+					this.SendPropertyChanging();
+					this._fecha_registro = value;
+					this.SendPropertyChanged("fecha_registro");
+					this.Onfecha_registroChanged();
+				}
+			}
+		}
+		
+		[global::System.Data.Linq.Mapping.ColumnAttribute(Storage="_salt", DbType="VarChar(100)")]
+		public string salt
+		{
+			get
+			{
+				return this._salt;
+			}
+			set
+			{
+				if ((this._salt != value))
+				{
+					this.OnsaltChanging(value);
+					this.SendPropertyChanging();
+					this._salt = value;
+					this.SendPropertyChanged("salt");
+					this.OnsaltChanged();
+				}
+			}
+		}
+		
+		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="Usuarios_Pacientes", Storage="_Pacientes", ThisKey="id_usuario", OtherKey="id_usuario")]
+		public EntitySet<Pacientes> Pacientes
+		{
+			get
+			{
+				return this._Pacientes;
+			}
+			set
+			{
+				this._Pacientes.Assign(value);
+			}
+		}
+		
+		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="Usuarios_Terapeutas", Storage="_Terapeutas", ThisKey="id_usuario", OtherKey="id_usuario")]
+		public EntitySet<Terapeutas> Terapeutas
+		{
+			get
+			{
+				return this._Terapeutas;
+			}
+			set
+			{
+				this._Terapeutas.Assign(value);
+			}
+		}
+		
+		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="Usuarios_Mensajes_Seguros", Storage="_Mensajes_Seguros", ThisKey="id_usuario", OtherKey="id_destinatario")]
+		public EntitySet<Mensajes_Seguros> Mensajes_Seguros
+		{
+			get
+			{
+				return this._Mensajes_Seguros;
+			}
+			set
+			{
+				this._Mensajes_Seguros.Assign(value);
+			}
+		}
+		
+		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="Usuarios_Mensajes_Seguros1", Storage="_Mensajes_Seguros1", ThisKey="id_usuario", OtherKey="id_remitente")]
+		public EntitySet<Mensajes_Seguros> Mensajes_Seguros1
+		{
+			get
+			{
+				return this._Mensajes_Seguros1;
+			}
+			set
+			{
+				this._Mensajes_Seguros1.Assign(value);
+			}
+		}
+		
+		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="Usuarios_Notificaciones", Storage="_Notificaciones", ThisKey="id_usuario", OtherKey="id_usuario")]
+		public EntitySet<Notificaciones> Notificaciones
+		{
+			get
+			{
+				return this._Notificaciones;
+			}
+			set
+			{
+				this._Notificaciones.Assign(value);
+			}
+		}
+		
+		[global::System.Data.Linq.Mapping.AssociationAttribute(Name="Roles_Usuarios", Storage="_Roles", ThisKey="id_rol", OtherKey="id_rol", IsForeignKey=true)]
+		public Roles Roles
+		{
+			get
+			{
+				return this._Roles.Entity;
+			}
+			set
+			{
+				Roles previousValue = this._Roles.Entity;
+				if (((previousValue != value) 
+							|| (this._Roles.HasLoadedOrAssignedValue == false)))
+				{
+					this.SendPropertyChanging();
+					if ((previousValue != null))
+					{
+						this._Roles.Entity = null;
+						previousValue.Usuarios.Remove(this);
+					}
+					this._Roles.Entity = value;
+					if ((value != null))
+					{
+						value.Usuarios.Add(this);
+						this._id_rol = value.id_rol;
+					}
+					else
+					{
+						this._id_rol = default(int);
+					}
+					this.SendPropertyChanged("Roles");
+				}
+			}
+		}
+		
+		public event PropertyChangingEventHandler PropertyChanging;
+		
+		public event PropertyChangedEventHandler PropertyChanged;
+		
+		protected virtual void SendPropertyChanging()
+		{
+			if ((this.PropertyChanging != null))
+			{
+				this.PropertyChanging(this, emptyChangingEventArgs);
+			}
+		}
+		
+		protected virtual void SendPropertyChanged(String propertyName)
+		{
+			if ((this.PropertyChanged != null))
+			{
+				this.PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+			}
+		}
+		
+		private void attach_Pacientes(Pacientes entity)
+		{
+			this.SendPropertyChanging();
+			entity.Usuarios = this;
+		}
+		
+		private void detach_Pacientes(Pacientes entity)
+		{
+			this.SendPropertyChanging();
+			entity.Usuarios = null;
+		}
+		
+		private void attach_Terapeutas(Terapeutas entity)
+		{
+			this.SendPropertyChanging();
+			entity.Usuarios = this;
+		}
+		
+		private void detach_Terapeutas(Terapeutas entity)
+		{
+			this.SendPropertyChanging();
+			entity.Usuarios = null;
+		}
+		
+		private void attach_Mensajes_Seguros(Mensajes_Seguros entity)
+		{
+			this.SendPropertyChanging();
+			entity.Usuarios = this;
+		}
+		
+		private void detach_Mensajes_Seguros(Mensajes_Seguros entity)
+		{
+			this.SendPropertyChanging();
+			entity.Usuarios = null;
+		}
+		
+		private void attach_Mensajes_Seguros1(Mensajes_Seguros entity)
+		{
+			this.SendPropertyChanging();
+			entity.Usuarios1 = this;
+		}
+		
+		private void detach_Mensajes_Seguros1(Mensajes_Seguros entity)
+		{
+			this.SendPropertyChanging();
+			entity.Usuarios1 = null;
+		}
+		
+		private void attach_Notificaciones(Notificaciones entity)
+		{
+			this.SendPropertyChanging();
+			entity.Usuarios = this;
+		}
+		
+		private void detach_Notificaciones(Notificaciones entity)
+		{
+			this.SendPropertyChanging();
+			entity.Usuarios = null;
 		}
 	}
 }

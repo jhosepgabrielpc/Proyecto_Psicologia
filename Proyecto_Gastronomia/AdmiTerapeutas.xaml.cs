@@ -5,13 +5,11 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Diagnostics; // Añadido para Debug.WriteLine
+using System.Diagnostics;
 
 namespace Proyecto_Gastronomia
 {
     // --- CLASES DE DATOS (DTOs) ---
-
-    // Para mostrar en el DataGrid
     public class TerapeutaDisplay
     {
         public int IdUsuario { get; set; }
@@ -19,19 +17,14 @@ namespace Proyecto_Gastronomia
         public string Nombre { get; set; }
         public string Apellido { get; set; }
         public string Correo { get; set; }
+        public string Telefono { get; set; } // <-- CAMPO AÑADIDO (1 de 4)
         public string Especialidad { get; set; }
         public string NroLicencia { get; set; }
         public int? ExperienciaAnios { get; set; }
         public bool Estado { get; set; }
     }
 
-    // --- CLASE AÑADIDA PARA CORREGIR LOS 8 ERRORES CS0117 ---
-    // Para pasar datos a la ventana de edición/registro
-    
-
-
     // --- VENTANA PRINCIPAL ---
-
     public partial class AdmiTerapeutas : Window
     {
         private string connectionString;
@@ -56,7 +49,6 @@ namespace Proyecto_Gastronomia
             {
                 using (DataClasses1DataContext db = GetContext())
                 {
-                    // Ojo: Usando nombres en plural (Terapeutas, Usuarios, Roles)
                     var terapeutasDB = from t in db.Terapeutas
                                        join u in db.Usuarios on t.id_usuario equals u.id_usuario
                                        join r in db.Roles on u.id_rol equals r.id_rol
@@ -69,6 +61,7 @@ namespace Proyecto_Gastronomia
                                            Nombre = u.nombre,
                                            Apellido = u.apellido,
                                            Correo = u.correo,
+                                           Telefono = u.telefono, // <-- CAMPO AÑADIDO (2 de 4)
                                            Especialidad = t.especialidad,
                                            NroLicencia = t.nro_licencia,
                                            ExperienciaAnios = t.experiencia_anios,
@@ -91,6 +84,7 @@ namespace Proyecto_Gastronomia
             txtNombre.Clear();
             txtApellido.Clear();
             txtCorreo.Clear();
+            txtTelefono.Clear(); // <-- CAMPO AÑADIDO
             txtEspecialidad.Clear();
             txtNroLicencia.Clear();
             chkEstado.IsChecked = false;
@@ -106,6 +100,7 @@ namespace Proyecto_Gastronomia
                 txtNombre.Text = selectedTerapeuta.Nombre;
                 txtApellido.Text = selectedTerapeuta.Apellido;
                 txtCorreo.Text = selectedTerapeuta.Correo;
+                txtTelefono.Text = selectedTerapeuta.Telefono; // <-- CAMPO AÑADIDO (3 de 4)
                 txtEspecialidad.Text = selectedTerapeuta.Especialidad;
                 txtNroLicencia.Text = selectedTerapeuta.NroLicencia;
                 chkEstado.IsChecked = selectedTerapeuta.Estado;
@@ -119,7 +114,6 @@ namespace Proyecto_Gastronomia
 
         private void Nuevo_Click(object sender, RoutedEventArgs e)
         {
-            // Este es uno de los errores (CS0246)
             RegistrarTerapeuta registrarTerapeutaWindow = new RegistrarTerapeuta();
             bool? result = registrarTerapeutaWindow.ShowDialog();
 
@@ -134,7 +128,7 @@ namespace Proyecto_Gastronomia
         {
             if (dgTerapeutas.SelectedItem is TerapeutaDisplay selectedTerapeuta)
             {
-                // Ahora 'TerapeutaData' SÍ existe (la añadimos arriba)
+                // La clase TerapeutaData la lee desde RegistrarTerapeuta.xaml.cs
                 TerapeutaData terapeutaParaEditar = new TerapeutaData
                 {
                     IdUsuario = selectedTerapeuta.IdUsuario,
@@ -142,14 +136,13 @@ namespace Proyecto_Gastronomia
                     Nombre = selectedTerapeuta.Nombre,
                     Apellido = selectedTerapeuta.Apellido,
                     Correo = selectedTerapeuta.Correo,
+                    Telefono = selectedTerapeuta.Telefono, // <-- CAMPO AÑADIDO (4 de 4)
                     Especialidad = selectedTerapeuta.Especialidad,
                     NroLicencia = selectedTerapeuta.NroLicencia,
                     ExperienciaAnios = selectedTerapeuta.ExperienciaAnios,
                     Estado = selectedTerapeuta.Estado
-                    // 'Telefono' no se está cargando aquí, podemos añadirlo luego si es necesario
                 };
 
-                // Este es el otro error (CS0246)
                 RegistrarTerapeuta registrarTerapeutaWindow = new RegistrarTerapeuta(terapeutaParaEditar);
                 bool? result = registrarTerapeutaWindow.ShowDialog();
 
@@ -185,7 +178,6 @@ namespace Proyecto_Gastronomia
                 {
                     using (DataClasses1DataContext db = GetContext())
                     {
-                        // Ojo: Usando plural 'Usuarios'
                         Usuarios usuarioToDeactivate = db.Usuarios.SingleOrDefault(u => u.id_usuario == selectedUsuarioId.Value);
 
                         if (usuarioToDeactivate != null)

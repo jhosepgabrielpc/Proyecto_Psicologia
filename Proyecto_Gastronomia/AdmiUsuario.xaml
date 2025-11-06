@@ -15,7 +15,7 @@
 
     <Grid>
         <Grid.Background>
-            <ImageBrush ImageSource="Imagenes/fondo_login.jpg" Stretch="Fill" />
+            <ImageBrush ImageSource="/Imagenes/fondo_login.png" Stretch="Fill" />
         </Grid.Background>
 
         <!-- Botón de Atrás (Texto: <<<) - Posicionado en la esquina superior izquierda -->

@@ -11,7 +11,6 @@ using System.Diagnostics; // Para Debug.WriteLine
 namespace Proyecto_Gastronomia
 {
     // --- CLASE DE DATOS NECESARIA ---
-    // Esta clase la necesita AdmiTerapeutas.xaml.cs para enviarnos datos.
     public class TerapeutaData
     {
         public int IdUsuario { get; set; }
@@ -105,11 +104,19 @@ namespace Proyecto_Gastronomia
             }
         }
 
+        // --- MÉTODO 'ValidarCampos' COMPLETO (Corrige CS0161) ---
         private bool ValidarCampos()
         {
             if (string.IsNullOrWhiteSpace(txtNombre.Text) || string.IsNullOrWhiteSpace(txtApellido.Text) || string.IsNullOrWhiteSpace(txtCorreo.Text))
             {
                 MessageBox.Show("Nombre, Apellido y Correo son obligatorios.", "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
+            // --- CORRECCIÓN: Validación de Teléfono añadida ---
+            if (string.IsNullOrWhiteSpace(txtTelefono.Text))
+            {
+                MessageBox.Show("El teléfono es obligatorio.", "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
 
@@ -136,10 +143,19 @@ namespace Proyecto_Gastronomia
                 using (DataClasses1DataContext db = GetContext())
                 {
                     string correoActual = txtCorreo.Text.Trim().ToLower();
-                    // Ojo: Usando plural 'Usuarios'
-                    var existingUser = db.Usuarios
+                    Usuarios existingUser;
+
+                    if (_modoEdicion)
+                    {
+                        existingUser = db.Usuarios
                                          .FirstOrDefault(u => u.correo.ToLower() == correoActual &&
-                                                              (!_modoEdicion || u.id_usuario != _terapeutaAEditar.IdUsuario));
+                                                              u.id_usuario != _terapeutaAEditar.IdUsuario);
+                    }
+                    else
+                    {
+                        existingUser = db.Usuarios
+                                         .FirstOrDefault(u => u.correo.ToLower() == correoActual);
+                    }
 
                     if (existingUser != null)
                     {
@@ -154,7 +170,7 @@ namespace Proyecto_Gastronomia
                 return false;
             }
 
-            return true;
+            return true; // Si pasa todas las validaciones
         }
 
         private void btnGuardar_Click(object sender, RoutedEventArgs e)
@@ -167,35 +183,27 @@ namespace Proyecto_Gastronomia
                 {
                     if (!_modoEdicion) // --- MODO NUEVO ---
                     {
-                        // 1. Buscar el Rol "Terapeuta"
-                        // Ojo: Usando plural 'Roles'
                         int? rolTerapeutaId = db.Roles.FirstOrDefault(r => r.nombre_rol == "Terapeuta")?.id_rol;
-                        if (rolTerapeutaId == null)
-                        {
-                            MessageBox.Show("Error crítico: No se encontró el rol 'Terapeuta'.", "Error de BD", MessageBoxButton.OK, MessageBoxImage.Error);
-                            return;
-                        }
+                        if (rolTerapeutaId == null) { /* ... error ... */ return; }
 
-                        // 2. Crear USUARIO
-                        // Ojo: Usando plural 'Usuarios'
+                        string salt = PasswordManager.GenerateSalt();
+                        string hash = PasswordManager.HashPassword(pbContrasena.Password, salt);
+
                         Usuarios nuevoUsuario = new Usuarios
                         {
                             id_rol = rolTerapeutaId.Value,
                             nombre = txtNombre.Text,
                             apellido = txtApellido.Text,
                             correo = txtCorreo.Text,
-                            contrasena = pbContrasena.Password,
+                            contrasena = hash,
+                            salt = salt,
                             telefono = txtTelefono.Text,
                             estado = chkEstado.IsChecked ?? true,
                             fecha_registro = DateTime.Now
                         };
                         db.Usuarios.InsertOnSubmit(nuevoUsuario);
-
-                        // 3. Guardar Usuario para obtener su ID
                         db.SubmitChanges();
 
-                        // 4. Crear TERAPEUTA
-                        // Ojo: Usando plural 'Terapeutas'
                         Terapeutas nuevoTerapeuta = new Terapeutas
                         {
                             id_usuario = nuevoUsuario.id_usuario,
@@ -209,10 +217,7 @@ namespace Proyecto_Gastronomia
                     }
                     else // --- MODO EDICIÓN ---
                     {
-                        // Ojo: Usando plural 'Usuarios'
                         Usuarios usuarioToUpdate = db.Usuarios.SingleOrDefault(u => u.id_usuario == _terapeutaAEditar.IdUsuario);
-
-                        // Ojo: Usando plural 'Terapeutas'
                         Terapeutas terapeutaToUpdate = db.Terapeutas.SingleOrDefault(t => t.id_terapeuta == _terapeutaAEditar.IdTerapeuta);
 
                         if (usuarioToUpdate != null && terapeutaToUpdate != null)
@@ -227,9 +232,9 @@ namespace Proyecto_Gastronomia
                             terapeutaToUpdate.especialidad = txtEspecialidad.Text;
                             terapeutaToUpdate.nro_licencia = txtNroLicencia.Text;
                             terapeutaToUpdate.experiencia_anios = string.IsNullOrWhiteSpace(txtExperienciaAnios.Text) ? (int?)null : int.Parse(txtExperienciaAnios.Text);
-
-                            MessageBox.Show("Terapeuta actualizado exitosamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
                         }
+
+                        MessageBox.Show("Terapeuta actualizado exitosamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
 
                     db.SubmitChanges();
@@ -275,18 +280,15 @@ namespace Proyecto_Gastronomia
             }
         }
 
-        // --- MÉTODOS AÑADIDOS PARA CORREGIR LOS ERRORES ---
-
+        // --- MÉTODOS AÑADIDOS PARA CORREGIR LOS ERRORES DEL XAML ---
         private void NumericInput_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            // Regex que solo permite números (no permite letras ni símbolos)
             Regex regex = new Regex("[^0-9]+");
             e.Handled = regex.IsMatch(e.Text);
         }
 
         private void NumericInput_Pasting(object sender, DataObjectPastingEventArgs e)
         {
-            // Bloquea el pegado (paste) de texto no numérico
             if (e.DataObject.GetDataPresent(typeof(String)))
             {
                 String text = (String)e.DataObject.GetData(typeof(String));

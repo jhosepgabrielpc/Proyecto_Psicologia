@@ -40,6 +40,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
@@ -65,16 +66,19 @@
             <Label Content="Correo:" Background="Gray" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Margin="0 0 10 5" Foreground="White"/>
             <TextBox x:Name="txtCorreo" Grid.Row="4" Grid.Column="1" Margin="0 0 0 5" Padding="8" FontSize="16" Background="#F9F9F9" Opacity="0.92" IsReadOnly="True" BorderThickness="1" BorderBrush="Gray"/>
 
-            <Label Content="Especialidad:" Background="Gray" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Margin="0 0 10 5" Foreground="White"/>
-            <TextBox x:Name="txtEspecialidad" Grid.Row="5" Grid.Column="1" Margin="0 0 0 5" Padding="8" FontSize="16" Background="#F9F9F9" Opacity="0.92" IsReadOnly="True" BorderThickness="1" BorderBrush="Gray"/>
+            <Label Content="Teléfono:" Background="Gray" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Margin="0 0 10 5" Foreground="White"/>
+            <TextBox x:Name="txtTelefono" Grid.Row="5" Grid.Column="1" Margin="0 0 0 5" Padding="8" FontSize="16" Background="#F9F9F9" Opacity="0.92" IsReadOnly="True" BorderThickness="1" BorderBrush="Gray"/>
 
-            <Label Content="Nro. Licencia:" Background="Gray" Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Margin="0 0 10 5" Foreground="White"/>
-            <TextBox x:Name="txtNroLicencia" Grid.Row="6" Grid.Column="1" Margin="0 0 0 5" Padding="8" FontSize="16" Background="#F9F9F9" Opacity="0.92" IsReadOnly="True" BorderThickness="1" BorderBrush="Gray"/>
+            <Label Content="Especialidad:" Background="Gray" Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Margin="0 0 10 5" Foreground="White"/>
+            <TextBox x:Name="txtEspecialidad" Grid.Row="6" Grid.Column="1" Margin="0 0 0 5" Padding="8" FontSize="16" Background="#F9F9F9" Opacity="0.92" IsReadOnly="True" BorderThickness="1" BorderBrush="Gray"/>
 
-            <Label Content="Estado:" Background="Gray" Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" Margin="0 0 10 5" Foreground="White"/>
-            <CheckBox x:Name="chkEstado" Grid.Row="7" Grid.Column="1" VerticalAlignment="Center" Margin="0,0,0,5" Foreground="White" Content="Activo" IsEnabled="False"/>
+            <Label Content="Nro. Licencia:" Background="Gray" Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" Margin="0 0 10 5" Foreground="White"/>
+            <TextBox x:Name="txtNroLicencia" Grid.Row="7" Grid.Column="1" Margin="0 0 0 5" Padding="8" FontSize="16" Background="#F9F9F9" Opacity="0.92" IsReadOnly="True" BorderThickness="1" BorderBrush="Gray"/>
 
-            <StackPanel Grid.Row="8" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0 20">
+            <Label Content="Estado:" Background="Gray" Grid.Row="8" Grid.Column="0" VerticalAlignment="Center" Margin="0 0 10 5" Foreground="White"/>
+            <CheckBox x:Name="chkEstado" Grid.Row="8" Grid.Column="1" VerticalAlignment="Center" Margin="0,0,0,5" Foreground="White" Content="Activo" IsEnabled="False"/>
+
+            <StackPanel Grid.Row="9" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0 20">
                 <Button Content="Nuevo" Width="130" Height="40" Margin="10"
                         Background="#17A2B8" Foreground="White" FontWeight="SemiBold"
                         BorderThickness="0" Cursor="Hand" Click="Nuevo_Click"/>
@@ -86,7 +90,7 @@
                         BorderThickness="0" Cursor="Hand" Click="Eliminar_Click"/>
             </StackPanel>
 
-            <DataGrid x:Name="dgTerapeutas" Grid.Row="9" Grid.ColumnSpan="2" Margin="0 20 0 0"
+            <DataGrid x:Name="dgTerapeutas" Grid.Row="10" Grid.ColumnSpan="2" Margin="0 20 0 0"
                       AutoGenerateColumns="False" SelectionMode="Single"
                       SelectionChanged="DgTerapeutas_SelectionChanged"
                       Background="White" RowBackground="#fdfdfd" AlternatingRowBackground="#f0f0f0"
@@ -97,6 +101,7 @@
                     <DataGridTextColumn Header="ID" Binding="{Binding IdUsuario}" Width="60" />
                     <DataGridTextColumn Header="Nombre" Binding="{Binding Nombre}" Width="1.5*"/>
                     <DataGridTextColumn Header="Apellido" Binding="{Binding Apellido}" Width="1.5*"/>
+                    <DataGridTextColumn Header="Teléfono" Binding="{Binding Telefono}" Width="*"/>
                     <DataGridTextColumn Header="Especialidad" Binding="{Binding Especialidad}" Width="2*"/>
                     <DataGridTextColumn Header="Nro. Licencia" Binding="{Binding NroLicencia}" Width="*"/>
                     <DataGridCheckBoxColumn Header="Activo" Binding="{Binding Estado}" Width="Auto" />

@@ -1,24 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?><Database Name="mindcare" Class="DataClasses1DataContext" xmlns="http://schemas.microsoft.com/linqtosql/dbml/2007">
   <Connection Mode="AppSettings" ConnectionString="Data Source=LAPTOP-DRC4J3TQ\GPSICOLOGICA;Initial Catalog=mindcare;Persist Security Info=True;User ID=sa;Trust Server Certificate=True" SettingsObjectName="Proyecto_Gastronomia.Properties.Settings" SettingsPropertyName="mindcareConnectionString1" Provider="System.Data.SqlClient" />
-  <Table Name="dbo.Usuarios" Member="Usuarios">
-    <Type Name="Usuarios">
-      <Column Name="id_usuario" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
-      <Column Name="id_rol" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
-      <Column Name="nombre" Type="System.String" DbType="VarChar(100) NOT NULL" CanBeNull="false" />
-      <Column Name="apellido" Type="System.String" DbType="VarChar(100) NOT NULL" CanBeNull="false" />
-      <Column Name="correo" Type="System.String" DbType="VarChar(150) NOT NULL" CanBeNull="false" />
-      <Column Name="contrasena" Type="System.String" DbType="VarChar(255) NOT NULL" CanBeNull="false" />
-      <Column Name="telefono" Type="System.String" DbType="VarChar(15)" CanBeNull="true" />
-      <Column Name="estado" Type="System.Boolean" DbType="Bit" CanBeNull="true" />
-      <Column Name="fecha_registro" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
-      <Association Name="Usuarios_Pacientes" Member="Pacientes" ThisKey="id_usuario" OtherKey="id_usuario" Type="Pacientes" />
-      <Association Name="Usuarios_Terapeutas" Member="Terapeutas" ThisKey="id_usuario" OtherKey="id_usuario" Type="Terapeutas" />
-      <Association Name="Usuarios_Mensajes_Seguros" Member="Mensajes_Seguros" ThisKey="id_usuario" OtherKey="id_destinatario" Type="Mensajes_Seguros" />
-      <Association Name="Usuarios_Mensajes_Seguros1" Member="Mensajes_Seguros1" ThisKey="id_usuario" OtherKey="id_remitente" Type="Mensajes_Seguros" />
-      <Association Name="Usuarios_Notificaciones" Member="Notificaciones" ThisKey="id_usuario" OtherKey="id_usuario" Type="Notificaciones" />
-      <Association Name="Roles_Usuarios" Member="Roles" ThisKey="id_rol" OtherKey="id_rol" Type="Roles" IsForeignKey="true" />
-    </Type>
-  </Table>
   <Table Name="dbo.Roles" Member="Roles">
     <Type Name="Roles">
       <Column Name="id_rol" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
@@ -40,8 +21,8 @@
       <Association Name="Pacientes_Registros_Emocionales" Member="Registros_Emocionales" ThisKey="id_paciente" OtherKey="id_paciente" Type="Registros_Emocionales" />
       <Association Name="Pacientes_Reportes" Member="Reportes" ThisKey="id_paciente" OtherKey="id_paciente" Type="Reportes" />
       <Association Name="Pacientes_Resultados_Escalas" Member="Resultados_Escalas" ThisKey="id_paciente" OtherKey="id_paciente" Type="Resultados_Escalas" />
-      <Association Name="Usuarios_Pacientes" Member="Usuarios" ThisKey="id_usuario" OtherKey="id_usuario" Type="Usuarios" IsForeignKey="true" />
       <Association Name="Terapeutas_Pacientes" Member="Terapeutas" ThisKey="id_terapeuta" OtherKey="id_terapeuta" Type="Terapeutas" IsForeignKey="true" />
+      <Association Name="Usuarios_Pacientes" Member="Usuarios" ThisKey="id_usuario" OtherKey="id_usuario" Type="Usuarios" IsForeignKey="true" />
     </Type>
   </Table>
   <Table Name="dbo.Terapeutas" Member="Terapeutas">
@@ -170,6 +151,26 @@
       <Column Name="hora_fin" Type="System.TimeSpan" DbType="Time NOT NULL" CanBeNull="false" />
       <Column Name="disponible" Type="System.Boolean" DbType="Bit" CanBeNull="true" />
       <Association Name="Terapeutas_Horarios_Terapeutas" Member="Terapeutas" ThisKey="id_terapeuta" OtherKey="id_terapeuta" Type="Terapeutas" IsForeignKey="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.Usuarios" Member="Usuarios">
+    <Type Name="Usuarios">
+      <Column Name="id_usuario" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="id_rol" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="nombre" Type="System.String" DbType="VarChar(100) NOT NULL" CanBeNull="false" />
+      <Column Name="apellido" Type="System.String" DbType="VarChar(100) NOT NULL" CanBeNull="false" />
+      <Column Name="correo" Type="System.String" DbType="VarChar(150) NOT NULL" CanBeNull="false" />
+      <Column Name="contrasena" Type="System.String" DbType="VarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="telefono" Type="System.String" DbType="VarChar(15)" CanBeNull="true" />
+      <Column Name="estado" Type="System.Boolean" DbType="Bit" CanBeNull="true" />
+      <Column Name="fecha_registro" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Column Name="salt" Type="System.String" DbType="VarChar(100)" CanBeNull="true" />
+      <Association Name="Usuarios_Pacientes" Member="Pacientes" ThisKey="id_usuario" OtherKey="id_usuario" Type="Pacientes" />
+      <Association Name="Usuarios_Terapeutas" Member="Terapeutas" ThisKey="id_usuario" OtherKey="id_usuario" Type="Terapeutas" />
+      <Association Name="Usuarios_Mensajes_Seguros" Member="Mensajes_Seguros" ThisKey="id_usuario" OtherKey="id_destinatario" Type="Mensajes_Seguros" />
+      <Association Name="Usuarios_Mensajes_Seguros1" Member="Mensajes_Seguros1" ThisKey="id_usuario" OtherKey="id_remitente" Type="Mensajes_Seguros" />
+      <Association Name="Usuarios_Notificaciones" Member="Notificaciones" ThisKey="id_usuario" OtherKey="id_usuario" Type="Notificaciones" />
+      <Association Name="Roles_Usuarios" Member="Roles" ThisKey="id_rol" OtherKey="id_rol" Type="Roles" IsForeignKey="true" />
     </Type>
   </Table>
 </Database>
