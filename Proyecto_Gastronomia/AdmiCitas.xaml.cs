@@ -34,6 +34,7 @@ namespace Proyecto_Gastronomia
         private List<TerapeutaComboBoxItem> allTerapeutas; // Lista para el ComboBox.
         private string connectionString;
 
+        //inicio de citas
         public AdmiCitas()
         {
             InitializeComponent();
