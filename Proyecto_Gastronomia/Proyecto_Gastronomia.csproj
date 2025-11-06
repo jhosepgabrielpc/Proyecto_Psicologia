@@ -120,6 +120,44 @@
     <Compile Include="Menu.xaml.cs">
       <DependentUpon>Menu.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Modulo_Alan\Modulo_Alan\App.xaml.cs">
+      <DependentUpon>App.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modulo_Alan\Modulo_Alan\AssemblyInfo.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\MainWindow.xaml.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modulo_Alan\Modulo_Alan\Modelos\Cita.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\Modelos\ConfiguracionVideo.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\Modelos\SesionVideo.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\.NETCoreApp,Version=v9.0.AssemblyAttributes.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\App.g.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\App.g.i.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\MainWindow.g.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\MainWindow.g.i.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Modulo_Alan.AssemblyInfo.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Modulo_Alan.GlobalUsings.g.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\VentaConfiguracion.g.i.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\VentanaConfiguracion.g.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\VentanaConfiguracion.g.i.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\ViewModels\VentanaSalaVideo.g.i.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Vistas\VentanaPreparacionVideo.g.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Vistas\VentanaPreparacionVideo.g.i.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Vistas\VentanaSalaVideo.g.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Vistas\VentanaSalaVideo.g.i.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\RelayCommand.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\Services\IVideoConferenciaService.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\Services\ZoomService.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\VentanaConfiguracion.xaml.cs">
+      <DependentUpon>VentanaConfiguracion.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modulo_Alan\Modulo_Alan\ViewModels\SalaVideoViewModel.cs" />
+    <Compile Include="Modulo_Alan\Modulo_Alan\Vistas\VentanaPreparacionVideo.xaml.cs">
+      <DependentUpon>VentanaPreparacionVideo.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modulo_Alan\Modulo_Alan\Vistas\VentanaSalaVideo.xaml.cs">
+      <DependentUpon>VentanaSalaVideo.xaml</DependentUpon>
+    </Compile>
     <Compile Include="VerRegistros.xaml.cs">
       <DependentUpon>VerRegistros.xaml</DependentUpon>
     </Compile>
@@ -179,6 +217,26 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Modulo_Alan\Modulo_Alan\App.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Modulo_Alan\Modulo_Alan\MainWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Modulo_Alan\Modulo_Alan\VentanaConfiguracion.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Modulo_Alan\Modulo_Alan\Vistas\VentanaPreparacionVideo.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Modulo_Alan\Modulo_Alan\Vistas\VentanaSalaVideo.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="VerRegistros.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -210,6 +268,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <EmbeddedResource Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Modulo_Alan.g.resources" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -222,6 +281,47 @@
     <None Include="DataClasses1.dbml.layout">
       <DependentUpon>DataClasses1.dbml</DependentUpon>
     </None>
+    <None Include="Modulo_Alan\.vs\Modulo_Alan\CopilotIndices\17.14.995.13737\CodeChunks.db" />
+    <None Include="Modulo_Alan\.vs\Modulo_Alan\CopilotIndices\17.14.995.13737\SemanticSymbols.db" />
+    <None Include="Modulo_Alan\.vs\Modulo_Alan\DesignTimeBuild\.dtbcache.v2" />
+    <None Include="Modulo_Alan\.vs\Modulo_Alan\FileContentIndex\0bcd46e8-e7f1-4dfc-ad10-9827dd55d5cc.vsidx" />
+    <None Include="Modulo_Alan\.vs\Modulo_Alan\FileContentIndex\124b576c-6ea0-4dfc-a651-41ee2adb3958.vsidx" />
+    <None Include="Modulo_Alan\.vs\Modulo_Alan\FileContentIndex\2dd9ffdf-14e3-4615-9fec-37a985a449d5.vsidx" />
+    <None Include="Modulo_Alan\.vs\Modulo_Alan\FileContentIndex\70a5646e-4064-40bb-b3eb-c55ce578f86e.vsidx" />
+    <None Include="Modulo_Alan\.vs\Modulo_Alan\FileContentIndex\7454cd12-516d-478c-ab4a-d06df4c64e8b.vsidx" />
+    <None Include="Modulo_Alan\.vs\Modulo_Alan\v17\.futdcache.v2" />
+    <None Include="Modulo_Alan\.vs\Modulo_Alan\v17\.suo" />
+    <None Include="Modulo_Alan\.vs\Modulo_Alan\v17\DocumentLayout.backup.json" />
+    <None Include="Modulo_Alan\.vs\Modulo_Alan\v17\DocumentLayout.json" />
+    <None Include="Modulo_Alan\.vs\ProjectEvaluation\modulo_alan.metadata.v9.bin" />
+    <None Include="Modulo_Alan\.vs\ProjectEvaluation\modulo_alan.projects.v9.bin" />
+    <None Include="Modulo_Alan\.vs\ProjectEvaluation\modulo_alan.strings.v9.bin" />
+    <None Include="Modulo_Alan\Modulo_Alan\App.config" />
+    <None Include="Modulo_Alan\Modulo_Alan\bin\Debug\net9.0-windows\Modulo_Alan.deps.json" />
+    <None Include="Modulo_Alan\Modulo_Alan\bin\Debug\net9.0-windows\Modulo_Alan.dll.config" />
+    <None Include="Modulo_Alan\Modulo_Alan\bin\Debug\net9.0-windows\Modulo_Alan.runtimeconfig.json" />
+    <None Include="Modulo_Alan\Modulo_Alan\Modulo_Alan.csproj" />
+    <None Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\MainWindow.baml" />
+    <None Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Modulo_A.D84B9492.Up2Date" />
+    <None Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Modulo_Alan.AssemblyInfoInputs.cache" />
+    <None Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Modulo_Alan.assets.cache" />
+    <None Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Modulo_Alan.csproj.AssemblyReference.cache" />
+    <None Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Modulo_Alan.csproj.BuildWithSkipAnalyzers" />
+    <None Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Modulo_Alan.csproj.CoreCompileInputs.cache" />
+    <None Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Modulo_Alan.designer.deps.json" />
+    <None Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Modulo_Alan.designer.runtimeconfig.json" />
+    <None Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Modulo_Alan.GeneratedMSBuildEditorConfig.editorconfig" />
+    <None Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Modulo_Alan.genruntimeconfig.cache" />
+    <None Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Modulo_Alan_MarkupCompile.cache" />
+    <None Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Modulo_Alan_MarkupCompile.i.cache" />
+    <None Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\VentanaConfiguracion.baml" />
+    <None Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Vistas\VentanaPreparacionVideo.baml" />
+    <None Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Vistas\VentanaSalaVideo.baml" />
+    <None Include="Modulo_Alan\Modulo_Alan\obj\Modulo_Alan.csproj.nuget.dgspec.json" />
+    <None Include="Modulo_Alan\Modulo_Alan\obj\Modulo_Alan.csproj.nuget.g.props" />
+    <None Include="Modulo_Alan\Modulo_Alan\obj\Modulo_Alan.csproj.nuget.g.targets" />
+    <None Include="Modulo_Alan\Modulo_Alan\obj\project.assets.json" />
+    <None Include="Modulo_Alan\Modulo_Alan\obj\project.nuget.cache" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -286,6 +386,22 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Imagenes\fondo_pacientes.png" />
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <Content Include="Modulo_Alan\Modulo_Alan.sln" />
+    <Content Include="Modulo_Alan\Modulo_Alan\bin\Debug\net9.0-windows\Modulo_Alan.dll" />
+    <Content Include="Modulo_Alan\Modulo_Alan\bin\Debug\net9.0-windows\Modulo_Alan.exe" />
+    <Content Include="Modulo_Alan\Modulo_Alan\bin\Debug\net9.0-windows\Modulo_Alan.pdb" />
+    <Content Include="Modulo_Alan\Modulo_Alan\bin\Debug\net9.0-windows\Newtonsoft.Json.dll" />
+    <Content Include="Modulo_Alan\Modulo_Alan\Modulo_Alan.csproj.user" />
+    <Content Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\apphost.exe" />
+    <Resource Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Modulo_Alan.csproj.FileListAbsolute.txt" />
+    <Content Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Modulo_Alan.dll" />
+    <Content Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\Modulo_Alan.pdb" />
+    <Content Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\refint\Modulo_Alan.dll" />
+    <Content Include="Modulo_Alan\Modulo_Alan\obj\Debug\net9.0-windows\ref\Modulo_Alan.dll" />
+    <Resource Include="Modulo_Alan\Modulo_Alan\Resources\video-icon.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

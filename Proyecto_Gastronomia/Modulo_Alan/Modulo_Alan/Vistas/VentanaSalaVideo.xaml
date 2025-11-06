@@ -1,0 +1,83 @@
+﻿<!-- Vistas/VentanaSalaVideo.xaml -->
+<Window x:Class="Modulo_Alan.Vistas.VentanaSalaVideo"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Sala de Video Conferencia - MindCare" 
+        Height="600" Width="900"
+        WindowStartupLocation="CenterScreen">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
+            <Image Source="/Resources/video-icon.png" Width="32" Height="32"/>
+            <TextBlock Text="Sala de Terapia Virtual" FontSize="18" FontWeight="Bold" 
+                      VerticalAlignment="Center" Margin="10,0,0,0"/>
+        </StackPanel>
+
+        <!-- Contenido Principal -->
+        <Border Grid.Row="1" BorderBrush="#E0E0E0" BorderThickness="1" 
+                Background="#F5F5F5" CornerRadius="8" Padding="20">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Información de Sesión -->
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Estado de Coneexión:" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <TextBlock Text="{Binding EstadoConexion}" FontSize="14" Foreground="Green" Margin="0,0,0,15"/>
+
+                    <TextBlock Text="URL de la Sesión:" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <TextBox Text="{Binding UrlSala}" IsReadOnly="True" Background="#FAFAFA" 
+                            Padding="10" BorderThickness="1" BorderBrush="#CCCCCC"
+                            Margin="0,0,0,20"/>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                        <Button Content="🎤 Probar Audio/Video" 
+                                Command="{Binding ComandoProbarAudioVideo}"
+                                Background="#4CAF50" Foreground="White" 
+                                Padding="15,8" Margin="0,0,10,0"/>
+
+                        <Button Content="🎥 Unirse a Sesión" 
+                                Command="{Binding ComandoUnirseSesion}"
+                                Background="#2196F3" Foreground="White" 
+                                Padding="15,8" Margin="0,0,10,0"
+                                IsEnabled="{Binding SesionActiva}"/>
+
+                        <Button Content="⏹️ Finalizar Sesión" 
+                                Command="{Binding ComandoFinalizarSesion}"
+                                Background="#F44336" Foreground="White" 
+                                Padding="15,8"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Panel de Configuración -->
+                <StackPanel Grid.Column="1" Width="200" Margin="20,0,0,0">
+                    <TextBlock Text="Configuración:" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                    <CheckBox Content="Activar Micrófono" IsChecked="True" Margin="0,0,0,5"/>
+                    <CheckBox Content="Activar Cámara" IsChecked="True" Margin="0,0,0,5"/>
+                    <CheckBox Content="Sala de Espera" IsChecked="True" Margin="0,0,0,5"/>
+                    <CheckBox Content="Grabar Sesión" IsChecked="False" Margin="0,0,0,15"/>
+
+                    <Button Content="⚙️ Configuración Avanzada" 
+                            Background="#607D8B" Foreground="White" 
+                            Padding="10,5" Click="ConfiguracionAvanzada_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Footer -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0">
+            <TextBlock Text="MindCare - Plataforma de Teleterapia" 
+                      Foreground="#666666" FontSize="11"/>
+        </StackPanel>
+    </Grid>
+</Window>
