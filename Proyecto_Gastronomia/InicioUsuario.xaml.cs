@@ -31,7 +31,7 @@ namespace Proyecto_Gastronomia
             // this.Close();
             MessageBox.Show("Esta sección no está implementada.", "Información", MessageBoxButton.OK, MessageBoxImage.Information);
         }
-
+        
         private void btnDepartamentos_Click(object sender, RoutedEventArgs e)
         {
             // --- CORREGIDO ---
@@ -41,7 +41,7 @@ namespace Proyecto_Gastronomia
             citasWindow.Show();
             this.Close();
         }
-
+        //SE AGREGO UN BOTON PARA PODER RETONRAR A LA PAGINA ANTERIOR
         private void btnAtras_Click(object sender, RoutedEventArgs e)
         {
             Menu menuWindow = new Menu();
