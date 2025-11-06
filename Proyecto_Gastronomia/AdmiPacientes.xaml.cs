@@ -12,6 +12,7 @@ namespace Proyecto_Gastronomia
 
     public class PacienteDisplay
     {
+        //atributos de la tabla paciente(usuario)
         public int IdPaciente { get; set; }
         public int IdUsuario { get; set; }
         public string Nombre { get; set; }
