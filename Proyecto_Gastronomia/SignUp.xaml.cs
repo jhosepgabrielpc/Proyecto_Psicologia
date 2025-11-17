@@ -27,125 +27,119 @@ namespace Proyecto_Gastronomia
             return new DataClasses1DataContext(connectionString);
         }
 
-        // --- MÉTODOS DE VALIDACIÓN COMPLETOS (CORRIGE CS0161) ---
+        // --- MÉTODOS DE VALIDACIÓN COMPLETOS ---
 
-        // Valida el formato de correo electrónico.
         private bool EsFormatoCorreoValido(string email)
         {
             string pattern = @"^[a-zA-Z0-9._%+-]{3,}@[a-zA-Z0-9.-]{3,}\.[a-zA-Z]{2,}$";
             return Regex.IsMatch(email, pattern);
         }
 
-        // Valida el nombre de usuario (solo formato)
         private string ValidateNombre(string nombre)
         {
             if (string.IsNullOrWhiteSpace(nombre)) return "El nombre no puede estar vacío.";
             if (nombre.Length > MAX_LENGTH_NOMBRE) return $"El nombre no debe exceder los {MAX_LENGTH_NOMBRE} caracteres.";
-            return null; // Devuelve null si es válido
+            return null; // Válido
         }
 
-        // Valida el correo electrónico (formato y unicidad).
-        private string ValidateCorreoUsr(string correoUsr)
+        private string ValidateCorreoUsr(string correoUsr, DataClasses1DataContext db)
         {
             if (string.IsNullOrWhiteSpace(correoUsr)) return "El correo electrónico no puede estar vacío.";
             if (correoUsr.Length > MAX_LENGTH_CORREO) return $"El correo electrónico no debe exceder los {MAX_LENGTH_CORREO} caracteres.";
-            if (!EsFormatoCorreoValido(correoUsr)) return "Formato de correo no válido. (Ej: usuario@dominio.com)";
+            if (!ValidationManager.IsEmailValid(correoUsr))
+                return "Formato de correo no válido. (Ej: usuario@dominio.com)";
 
             try
             {
-                using (DataClasses1DataContext db = GetContext())
+                if (!ValidationManager.IsEmailUnique(correoUsr, null, db))
                 {
-                    // Ojo: Usando plural 'Usuarios' y columna 'correo'
-                    if (db.Usuarios.Any(u => u.correo.ToLower() == correoUsr.ToLower()))
-                    {
-                        return "El correo electrónico ya está registrado.";
-                    }
+                    return "El correo electrónico ya está registrado.";
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error al verificar unicidad de correo: {ex.Message}", "Error de Validación", MessageBoxButton.OK, MessageBoxImage.Error);
-                return "Error al verificar unicidad de correo.";
+                MessageBox.Show($"Error al verificar correo: {ex.Message}", "Error de Validación", MessageBoxButton.OK, MessageBoxImage.Error);
+                return "Error al verificar correo.";
             }
-            return null; // Devuelve null si es válido
+            return null; // Válido
         }
 
-        // Valida el número de celular (formato).
         private string ValidateNCelUsr(string nCelUsr_text)
         {
-            if (string.IsNullOrWhiteSpace(nCelUsr_text)) return "El número de celular no puede estar vacío.";
-            if (nCelUsr_text.Length < 8) return "El número de celular debe tener 8 dígitos o más.";
-            return null; // Devuelve null si es válido
+            if (!ValidationManager.IsPhoneValid(nCelUsr_text))
+            {
+                return "El teléfono debe tener 8 dígitos y empezar con 6 o 7.";
+            }
+            return null; // Válido
         }
 
-        // Valida la contraseña (longitud y complejidad).
         private string ValidatePassWdUsr(string passWdUsr)
         {
             if (string.IsNullOrWhiteSpace(passWdUsr)) return "La contraseña no puede estar vacía.";
             if (passWdUsr.Length < 8) return "La contraseña debe tener al menos 8 caracteres.";
-            if (passWdUsr.Length > MAX_LENGTH_CONTRASENA) return $"La contraseña no debe exceder los {MAX_LENGTH_CONTRASENA} caracteres.";
-            // (Puedes añadir más validaciones de complejidad aquí si quieres)
-            return null; // Devuelve null si es válido
+            return null; // Válido
         }
 
 
         private void btnSignUp_Click(object sender, RoutedEventArgs e)
         {
-            // Asumimos que 'txtNomUsr_SignUp' ahora es para 'Nombre'
             string nombre = txtNomUsr_SignUp.Text.Trim();
-            // *** OJO: Necesitarás un campo de Apellido en el XAML ***
-            string apellido = txtNomUsr_SignUp.Text.Trim(); // Usamos el nombre temporalmente
+
+            // --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
+            // Asumimos que el usuario pone su nombre completo en un campo.
+            // Lo guardamos en 'nombre' y ponemos un placeholder en 'apellido'.
+            string apellido = "Paciente"; // <-- VALOR GENÉRICO
+                                          // (La mejor solución es que añadas un campo 'txtApellido_SignUp' a tu .xaml)
 
             string correoUsr = txtCorreoUsr_SignUp.Text.Trim();
             string nCelUsr_text = txtNCelUsr_SignUp.Text.Trim();
             string passWdUsr = txtPassWdUsr_SignUp.Password;
             string confirmPassWdUsr = txtConfirmPassWdUsr_SignUp.Password;
 
-            // --- VALIDACIONES ---
-            // (Ahora llaman a los métodos completos)
-            string error = ValidateNombre(nombre);
-            if (error != null) { MessageBox.Show(error, "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-            error = ValidateCorreoUsr(correoUsr);
-            if (error != null) { MessageBox.Show(error, "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-            error = ValidateNCelUsr(nCelUsr_text);
-            if (error != null) { MessageBox.Show(error, "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-            error = ValidatePassWdUsr(passWdUsr);
-            if (error != null) { MessageBox.Show(error, "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-
-            if (passWdUsr != confirmPassWdUsr)
-            {
-                MessageBox.Show("Las contraseñas no coinciden.", "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
+            string error;
 
             try
             {
                 using (DataClasses1DataContext db = GetContext())
                 {
-                    int? rolPacienteId = db.Roles.FirstOrDefault(r => r.nombre_rol == "Paciente")?.id_rol;
-                    if (rolPacienteId == null)
+                    // Validaciones
+                    error = ValidateNombre(nombre);
+                    if (error != null) { MessageBox.Show(error, "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+
+                    error = ValidateCorreoUsr(correoUsr, db);
+                    if (error != null) { MessageBox.Show(error, "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+
+                    error = ValidateNCelUsr(nCelUsr_text);
+                    if (error != null) { MessageBox.Show(error, "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+
+                    error = ValidatePassWdUsr(passWdUsr);
+                    if (error != null) { MessageBox.Show(error, "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+
+                    if (passWdUsr != confirmPassWdUsr)
                     {
-                        MessageBox.Show("Error crítico: No se encontró el rol 'Paciente'.", "Error de BD", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show("Las contraseñas no coinciden.", "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning);
                         return;
                     }
 
-                    // --- LÓGICA DE HASHING ---
+                    // Lógica de Hashing
                     string salt = PasswordManager.GenerateSalt();
                     string hash = PasswordManager.HashPassword(passWdUsr, salt);
+
+                    int? rolPacienteId = db.Roles.FirstOrDefault(r => r.nombre_rol == "Paciente")?.id_rol;
+                    if (rolPacienteId == null) { /* ... error ... */ return; }
 
                     Usuarios nuevoUsuario = new Usuarios
                     {
                         id_rol = rolPacienteId.Value,
                         nombre = nombre,
-                        apellido = apellido,
+                        apellido = apellido, // <-- CAMPO CORREGIDO
                         correo = correoUsr,
                         telefono = nCelUsr_text,
-                        contrasena = hash, // Guardar el HASH
-                        salt = salt,       // Guardar el SALT
+                        contrasena = hash,
+                        salt = salt,
                         estado = true,
                         fecha_registro = DateTime.Now
                     };
-
                     db.Usuarios.InsertOnSubmit(nuevoUsuario);
                     db.SubmitChanges();
 
@@ -156,7 +150,6 @@ namespace Proyecto_Gastronomia
                         estado_tratamiento = "activo",
                         fecha_inicio_tratamiento = DateTime.Now
                     };
-
                     db.Pacientes.InsertOnSubmit(nuevoPaciente);
                     db.SubmitChanges();
 

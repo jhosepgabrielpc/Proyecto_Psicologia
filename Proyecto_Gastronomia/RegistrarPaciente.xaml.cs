@@ -1,22 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration; // Para App.config
+using System.Configuration;
 using System.Linq;
-using System.Text.RegularExpressions; // Para validación numérica
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Diagnostics; // Para Debug.WriteLine
+using System.Diagnostics;
 
 namespace Proyecto_Gastronomia
 {
     public partial class RegistrarPaciente : Window
     {
         private string connectionString;
-        private int? _pacienteParaEditarId; // Contiene el ID si es edición.
-        private bool _modoEdicion = false; // Añadido para controlar el modo
+        private int? _pacienteParaEditarId;
+        private bool _modoEdicion = false;
 
-        // Constructor para NUEVO Paciente
         public RegistrarPaciente()
         {
             InitializeComponent();
@@ -26,32 +25,24 @@ namespace Proyecto_Gastronomia
             this.MouseLeftButtonDown += Window_MouseLeftButtonDown;
         }
 
-        // Constructor para EDITAR Paciente
-        public RegistrarPaciente(int idPaciente) : this() // Llama al constructor base
+        public RegistrarPaciente(int idPaciente) : this()
         {
             _pacienteParaEditarId = idPaciente;
-            _modoEdicion = true; // Activa el modo edición
-
-            // --- CORRECCIÓN DEL ERROR TIPOGRÁFICO CS0103 ---
-            // El método se llama 'CargarDatosParaEdicion' (sin 'Paciente')
+            _modoEdicion = true;
             CargarDatosParaEdicion();
         }
 
-        // --- CORRECCIÓN DE CS0161 ---
-        // Método GetContext COMPLETO
         private DataClasses1DataContext GetContext()
         {
             return new DataClasses1DataContext(connectionString);
         }
 
-        // --- MÉTODO COMPLETO ---
         private void CargarTerapeutas()
         {
             try
             {
                 using (DataClasses1DataContext db = GetContext())
                 {
-                    // Ojo: Usando plurales 'Terapeutas' y 'Usuarios'
                     var terapeutas = (from t in db.Terapeutas
                                       join u in db.Usuarios on t.id_usuario equals u.id_usuario
                                       where u.estado == true
@@ -62,7 +53,6 @@ namespace Proyecto_Gastronomia
                                       }).ToList();
 
                     cmbTerapeutas.ItemsSource = terapeutas;
-                    // Ojo: Estas propiedades deben coincidir con el 'select' de arriba
                     cmbTerapeutas.DisplayMemberPath = "NombreCompleto";
                     cmbTerapeutas.SelectedValuePath = "IdTerapeuta";
                 }
@@ -73,16 +63,13 @@ namespace Proyecto_Gastronomia
             }
         }
 
-        // --- MÉTODO COMPLETO ---
         private void CargarDatosParaEdicion()
         {
             if (_pacienteParaEditarId == null) return;
-
             try
             {
                 using (DataClasses1DataContext db = GetContext())
                 {
-                    // Ojo: Usando plurales 'Pacientes' y 'Usuarios'
                     var query = (from p in db.Pacientes
                                  join u in db.Usuarios on p.id_usuario equals u.id_usuario
                                  where p.id_paciente == _pacienteParaEditarId.Value
@@ -93,7 +80,6 @@ namespace Proyecto_Gastronomia
                         var paciente = query.Paciente;
                         var usuario = query.Usuario;
 
-                        // Llenar campos
                         txtIdUsuario.Text = usuario.id_usuario.ToString();
                         txtIdPaciente.Text = paciente.id_paciente.ToString();
                         txtNombre.Text = usuario.nombre;
@@ -101,17 +87,15 @@ namespace Proyecto_Gastronomia
                         txtCorreo.Text = usuario.correo;
                         txtTelefono.Text = usuario.telefono;
                         chkEstado.IsChecked = usuario.estado ?? true;
-
                         cmbTerapeutas.SelectedValue = paciente.id_terapeuta;
                         dpFechaNacimiento.SelectedDate = paciente.fecha_nacimiento;
                         txtGenero.Text = paciente.genero;
                         txtEstadoTratamiento.Text = paciente.estado_tratamiento;
                         txtHistorialClinico.Text = paciente.historial_clinico;
 
-                        // Deshabilitar campos de login en modo edición
                         txtCorreo.IsReadOnly = true;
                         pbContrasena.IsEnabled = false;
-                        pbContrasena.Password = "********"; // Placeholder
+                        pbContrasena.Password = "********";
                     }
                 }
             }
@@ -137,7 +121,6 @@ namespace Proyecto_Gastronomia
                         string salt = PasswordManager.GenerateSalt();
                         string hash = PasswordManager.HashPassword(pbContrasena.Password, salt);
 
-                        // Ojo: Usando plural 'Usuarios'
                         Usuarios nuevoUsuario = new Usuarios
                         {
                             id_rol = rolPacienteId.Value,
@@ -153,7 +136,6 @@ namespace Proyecto_Gastronomia
                         db.Usuarios.InsertOnSubmit(nuevoUsuario);
                         db.SubmitChanges();
 
-                        // Ojo: Usando plural 'Pacientes'
                         Pacientes nuevoPaciente = new Pacientes
                         {
                             id_usuario = nuevoUsuario.id_usuario,
@@ -170,21 +152,18 @@ namespace Proyecto_Gastronomia
                     }
                     else // --- MODO EDICIÓN ---
                     {
-                        // Ojo: Usando plural 'Pacientes' y 'Usuarios'
                         Pacientes pacienteToUpdate = db.Pacientes.SingleOrDefault(p => p.id_paciente == _pacienteParaEditarId.Value);
                         if (pacienteToUpdate != null)
                         {
                             Usuarios usuarioToUpdate = db.Usuarios.SingleOrDefault(u => u.id_usuario == pacienteToUpdate.id_usuario);
                             if (usuarioToUpdate != null)
                             {
-                                // Actualizar Usuario
                                 usuarioToUpdate.nombre = txtNombre.Text;
                                 usuarioToUpdate.apellido = txtApellido.Text;
                                 usuarioToUpdate.telefono = txtTelefono.Text;
                                 usuarioToUpdate.estado = chkEstado.IsChecked ?? true;
                             }
 
-                            // Actualizar Paciente
                             pacienteToUpdate.id_terapeuta = (int?)cmbTerapeutas.SelectedValue;
                             pacienteToUpdate.fecha_nacimiento = dpFechaNacimiento.SelectedDate;
                             pacienteToUpdate.genero = txtGenero.Text;
@@ -195,7 +174,6 @@ namespace Proyecto_Gastronomia
                             MessageBox.Show("Paciente actualizado exitosamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
                         }
                     }
-
                     this.DialogResult = true;
                     this.Close();
                 }
@@ -208,36 +186,74 @@ namespace Proyecto_Gastronomia
             }
         }
 
-        // --- CORRECCIÓN DE CS0161 ---
-        // Método ValidarCampos COMPLETO
+        // --- MÉTODO 'ValidarCampos' CON LA NUEVA VALIDACIÓN DE FECHA ---
         private bool ValidarCampos()
         {
+            string correo = txtCorreo.Text;
+            string telefono = txtTelefono.Text;
+
             if (string.IsNullOrWhiteSpace(txtNombre.Text) ||
                 string.IsNullOrWhiteSpace(txtApellido.Text) ||
-                string.IsNullOrWhiteSpace(txtCorreo.Text))
+                string.IsNullOrWhiteSpace(correo))
             {
                 MessageBox.Show("Completa Nombre, Apellido y Correo.", "Campos Incompletos", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
-
-            // Validar contraseña solo si es un NUEVO paciente
             if (!_modoEdicion && string.IsNullOrWhiteSpace(pbContrasena.Password))
             {
                 MessageBox.Show("Debe ingresar una contraseña para el nuevo paciente.", "Campos Incompletos", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
 
-            // Validar fecha de nacimiento
+            // --- VALIDACIÓN DE FECHA (MODIFICADA) ---
             if (dpFechaNacimiento.SelectedDate == null)
             {
                 MessageBox.Show("Debe seleccionar una fecha de nacimiento.", "Campos Incompletos", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
+            // ¡NUEVA LÍNEA!
+            if (dpFechaNacimiento.SelectedDate.Value > DateTime.Now)
+            {
+                MessageBox.Show("La fecha de nacimiento no puede ser en el futuro.", "Validación", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+            // --- FIN DE LA MODIFICACIÓN ---
+
+            // Validación de Correo
+            if (!ValidationManager.IsEmailValid(correo))
+            {
+                MessageBox.Show("El formato del correo electrónico no es válido.", "Validación", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+            try
+            {
+                using (DataClasses1DataContext db = GetContext())
+                {
+                    int? currentUserId = _modoEdicion ? (int?)int.Parse(txtIdUsuario.Text) : null;
+                    if (!ValidationManager.IsEmailUnique(correo, currentUserId, db))
+                    {
+                        MessageBox.Show("Ese correo electrónico ya está registrado.", "Validación", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return false;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al validar correo: {ex.Message}", "Error de BD", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
+            // Validación de Teléfono
+            if (!ValidationManager.IsPhoneValid(telefono))
+            {
+                MessageBox.Show("El teléfono debe tener 8 dígitos y empezar con 6 o 7.", "Validación", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
 
             return true; // Devuelve true si todo es válido
         }
+        // --- FIN DEL MÉTODO ValidarCampos ---
 
-        // --- MÉTODO COMPLETO ---
         private void LimpiarCampos()
         {
             txtIdUsuario.Clear();
@@ -248,48 +264,26 @@ namespace Proyecto_Gastronomia
             pbContrasena.Clear();
             txtTelefono.Clear();
             chkEstado.IsChecked = true;
-
             cmbTerapeutas.SelectedIndex = -1;
             dpFechaNacimiento.SelectedDate = null;
             txtGenero.Clear();
-            txtEstadoTratamiento.Text = "activo"; // Valor por defecto
+            txtEstadoTratamiento.Text = "activo";
             txtHistorialClinico.Clear();
-
             _pacienteParaEditarId = null;
             _modoEdicion = false;
             txtCorreo.IsReadOnly = false;
             pbContrasena.IsEnabled = true;
         }
 
-        private void btnLimpiar_Click(object sender, RoutedEventArgs e)
-        {
-            LimpiarCampos();
-        }
-
-        private void btnVolver_Click(object sender, RoutedEventArgs e)
-        {
-            this.DialogResult = false; // Indica que no hubo cambios
-            this.Close();
-        }
-
-        private void btnAtras_Click(object sender, RoutedEventArgs e)
-        {
-            this.DialogResult = false;
-            this.Close();
-        }
-
-        private void btnSalir_Click(object sender, RoutedEventArgs e)
-        {
-            Application.Current.Shutdown();
-        }
-
-        // --- MÉTODOS DE VALIDACIÓN NUMÉRICA COMPLETOS ---
+        private void btnLimpiar_Click(object sender, RoutedEventArgs e) { LimpiarCampos(); }
+        private void btnVolver_Click(object sender, RoutedEventArgs e) { this.DialogResult = false; this.Close(); }
+        private void btnAtras_Click(object sender, RoutedEventArgs e) { this.DialogResult = false; this.Close(); }
+        private void btnSalir_Click(object sender, RoutedEventArgs e) { Application.Current.Shutdown(); }
         private void NumericInput_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             Regex regex = new Regex("[^0-9]+");
             e.Handled = regex.IsMatch(e.Text);
         }
-
         private void NumericInput_Pasting(object sender, DataObjectPastingEventArgs e)
         {
             if (e.DataObject.GetDataPresent(typeof(String)))
@@ -302,7 +296,6 @@ namespace Proyecto_Gastronomia
                 }
             }
         }
-
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (e.ButtonState == MouseButtonState.Pressed)

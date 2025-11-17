@@ -121,6 +121,7 @@
       <DependentUpon>Menu.xaml</DependentUpon>
     </Compile>
     <Compile Include="PasswordManager.cs" />
+    <Compile Include="ValidationManager.cs" />
     <Compile Include="VerRegistros.xaml.cs">
       <DependentUpon>VerRegistros.xaml</DependentUpon>
     </Compile>
