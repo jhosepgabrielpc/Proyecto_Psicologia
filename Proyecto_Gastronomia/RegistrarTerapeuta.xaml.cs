@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration; // Para App.config
+using System.Configuration;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Diagnostics; // Para Debug.WriteLine
+using System.Diagnostics;
 
 namespace Proyecto_Gastronomia
 {
-    // --- CLASE DE DATOS NECESARIA ---
+    // --- CLASE DE DATOS NECESARIA (Arregla CS0246) ---
     public class TerapeutaData
     {
         public int IdUsuario { get; set; }
@@ -25,8 +25,6 @@ namespace Proyecto_Gastronomia
         public bool Estado { get; set; }
     }
 
-
-    // --- VENTANA PRINCIPAL ---
     public partial class RegistrarTerapeuta : Window
     {
         private string connectionString;
@@ -38,7 +36,8 @@ namespace Proyecto_Gastronomia
             return new DataClasses1DataContext(connectionString);
         }
 
-        // Constructor para un nuevo terapeuta
+        // (El método 'GetContent()' que causaba el error CS0161 ha sido eliminado)
+
         public RegistrarTerapeuta()
         {
             InitializeComponent();
@@ -47,7 +46,6 @@ namespace Proyecto_Gastronomia
             LimpiarCampos();
         }
 
-        // Constructor para editar un terapeuta existente
         public RegistrarTerapeuta(TerapeutaData terapeutaParaEditar) : this()
         {
             _terapeutaAEditar = terapeutaParaEditar;
@@ -66,13 +64,10 @@ namespace Proyecto_Gastronomia
             txtNroLicencia.Clear();
             txtExperienciaAnios.Clear();
             chkEstado.IsChecked = true;
-
             txtCorreo.IsReadOnly = false;
             pbContrasena.IsEnabled = true;
-
             txtNombre.Focus();
             btnGuardar.Content = "Guardar";
-
             _terapeutaAEditar = null;
             _modoEdicion = false;
         }
@@ -81,25 +76,19 @@ namespace Proyecto_Gastronomia
         {
             if (_terapeutaAEditar != null)
             {
-                // Llenar campos de Usuario
                 txtIdUsuario.Text = _terapeutaAEditar.IdUsuario.ToString();
                 txtNombre.Text = _terapeutaAEditar.Nombre;
                 txtApellido.Text = _terapeutaAEditar.Apellido;
                 txtCorreo.Text = _terapeutaAEditar.Correo;
                 txtTelefono.Text = _terapeutaAEditar.Telefono;
                 chkEstado.IsChecked = _terapeutaAEditar.Estado;
-
-                // Llenar campos de Terapeuta
                 txtIdTerapeuta.Text = _terapeutaAEditar.IdTerapeuta.ToString();
                 txtEspecialidad.Text = _terapeutaAEditar.Especialidad;
                 txtNroLicencia.Text = _terapeutaAEditar.NroLicencia;
                 txtExperienciaAnios.Text = _terapeutaAEditar.ExperienciaAnios?.ToString();
-
-                // Deshabilitar campos de login
                 txtCorreo.IsReadOnly = true;
                 pbContrasena.IsEnabled = false;
                 pbContrasena.Password = "********";
-
                 btnGuardar.Content = "Actualizar";
             }
         }
@@ -112,39 +101,27 @@ namespace Proyecto_Gastronomia
                 MessageBox.Show("Nombre, Apellido y Correo son obligatorios.", "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
-
-            // --- CORRECCIÓN: Validación de Teléfono añadida ---
-            if (string.IsNullOrWhiteSpace(txtTelefono.Text))
-            {
-                MessageBox.Show("El teléfono es obligatorio.", "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return false;
-            }
-
             if (!_modoEdicion && string.IsNullOrWhiteSpace(pbContrasena.Password))
             {
                 MessageBox.Show("La contraseña es obligatoria para nuevos terapeutas.", "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
-
             if (string.IsNullOrWhiteSpace(txtEspecialidad.Text) || string.IsNullOrWhiteSpace(txtNroLicencia.Text))
             {
                 MessageBox.Show("Especialidad y Nro. Licencia son obligatorios.", "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
-
             if (!string.IsNullOrWhiteSpace(txtExperienciaAnios.Text) && (!int.TryParse(txtExperienciaAnios.Text, out int exp) || exp < 0))
             {
                 MessageBox.Show("Años de experiencia debe ser un número positivo.", "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
             }
-
             try
             {
                 using (DataClasses1DataContext db = GetContext())
                 {
                     string correoActual = txtCorreo.Text.Trim().ToLower();
                     Usuarios existingUser;
-
                     if (_modoEdicion)
                     {
                         existingUser = db.Usuarios
@@ -169,14 +146,12 @@ namespace Proyecto_Gastronomia
                 MessageBox.Show($"Error al validar correo: {ex.Message}", "Error de BD", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
-
-            return true; // Si pasa todas las validaciones
+            return true;
         }
 
         private void btnGuardar_Click(object sender, RoutedEventArgs e)
         {
             if (!ValidarCampos()) return;
-
             try
             {
                 using (DataClasses1DataContext db = GetContext())
@@ -184,7 +159,7 @@ namespace Proyecto_Gastronomia
                     if (!_modoEdicion) // --- MODO NUEVO ---
                     {
                         int? rolTerapeutaId = db.Roles.FirstOrDefault(r => r.nombre_rol == "Terapeuta")?.id_rol;
-                        if (rolTerapeutaId == null) { /* ... error ... */ return; }
+                        if (rolTerapeutaId == null) { MessageBox.Show("Error: Rol 'Terapeuta' no encontrado."); return; }
 
                         string salt = PasswordManager.GenerateSalt();
                         string hash = PasswordManager.HashPassword(pbContrasena.Password, salt);
@@ -222,13 +197,11 @@ namespace Proyecto_Gastronomia
 
                         if (usuarioToUpdate != null && terapeutaToUpdate != null)
                         {
-                            // Actualizar Usuario
                             usuarioToUpdate.nombre = txtNombre.Text;
                             usuarioToUpdate.apellido = txtApellido.Text;
                             usuarioToUpdate.telefono = txtTelefono.Text;
                             usuarioToUpdate.estado = chkEstado.IsChecked ?? true;
 
-                            // Actualizar Terapeuta
                             terapeutaToUpdate.especialidad = txtEspecialidad.Text;
                             terapeutaToUpdate.nro_licencia = txtNroLicencia.Text;
                             terapeutaToUpdate.experiencia_anios = string.IsNullOrWhiteSpace(txtExperienciaAnios.Text) ? (int?)null : int.Parse(txtExperienciaAnios.Text);
@@ -236,7 +209,6 @@ namespace Proyecto_Gastronomia
 
                         MessageBox.Show("Terapeuta actualizado exitosamente.", "Éxito", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
-
                     db.SubmitChanges();
                     this.DialogResult = true;
                     this.Close();
@@ -250,43 +222,15 @@ namespace Proyecto_Gastronomia
             }
         }
 
-        private void btnLimpiar_Click(object sender, RoutedEventArgs e)
-        {
-            LimpiarCampos();
-        }
-
-        private void btnVolver_Click(object sender, RoutedEventArgs e)
-        {
-            this.DialogResult = false;
-            this.Close();
-        }
-
-        private void btnAtras_Click(object sender, RoutedEventArgs e)
-        {
-            this.DialogResult = false;
-            this.Close();
-        }
-
-        private void btnSalir_Click(object sender, RoutedEventArgs e)
-        {
-            Application.Current.Shutdown();
-        }
-
-        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            if (e.ButtonState == MouseButtonState.Pressed)
-            {
-                this.DragMove();
-            }
-        }
-
-        // --- MÉTODOS AÑADIDOS PARA CORREGIR LOS ERRORES DEL XAML ---
+        private void btnLimpiar_Click(object sender, RoutedEventArgs e) { LimpiarCampos(); }
+        private void btnVolver_Click(object sender, RoutedEventArgs e) { this.DialogResult = false; this.Close(); }
+        private void btnAtras_Click(object sender, RoutedEventArgs e) { this.DialogResult = false; this.Close(); }
+        private void btnSalir_Click(object sender, RoutedEventArgs e) { Application.Current.Shutdown(); }
         private void NumericInput_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             Regex regex = new Regex("[^0-9]+");
             e.Handled = regex.IsMatch(e.Text);
         }
-
         private void NumericInput_Pasting(object sender, DataObjectPastingEventArgs e)
         {
             if (e.DataObject.GetDataPresent(typeof(String)))
@@ -297,6 +241,13 @@ namespace Proyecto_Gastronomia
                 {
                     e.CancelCommand();
                 }
+            }
+        }
+        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState == MouseButtonState.Pressed)
+            {
+                this.DragMove();
             }
         }
     }
