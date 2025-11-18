@@ -1,0 +1,149 @@
+<%- include('../partials/header', { title: 'Mi Perfil' }) %>
+
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Mi Perfil 👤</h1>
+        <p class="text-gray-600 mt-2">Gestiona tu información personal</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Sidebar -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl shadow-sm p-6 text-center">
+                <div class="w-32 h-32 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <% if (user.foto_perfil) { %>
+                        <img src="<%= user.foto_perfil %>" alt="Profile" class="w-32 h-32 rounded-full">
+                    <% } else { %>
+                        <i class="fas fa-user text-blue-600 text-4xl"></i>
+                    <% } %>
+                </div>
+                <h2 class="text-xl font-bold text-gray-800"><%= user.nombre %> <%= user.apellido %></h2>
+                <p class="text-gray-600 mb-2"><%= user.email %></p>
+                <span class="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                    <%= user.rol %>
+                </span>
+                
+                <button class="w-full mt-4 bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 rounded-lg font-medium transition">
+                    <i class="fas fa-camera mr-2"></i>Cambiar Foto
+                </button>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mt-6">
+                <h3 class="font-semibold text-gray-800 mb-4">Tu Actividad</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Check-ins este mes:</span>
+                        <span class="font-semibold">12</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Sesiones completadas:</span>
+                        <span class="font-semibold">8</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Días consecutivos:</span>
+                        <span class="font-semibold text-green-600">5</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h3 class="text-lg font-semibold mb-6">Información Personal</h3>
+                
+                <form class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
+                            <input type="text" value="<%= user.nombre %>" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Apellido</label>
+                            <input type="text" value="<%= user.apellido %>" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" value="<%= user.email %>" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
+                            <input type="tel" value="<%= user.telefono || '' %>" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Nacimiento</label>
+                            <input type="date" value="<%= user.fecha_nacimiento || '' %>" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Género</label>
+                        <select class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option <%= user.genero === 'Masculino' ? 'selected' : '' %>>Masculino</option>
+                            <option <%= user.genero === 'Femenino' ? 'selected' : '' %>>Femenino</option>
+                            <option <%= user.genero === 'Otro' ? 'selected' : '' %>>Otro</option>
+                            <option <%= user.genero === 'Prefiero no decir' ? 'selected' : '' %>>Prefiero no decir</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Dirección</label>
+                        <textarea class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" rows="3"><%= user.direccion || '' %></textarea>
+                    </div>
+
+                    <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                        <button type="button" class="px-6 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition">
+                            <i class="fas fa-save mr-2"></i>Guardar Cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Security Section -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mt-6">
+                <h3 class="text-lg font-semibold mb-6">Seguridad</h3>
+                <div class="space-y-4">
+                    <button class="w-full text-left p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="font-medium text-gray-800">Cambiar Contraseña</p>
+                                <p class="text-sm text-gray-600">Actualiza tu contraseña regularmente</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </button>
+                    
+                    <button class="w-full text-left p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="font-medium text-gray-800">Verificación en Dos Pasos</p>
+                                <p class="text-sm text-gray-600">Añade una capa extra de seguridad</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </button>
+                    
+                    <button class="w-full text-left p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="font-medium text-gray-800">Sesiones Activas</p>
+                                <p class="text-sm text-gray-600">Gestiona tus dispositivos conectados</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

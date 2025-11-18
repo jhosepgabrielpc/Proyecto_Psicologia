@@ -1,0 +1,115 @@
+<%- include('../../partials/header', { title: 'Dashboard Administrador' }) %>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Panel de Administración 🛠️</h1>
+        <p class="text-gray-600 mt-2">Gestión completa de la plataforma MindCare</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
+            <div class="flex items-center">
+                <div class="bg-blue-100 p-3 rounded-lg">
+                    <i class="fas fa-users text-blue-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="font-semibold text-gray-800">Total Usuarios</h3>
+                    <p class="text-2xl font-bold text-gray-900">45</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
+            <div class="flex items-center">
+                <div class="bg-green-100 p-3 rounded-lg">
+                    <i class="fas fa-user-md text-green-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="font-semibold text-gray-800">Terapeutas</h3>
+                    <p class="text-2xl font-bold text-gray-900">8</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-purple-500">
+            <div class="flex items-center">
+                <div class="bg-purple-100 p-3 rounded-lg">
+                    <i class="fas fa-calendar-alt text-purple-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="font-semibold text-gray-800">Citas del Mes</h3>
+                    <p class="text-2xl font-bold text-gray-900">127</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-red-500">
+            <div class="flex items-center">
+                <div class="bg-red-100 p-3 rounded-lg">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="font-semibold text-gray-800">Alertas Activas</h3>
+                    <p class="text-2xl font-bold text-gray-900">5</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="bg-white rounded-xl shadow-sm p-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Terapeutas Pendientes</h2>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                    <div>
+                        <p class="font-medium">Dr. Roberto Silva</p>
+                        <p class="text-sm text-gray-600">Especialidad: Ansiedad</p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button class="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600">Aprobar</button>
+                        <button class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600">Rechazar</button>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                    <div>
+                        <p class="font-medium">Dra. Laura Mendoza</p>
+                        <p class="text-sm text-gray-600">Especialidad: Depresión</p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button class="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600">Aprobar</button>
+                        <button class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600">Rechazar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Actividad Reciente</h2>
+            <div class="space-y-3">
+                <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                    <i class="fas fa-user-plus text-green-500 mr-3"></i>
+                    <div>
+                        <p class="text-sm font-medium">Nuevo paciente registrado</p>
+                        <p class="text-xs text-gray-600">Hace 2 horas</p>
+                    </div>
+                </div>
+                <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                    <i class="fas fa-calendar-check text-blue-500 mr-3"></i>
+                    <div>
+                        <p class="text-sm font-medium">Cita completada</p>
+                        <p class="text-xs text-gray-600">Hace 4 horas</p>
+                    </div>
+                </div>
+                <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                    <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
+                    <div>
+                        <p class="text-sm font-medium">Alerta clínica generada</p>
+                        <p class="text-xs text-gray-600">Hace 6 horas</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../../partials/footer') %>

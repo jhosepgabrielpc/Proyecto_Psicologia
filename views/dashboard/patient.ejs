@@ -1,0 +1,127 @@
+<%- include('../../partials/header', { title: 'Dashboard Paciente' }) %>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Welcome Section -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Hola, <%= user.nombre %> 👋</h1>
+        <p class="text-gray-600 mt-2">Bienvenido a tu espacio de bienestar emocional</p>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <a href="/monitoring/checkin" class="bg-white rounded-xl shadow-sm p-6 card-hover border-l-4 border-blue-500">
+            <div class="flex items-center">
+                <div class="bg-blue-100 p-3 rounded-lg">
+                    <i class="fas fa-heart text-blue-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="font-semibold text-gray-800">Check-in Emocional</h3>
+                    <p class="text-sm text-gray-600">Registra tu estado actual</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="/appointments" class="bg-white rounded-xl shadow-sm p-6 card-hover border-l-4 border-green-500">
+            <div class="flex items-center">
+                <div class="bg-green-100 p-3 rounded-lg">
+                    <i class="fas fa-calendar text-green-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="font-semibold text-gray-800">Mis Citas</h3>
+                    <p class="text-sm text-gray-600">Próximas sesiones</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="/communication/chat" class="bg-white rounded-xl shadow-sm p-6 card-hover border-l-4 border-purple-500">
+            <div class="flex items-center">
+                <div class="bg-purple-100 p-3 rounded-lg">
+                    <i class="fas fa-comments text-purple-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="font-semibold text-gray-800">Chat</h3>
+                    <p class="text-sm text-gray-600">Habla con tu terapeuta</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Emotional Progress -->
+        <div class="bg-white rounded-xl shadow-sm p-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-chart-line mr-2 text-blue-500"></i>
+                Mi Progreso Emocional
+            </h2>
+            <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                <div class="text-center text-gray-500">
+                    <i class="fas fa-chart-bar text-3xl mb-2"></i>
+                    <p>Gráfico de progreso emocional</p>
+                    <p class="text-sm mt-1">Se mostrará tu evolución semanal</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Next Appointments -->
+        <div class="bg-white rounded-xl shadow-sm p-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-clock mr-2 text-green-500"></i>
+                Próximas Citas
+            </h2>
+            <div class="space-y-4">
+                <div class="border-l-4 border-blue-500 pl-4 py-3 bg-blue-50 rounded-r-lg">
+                    <p class="font-medium text-gray-800">Sesión con Dra. Martínez</p>
+                    <p class="text-sm text-gray-600 mt-1">
+                        <i class="far fa-calendar mr-1"></i>Hoy, 15:00 - 16:00
+                    </p>
+                    <span class="inline-block mt-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
+                        <i class="fas fa-video mr-1"></i>Virtual
+                    </span>
+                </div>
+                <div class="border-l-4 border-green-500 pl-4 py-3 bg-green-50 rounded-r-lg">
+                    <p class="font-medium text-gray-800">Sesión de seguimiento</p>
+                    <p class="text-sm text-gray-600 mt-1">
+                        <i class="far fa-calendar mr-1"></i>Viernes, 10:00 - 11:00
+                    </p>
+                    <span class="inline-block mt-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
+                        <i class="fas fa-building mr-1"></i>Presencial
+                    </span>
+                </div>
+            </div>
+            <a href="/appointments" class="block text-center mt-4 text-blue-600 hover:text-blue-700 font-medium">
+                <i class="fas fa-plus mr-1"></i>Programar nueva cita
+            </a>
+        </div>
+    </div>
+
+    <!-- Pending Scales -->
+    <div class="mt-8 bg-white rounded-xl shadow-sm p-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-clipboard-list mr-2 text-orange-500"></i>
+            Escalas Pendientes
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="border border-orange-200 rounded-lg p-4 bg-orange-50 card-hover">
+                <h3 class="font-medium text-orange-800 flex items-center">
+                    <i class="fas fa-stethoscope mr-2"></i>PHQ-9
+                </h3>
+                <p class="text-sm text-orange-600 mt-1">Inventario de Salud del Paciente</p>
+                <button class="mt-3 w-full bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition flex items-center justify-center">
+                    <i class="fas fa-play mr-2"></i>Completar Escala
+                </button>
+            </div>
+            <div class="border border-purple-200 rounded-lg p-4 bg-purple-50 card-hover">
+                <h3 class="font-medium text-purple-800 flex items-center">
+                    <i class="fas fa-brain mr-2"></i>GAD-7
+                </h3>
+                <p class="text-sm text-purple-600 mt-1">Escala de Ansiedad Generalizada</p>
+                <button class="mt-3 w-full bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition flex items-center justify-center">
+                    <i class="fas fa-play mr-2"></i>Completar Escala
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../../partials/footer') %>

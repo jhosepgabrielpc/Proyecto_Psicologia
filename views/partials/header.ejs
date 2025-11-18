@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - MindCare</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <nav class="gradient-bg shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="/" class="text-white text-2xl font-bold">
+                        <i class="fas fa-brain mr-2"></i>MindCare
+                    </a>
+                    <% if (user) { %>
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="/dashboard" class="text-white hover:bg-white/20 px-3 py-2 rounded-md text-sm font-medium transition">
+                            <i class="fas fa-home mr-1"></i>Dashboard
+                        </a>
+                        <% if (user.rol === 'Paciente') { %>
+                        <a href="/appointments" class="text-white hover:bg-white/20 px-3 py-2 rounded-md text-sm font-medium transition">
+                            <i class="fas fa-calendar mr-1"></i>Citas
+                        </a>
+                        <a href="/monitoring/check-in" class="text-white hover:bg-white/20 px-3 py-2 rounded-md text-sm font-medium transition">
+                            <i class="fas fa-heart mr-1"></i>Check-in
+                        </a>
+                        <% } else if (user.rol === 'Terapeuta') { %>
+                        <a href="/patients" class="text-white hover:bg-white/20 px-3 py-2 rounded-md text-sm font-medium transition">
+                            <i class="fas fa-users mr-1"></i>Pacientes
+                        </a>
+                        <a href="/appointments" class="text-white hover:bg-white/20 px-3 py-2 rounded-md text-sm font-medium transition">
+                            <i class="fas fa-calendar-alt mr-1"></i>Agenda
+                        </a>
+                        <% } %>
+                        <a href="/communication/messages" class="text-white hover:bg-white/20 px-3 py-2 rounded-md text-sm font-medium transition">
+                            <i class="fas fa-comments mr-1"></i>Mensajes
+                        </a>
+                    </div>
+                    <% } %>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <% if (user) { %>
+                    <a href="/communication/notifications" class="text-white hover:bg-white/20 p-2 rounded-full transition relative">
+                        <i class="fas fa-bell"></i>
+                        <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500"></span>
+                    </a>
+                    <div class="relative group">
+                        <button class="flex items-center text-white hover:bg-white/20 px-3 py-2 rounded-md text-sm font-medium transition">
+                            <% if (user.foto_perfil) { %>
+                            <img src="<%= user.foto_perfil %>" alt="Profile" class="h-8 w-8 rounded-full mr-2 border-2 border-white">
+                            <% } else { %>
+                            <div class="h-8 w-8 rounded-full bg-white/30 flex items-center justify-center mr-2">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <% } %>
+                            <%= user.nombre %>
+                            <i class="fas fa-chevron-down ml-2 text-xs"></i>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 hidden group-hover:block z-10">
+                            <a href="/users/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-user-circle mr-2"></i>Mi Perfil
+                            </a>
+                            <a href="/auth/logout" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-sign-out-alt mr-2"></i>Cerrar Sesión
+                            </a>
+                        </div>
+                    </div>
+                    <% } else { %>
+                    <a href="/auth/login" class="text-white hover:bg-white/20 px-4 py-2 rounded-md text-sm font-medium transition">
+                        Iniciar Sesión
+                    </a>
+                    <a href="/auth/register" class="bg-white text-purple-700 hover:bg-gray-100 px-4 py-2 rounded-md text-sm font-medium transition">
+                        Registrarse
+                    </a>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <main>

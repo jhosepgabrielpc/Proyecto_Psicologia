@@ -1,0 +1,135 @@
+<%- include('../../partials/header', { title: 'Check-in Emocional' }) %>
+
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Check-in Emocional 💭</h1>
+        <p class="text-gray-600 mt-2">¿Cómo te sientes hoy?</p>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-xl p-8">
+        <!-- Emotional Grid -->
+        <div class="mb-8">
+            <h3 class="text-lg font-semibold mb-4 text-center">Selecciona tu estado emocional</h3>
+            
+            <!-- Russell Circumplex Model Grid -->
+            <div class="grid grid-cols-3 gap-4 max-w-md mx-auto">
+                <!-- High Arousal / Pleasant -->
+                <div class="bg-green-50 border-2 border-green-200 rounded-xl p-4 text-center cursor-pointer hover:bg-green-100 transition">
+                    <div class="text-2xl mb-2">😄</div>
+                    <p class="font-medium text-green-800">Entusiasmado</p>
+                    <p class="text-xs text-green-600">Alta energía +</p>
+                </div>
+                
+                <!-- Neutral Arousal / Pleasant -->
+                <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 text-center cursor-pointer hover:bg-blue-100 transition">
+                    <div class="text-2xl mb-2">😊</div>
+                    <p class="font-medium text-blue-800">Tranquilo</p>
+                    <p class="text-xs text-blue-600">Equilibrado +</p>
+                </div>
+                
+                <!-- Low Arousal / Pleasant -->
+                <div class="bg-purple-50 border-2 border-purple-200 rounded-xl p-4 text-center cursor-pointer hover:bg-purple-100 transition">
+                    <div class="text-2xl mb-2">😌</div>
+                    <p class="font-medium text-purple-800">Relajado</p>
+                    <p class="text-xs text-purple-600">Calma +</p>
+                </div>
+                
+                <!-- High Arousal / Unpleasant -->
+                <div class="bg-red-50 border-2 border-red-200 rounded-xl p-4 text-center cursor-pointer hover:bg-red-100 transition">
+                    <div class="text-2xl mb-2">😠</div>
+                    <p class="font-medium text-red-800">Enojado</p>
+                    <p class="text-xs text-red-600">Alta energía -</p>
+                </div>
+                
+                <!-- Neutral Arousal / Unpleasant -->
+                <div class="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4 text-center cursor-pointer hover:bg-yellow-100 transition">
+                    <div class="text-2xl mb-2">😟</div>
+                    <p class="font-medium text-yellow-800">Preocupado</p>
+                    <p class="text-xs text-yellow-600">Equilibrado -</p>
+                </div>
+                
+                <!-- Low Arousal / Unpleasant -->
+                <div class="bg-gray-50 border-2 border-gray-200 rounded-xl p-4 text-center cursor-pointer hover:bg-gray-100 transition">
+                    <div class="text-2xl mb-2">😔</div>
+                    <p class="font-medium text-gray-800">Triste</p>
+                    <p class="text-xs text-gray-600">Baja energía -</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes Section -->
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-edit mr-2"></i>¿Quieres agregar alguna nota?
+            </label>
+            <textarea 
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                rows="4"
+                placeholder="Describe cómo te sientes, qué te preocupa, o cualquier cosa que quieras compartir..."
+            ></textarea>
+        </div>
+
+        <!-- Context Factors -->
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-3">
+                <i class="fas fa-list mr-2"></i>Factores que influyen en tu estado
+            </label>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" class="rounded border-gray-300">
+                    <span class="text-sm">Sueño</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" class="rounded border-gray-300">
+                    <span class="text-sm">Alimentación</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" class="rounded border-gray-300">
+                    <span class="text-sm">Trabajo</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="checkbox" class="rounded border-gray-300">
+                    <span class="text-sm">Familia</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="text-center">
+            <button class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-lg transition duration-200 flex items-center justify-center mx-auto">
+                <i class="fas fa-check-circle mr-2"></i>
+                Guardar Check-in
+            </button>
+            <p class="text-sm text-gray-500 mt-2">Tu información es completamente confidencial</p>
+        </div>
+    </div>
+
+    <!-- Recent Check-ins -->
+    <div class="mt-8 bg-white rounded-xl shadow-sm p-6">
+        <h3 class="text-lg font-semibold mb-4">Tus últimos check-ins</h3>
+        <div class="space-y-3">
+            <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                <div class="flex items-center">
+                    <span class="text-2xl mr-3">😊</span>
+                    <div>
+                        <p class="font-medium">Tranquilo</p>
+                        <p class="text-sm text-gray-600">Ayer, 09:30 AM</p>
+                    </div>
+                </div>
+                <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">+ Positivo</span>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                <div class="flex items-center">
+                    <span class="text-2xl mr-3">😟</span>
+                    <div>
+                        <p class="font-medium">Preocupado</p>
+                        <p class="text-sm text-gray-600">Lunes, 14:20 PM</p>
+                    </div>
+                </div>
+                <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">Neutral</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../../partials/footer') %>

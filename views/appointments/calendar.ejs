@@ -1,0 +1,125 @@
+<%- include('../../partials/header', { title: 'Calendario de Citas' }) %>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Calendario de Citas 📅</h1>
+        <p class="text-gray-600 mt-2">Gestiona tus sesiones de terapia</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- Sidebar -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+                <h3 class="font-semibold text-gray-800 mb-4">Filtros</h3>
+                <div class="space-y-3">
+                    <select class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        <option>Todas las citas</option>
+                        <option>Programadas</option>
+                        <option>Confirmadas</option>
+                        <option>Completadas</option>
+                    </select>
+                    <input type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                    <button class="w-full bg-blue-600 text-white py-2 rounded-lg font-medium">
+                        Nueva Cita
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h3 class="font-semibold text-gray-800 mb-4">Estadísticas</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Este mes:</span>
+                        <span class="font-semibold">8 citas</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Completadas:</span>
+                        <span class="font-semibold text-green-600">6</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Pendientes:</span>
+                        <span class="font-semibold text-blue-600">2</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calendar -->
+        <div class="lg:col-span-3">
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold">Noviembre 2024</h2>
+                    <div class="flex space-x-2">
+                        <button class="p-2 rounded-lg border border-gray-300">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="px-4 py-2 rounded-lg border border-gray-300 font-medium">
+                            Hoy
+                        </button>
+                        <button class="p-2 rounded-lg border border-gray-300">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Calendar Grid -->
+                <div class="grid grid-cols-7 gap-2 mb-4">
+                    <div class="text-center font-semibold text-gray-500 py-2">Dom</div>
+                    <div class="text-center font-semibold text-gray-500 py-2">Lun</div>
+                    <div class="text-center font-semibold text-gray-500 py-2">Mar</div>
+                    <div class="text-center font-semibold text-gray-500 py-2">Mié</div>
+                    <div class="text-center font-semibold text-gray-500 py-2">Jue</div>
+                    <div class="text-center font-semibold text-gray-500 py-2">Vie</div>
+                    <div class="text-center font-semibold text-gray-500 py-2">Sáb</div>
+                </div>
+
+                <div class="grid grid-cols-7 gap-2">
+                    <!-- Example calendar days with appointments -->
+                    <div class="min-h-24 border border-gray-200 rounded-lg p-2">
+                        <div class="text-right text-gray-400">27</div>
+                    </div>
+                    <div class="min-h-24 border border-gray-200 rounded-lg p-2">
+                        <div class="text-right text-gray-400">28</div>
+                    </div>
+                    <div class="min-h-24 border border-gray-200 rounded-lg p-2 bg-blue-50 border-blue-200">
+                        <div class="text-right font-medium">29</div>
+                        <div class="mt-1 space-y-1">
+                            <div class="bg-blue-100 text-blue-800 text-xs p-1 rounded">
+                                <p>15:00</p>
+                                <p class="font-medium">Dra. Martínez</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="min-h-24 border border-gray-200 rounded-lg p-2">
+                        <div class="text-right">30</div>
+                    </div>
+                    <!-- Current month days would continue... -->
+                </div>
+            </div>
+
+            <!-- Upcoming Appointments -->
+            <div class="mt-6 bg-white rounded-xl shadow-sm p-6">
+                <h3 class="text-lg font-semibold mb-4">Próximas Citas</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="bg-blue-100 p-3 rounded-lg">
+                                <i class="fas fa-video text-blue-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="font-semibold">Sesión con Dra. Martínez</p>
+                                <p class="text-sm text-gray-600">Hoy, 15:00 - 16:00</p>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="px-3 py-1 bg-green-500 text-white text-sm rounded">Unirse</button>
+                            <button class="px-3 py-1 bg-gray-500 text-white text-sm rounded">Reprogramar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../../partials/footer') %>
