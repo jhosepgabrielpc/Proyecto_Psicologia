@@ -6,6 +6,27 @@ const { validateMessage } = require('../middleware/validation');
 
 router.use(authenticateToken);
 
+router.get('/chat', (req, res) => {
+    res.render('communication/chat', {
+        title: 'Chat - MindCare',
+        user: req.session.user
+    });
+});
+
+router.get('/notifications', (req, res) => {
+    res.render('communication/notifications', {
+        title: 'Notificaciones - MindCare',
+        user: req.session.user
+    });
+});
+
+router.get('/alerts', (req, res) => {
+    res.render('communication/alerts', {
+        title: 'Alertas Clínicas - MindCare',
+        user: req.session.user
+    });
+});
+
 router.get('/conversations', communicationController.getConversations);
 router.get('/conversations/:conversationId/messages', communicationController.getMessages);
 router.post('/conversations/:conversationId/messages', validateMessage, communicationController.sendMessage);

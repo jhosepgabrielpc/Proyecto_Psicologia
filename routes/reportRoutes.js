@@ -5,6 +5,20 @@ const { authenticateToken, requireTherapist, requireAdmin } = require('../middle
 
 router.use(authenticateToken);
 
+router.get('/analytics', requireAdmin, (req, res) => {
+    res.render('reports/analytics', {
+        title: 'Analytics - MindCare',
+        user: req.session.user
+    });
+});
+
+router.get('/history', (req, res) => {
+    res.render('reports/history', {
+        title: 'Historial Clínico - MindCare',
+        user: req.session.user
+    });
+});
+
 router.get('/patient/:patientId/clinical-history', reportController.getPatientClinicalHistory);
 router.post('/progress', requireTherapist, reportController.generateProgressReport);
 router.get('/patient/:patientId/progress', reportController.getProgressReports);
