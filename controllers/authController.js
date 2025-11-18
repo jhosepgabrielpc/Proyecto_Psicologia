@@ -1,43 +1,87 @@
 const db = require('../config/database');
 const { hashPassword, comparePassword, generateToken, generateVerificationToken } = require('../utils/helpers');
 const { sendVerificationEmail } = require('../config/email');
+// 1. IMPORTANTE: Importar validationResult para capturar errores del middleware
+const { validationResult } = require('express-validator');
+
+// --- MÉTODOS DE VISTA (GET) ---
+
+const showRegisterForm = (req, res) => {
+  res.render('auth/register', {
+    title: 'Registro - MindCare',
+    user: null,
+    errors: [],
+    formData: {}
+  });
+};
+
+const showLoginForm = (req, res) => {
+  res.render('auth/login', {
+    title: 'Iniciar Sesión - MindCare',
+    user: null,
+    errors: [],
+    formData: {}
+  });
+};
+
+// --- MÉTODOS DE LÓGICA (POST) ---
 
 const register = async (req, res) => {
+  // 2. CAPTURAR ERRORES DE VALIDACIÓN
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.render('auth/register', {
+      title: 'Registro - MindCare',
+      user: null,
+      errors: errors.array(), // Enviamos errores a la vista
+      formData: req.body      // Mantenemos lo escrito
+    });
+  }
+
   const client = await db.pool.connect();
+  const { email, password, nombre, apellido, telefono, fecha_nacimiento, genero, rol } = req.body;
 
   try {
     await client.query('BEGIN');
 
-    const { email, password, nombre, apellido, telefono, fecha_nacimiento, genero, rol } = req.body;
-
+    // Verificar si existe usuario
     const existingUser = await client.query('SELECT * FROM Usuarios WHERE email = $1', [email]);
 
     if (existingUser.rows.length > 0) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'El email ya está registrado' });
+      return res.render('auth/register', {
+        title: 'Registro - MindCare',
+        user: null,
+        errors: [{ msg: 'El correo electrónico ya está registrado.' }],
+        formData: req.body
+      });
     }
 
+    // Verificar Rol
+    const roleResult = await client.query('SELECT id_rol FROM Roles WHERE nombre_rol = $1', [rol || 'Paciente']);
+    if (roleResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.render('auth/register', {
+        title: 'Registro - MindCare',
+        user: null,
+        errors: [{ msg: 'El rol seleccionado no es válido.' }],
+        formData: req.body
+      });
+    }
+
+    // Crear Usuario
     const hashedPassword = await hashPassword(password);
     const verificationToken = generateVerificationToken();
 
-    const roleResult = await client.query(
-      'SELECT id_rol FROM Roles WHERE nombre_rol = $1',
-      [rol || 'Paciente']
-    );
-
-    if (roleResult.rows.length === 0) {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'Rol no válido' });
-    }
-
     const userResult = await client.query(
-      `INSERT INTO Usuarios (id_rol, email, password_hash, nombre, apellido, telefono, fecha_nacimiento, genero, token_verificacion)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id_usuario, email, nombre, apellido`,
+      `INSERT INTO Usuarios (id_rol, email, password_hash, nombre, apellido, telefono, fecha_nacimiento, genero, token_verificacion, fecha_registro)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW()) RETURNING id_usuario, email, nombre, apellido`,
       [roleResult.rows[0].id_rol, email, hashedPassword, nombre, apellido, telefono, fecha_nacimiento, genero, verificationToken]
     );
 
     const newUser = userResult.rows[0];
 
+    // Crear Paciente si corresponde
     if (rol === 'Paciente' || !rol) {
       await client.query(
         'INSERT INTO Pacientes (id_usuario, estado_tratamiento, fecha_inicio_tratamiento) VALUES ($1, $2, CURRENT_DATE)',
@@ -47,31 +91,43 @@ const register = async (req, res) => {
 
     await client.query('COMMIT');
 
-    await sendVerificationEmail(email, verificationToken, nombre);
+    try {
+      await sendVerificationEmail(email, verificationToken, nombre);
+    } catch (emailError) {
+      console.error('Error enviando email:', emailError);
+    }
 
-    res.status(201).json({
-      message: 'Usuario registrado exitosamente. Por favor, verifica tu email.',
-      user: {
-        id: newUser.id_usuario,
-        email: newUser.email,
-        nombre: newUser.nombre,
-        apellido: newUser.apellido
-      }
-    });
+    res.redirect('/auth/login?registered=true');
 
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error en registro:', error);
-    res.status(500).json({ error: 'Error en el registro de usuario' });
+    res.render('auth/register', {
+      title: 'Registro - MindCare',
+      user: null,
+      errors: [{ msg: 'Error interno del servidor.' }],
+      formData: req.body
+    });
   } finally {
     client.release();
   }
 };
 
 const login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+  // 2. CAPTURAR ERRORES DE VALIDACIÓN
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.render('auth/login', {
+      title: 'Iniciar Sesión - MindCare',
+      user: null,
+      errors: errors.array(),
+      formData: { email: req.body.email }
+    });
+  }
 
+  const { email, password } = req.body;
+
+  try {
     const result = await db.query(
       `SELECT u.*, r.nombre_rol
        FROM Usuarios u
@@ -80,35 +136,38 @@ const login = async (req, res) => {
       [email]
     );
 
+    const returnLoginError = (msg) => {
+      return res.render('auth/login', {
+        title: 'Iniciar Sesión - MindCare',
+        user: null,
+        errors: [{ msg: msg }],
+        formData: { email }
+      });
+    };
+
     if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Credenciales inválidas' });
+      return returnLoginError('Credenciales inválidas.');
     }
 
     const user = result.rows[0];
 
     if (user.bloqueado_hasta && new Date(user.bloqueado_hasta) > new Date()) {
-      return res.status(403).json({ error: 'Cuenta bloqueada temporalmente. Intenta más tarde.' });
+      return returnLoginError('Cuenta bloqueada temporalmente.');
     }
-
     if (!user.estado) {
-      return res.status(403).json({ error: 'Cuenta desactivada. Contacta al administrador.' });
+      return returnLoginError('Cuenta desactivada.');
     }
 
     const isValidPassword = await comparePassword(password, user.password_hash);
 
     if (!isValidPassword) {
-      const intentos = user.intentos_login + 1;
-
+      const intentos = (user.intentos_login || 0) + 1;
       if (intentos >= 5) {
-        await db.query(
-          'UPDATE Usuarios SET intentos_login = $1, bloqueado_hasta = NOW() + INTERVAL \'15 minutes\' WHERE id_usuario = $2',
-          [intentos, user.id_usuario]
-        );
-        return res.status(403).json({ error: 'Cuenta bloqueada por múltiples intentos fallidos' });
+        await db.query("UPDATE Usuarios SET intentos_login = $1, bloqueado_hasta = NOW() + INTERVAL '15 minutes' WHERE id_usuario = $2", [intentos, user.id_usuario]);
+        return returnLoginError('Cuenta bloqueada por múltiples intentos fallidos.');
       }
-
       await db.query('UPDATE Usuarios SET intentos_login = $1 WHERE id_usuario = $2', [intentos, user.id_usuario]);
-      return res.status(401).json({ error: 'Credenciales inválidas' });
+      return returnLoginError('Credenciales inválidas.');
     }
 
     await db.query(
@@ -133,95 +192,64 @@ const login = async (req, res) => {
       foto_perfil: user.foto_perfil
     };
 
-    // Redirigir según el rol del usuario
-const redirectPath = req.session.user.rol === 'Admin' ? '/dashboard/admin' :
-                    req.session.user.rol === 'Terapeuta' ? '/dashboard/therapist' :
-                    '/dashboard/patient';
+    const redirectPath = user.nombre_rol === 'Administrador' ? '/dashboard/admin' :
+                         user.nombre_rol === 'Terapeuta' ? '/dashboard/therapist' :
+                         '/dashboard';
 
-res.redirect(redirectPath);
+    res.redirect(redirectPath);
 
   } catch (error) {
     console.error('Error en login:', error);
-    res.status(500).json({ error: 'Error en el proceso de autenticación' });
+    res.render('auth/login', {
+      title: 'Iniciar Sesión',
+      user: null,
+      errors: [{ msg: 'Error al conectar con el servidor.' }],
+      formData: { email }
+    });
   }
 };
 
 const logout = (req, res) => {
   res.clearCookie('token');
   req.session.destroy((err) => {
-    if (err) {
-      return res.status(500).json({ error: 'Error al cerrar sesión' });
-    }
-    res.json({ message: 'Sesión cerrada exitosamente' });
+    if (err) console.error('Error:', err);
+    res.redirect('/');
   });
 };
 
 const verifyEmail = async (req, res) => {
   try {
     const { token } = req.query;
-
     const result = await db.query(
-      'UPDATE Usuarios SET email_verificado = true, fecha_verificacion = NOW(), token_verificacion = NULL WHERE token_verificacion = $1 RETURNING id_usuario, email',
+      'UPDATE Usuarios SET email_verificado = true, fecha_verificacion = NOW(), token_verificacion = NULL WHERE token_verificacion = $1 RETURNING id_usuario',
       [token]
     );
-
-    if (result.rows.length === 0) {
-      return res.status(400).json({ error: 'Token de verificación inválido o expirado' });
-    }
-
-    res.json({ message: 'Email verificado exitosamente' });
-
+    if (result.rows.length === 0) return res.redirect('/auth/login?error=token');
+    res.redirect('/auth/login?verified=true');
   } catch (error) {
-    console.error('Error en verificación:', error);
-    res.status(500).json({ error: 'Error en la verificación del email' });
+    res.status(500).send('Error verificando email');
   }
 };
 
 const getCurrentUser = async (req, res) => {
   try {
-    const result = await db.query(
-      `SELECT u.id_usuario, u.email, u.nombre, u.apellido, u.telefono, u.fecha_nacimiento,
-              u.genero, u.direccion, u.foto_perfil, u.email_verificado, r.nombre_rol
-       FROM Usuarios u
-       JOIN Roles r ON u.id_rol = r.id_rol
-       WHERE u.id_usuario = $1`,
-      [req.user.id_usuario]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    res.json({ user: result.rows[0] });
-
+    if (!req.user || !req.user.id_usuario) return res.status(401).json({ error: 'No autenticado' });
+    const result = await db.query('SELECT * FROM Usuarios WHERE id_usuario = $1', [req.user.id_usuario]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'No encontrado' });
+    const userData = result.rows[0];
+    delete userData.password_hash;
+    res.json({ user: userData });
   } catch (error) {
-    console.error('Error obteniendo usuario:', error);
-    res.status(500).json({ error: 'Error al obtener información del usuario' });
+    res.status(500).json({ error: 'Error servidor' });
   }
 };
 
-
-// AGREGAR LOS NUEVOS MÉTODOS AL OBJETO DE EXPORTACIÓN
 module.exports = {
   register,
   login,
   logout,
   verifyEmail,
   getCurrentUser,
-  showRegisterForm: (req, res) => {
-    res.render('auth/register', {
-      title: 'Registro - MindCare',
-      user: null,
-      errors: null,
-      formData: {}
-    });
-  },
-  showLoginForm: (req, res) => {
-    res.render('auth/login', {
-      title: 'Iniciar Sesión - MindCare',
-      user: null,
-      errors: null,
-      formData: {}
-    });
-  }
+  showRegisterForm,
+  showLoginForm
 };
