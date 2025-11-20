@@ -1,0 +1,49 @@
+<%- include('../partials/header', { title: 'Monitoreo Emocional' }) %>
+
+<div class="min-h-screen bg-slate-50 py-10 font-sans">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="mb-10 border-b border-gray-200 pb-6">
+            <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-500">
+                Monitoreo Emocional
+            </h1>
+            <p class="mt-2 text-lg text-slate-500">
+                Bienvenido, <strong><%= user.nombre %></strong>. Visualiza el estado emocional de los pacientes en tiempo real.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-indigo-500">
+                <p class="text-xs font-bold text-slate-400 uppercase">Check-ins Hoy</p>
+                <h3 class="text-3xl font-extrabold text-slate-800 mt-2">12</h3>
+                <span class="text-xs text-green-600 font-bold">↑ 2 nuevos</span>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-rose-500">
+                <p class="text-xs font-bold text-slate-400 uppercase">Alertas de Riesgo</p>
+                <h3 class="text-3xl font-extrabold text-slate-800 mt-2">1</h3>
+                <span class="text-xs text-rose-600 font-bold">Atención requerida</span>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-emerald-500">
+                <p class="text-xs font-bold text-slate-400 uppercase">Promedio Valencia</p>
+                <h3 class="text-3xl font-extrabold text-slate-800 mt-2">3.8<span class="text-sm text-slate-400">/5</span></h3>
+                <span class="text-xs text-slate-500">Estable</span>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg border border-slate-100 p-12 text-center">
+            <div class="mb-4 inline-flex p-4 bg-indigo-50 rounded-full text-indigo-600">
+                <i class="fas fa-chart-area text-4xl"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800">Panel de Métricas</h2>
+            <p class="text-slate-500 max-w-md mx-auto mt-2">
+                Aquí se implementarán las gráficas de evolución de pacientes y el historial de check-ins emocionales.
+            </p>
+            <button class="mt-6 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition">
+                Ver Reportes Detallados
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

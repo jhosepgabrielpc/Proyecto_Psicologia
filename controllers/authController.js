@@ -1,10 +1,12 @@
 const db = require('../config/database');
 const { hashPassword, comparePassword, generateToken, generateVerificationToken } = require('../utils/helpers');
 const { sendVerificationEmail } = require('../config/email');
-// 1. IMPORTANTE: Importar validationResult para capturar errores del middleware
+// IMPORTANTE: Importamos validationResult para manejar los errores del middleware
 const { validationResult } = require('express-validator');
 
-// --- MÉTODOS DE VISTA (GET) ---
+// ==========================================
+// MÉTODOS DE VISTA (GET)
+// ==========================================
 
 const showRegisterForm = (req, res) => {
   res.render('auth/register', {
@@ -24,17 +26,20 @@ const showLoginForm = (req, res) => {
   });
 };
 
-// --- MÉTODOS DE LÓGICA (POST) ---
+// ==========================================
+// MÉTODOS DE LÓGICA (POST)
+// ==========================================
 
+// 1. REGISTRO DE USUARIO
 const register = async (req, res) => {
-  // 2. CAPTURAR ERRORES DE VALIDACIÓN
+  // A. Validar Campos (Express-Validator)
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.render('auth/register', {
       title: 'Registro - MindCare',
       user: null,
-      errors: errors.array(), // Enviamos errores a la vista
-      formData: req.body      // Mantenemos lo escrito
+      errors: errors.array(),
+      formData: req.body
     });
   }
 
@@ -44,9 +49,8 @@ const register = async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // Verificar si existe usuario
+    // B. Verificar si ya existe
     const existingUser = await client.query('SELECT * FROM Usuarios WHERE email = $1', [email]);
-
     if (existingUser.rows.length > 0) {
       await client.query('ROLLBACK');
       return res.render('auth/register', {
@@ -57,7 +61,7 @@ const register = async (req, res) => {
       });
     }
 
-    // Verificar Rol
+    // C. Verificar Rol válido
     const roleResult = await client.query('SELECT id_rol FROM Roles WHERE nombre_rol = $1', [rol || 'Paciente']);
     if (roleResult.rows.length === 0) {
       await client.query('ROLLBACK');
@@ -69,7 +73,7 @@ const register = async (req, res) => {
       });
     }
 
-    // Crear Usuario
+    // D. Crear Usuario
     const hashedPassword = await hashPassword(password);
     const verificationToken = generateVerificationToken();
 
@@ -81,7 +85,7 @@ const register = async (req, res) => {
 
     const newUser = userResult.rows[0];
 
-    // Crear Paciente si corresponde
+    // E. Crear entrada vinculada (Paciente/Terapeuta)
     if (rol === 'Paciente' || !rol) {
       await client.query(
         'INSERT INTO Pacientes (id_usuario, estado_tratamiento, fecha_inicio_tratamiento) VALUES ($1, $2, CURRENT_DATE)',
@@ -91,6 +95,7 @@ const register = async (req, res) => {
 
     await client.query('COMMIT');
 
+    // F. Enviar Email (No bloqueante)
     try {
       await sendVerificationEmail(email, verificationToken, nombre);
     } catch (emailError) {
@@ -105,7 +110,7 @@ const register = async (req, res) => {
     res.render('auth/register', {
       title: 'Registro - MindCare',
       user: null,
-      errors: [{ msg: 'Error interno del servidor.' }],
+      errors: [{ msg: 'Error interno del servidor. Intente nuevamente.' }],
       formData: req.body
     });
   } finally {
@@ -113,8 +118,9 @@ const register = async (req, res) => {
   }
 };
 
+// 2. INICIO DE SESIÓN (LOGIN)
 const login = async (req, res) => {
-  // 2. CAPTURAR ERRORES DE VALIDACIÓN
+  // A. Validar Campos
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.render('auth/login', {
@@ -128,6 +134,7 @@ const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
+    // B. Buscar Usuario
     const result = await db.query(
       `SELECT u.*, r.nombre_rol
        FROM Usuarios u
@@ -145,22 +152,23 @@ const login = async (req, res) => {
       });
     };
 
-    if (result.rows.length === 0) {
-      return returnLoginError('Credenciales inválidas.');
-    }
+    if (result.rows.length === 0) return returnLoginError('Credenciales inválidas.');
 
     const user = result.rows[0];
 
+    // C. Validar Estado (Bloqueado/Inactivo)
     if (user.bloqueado_hasta && new Date(user.bloqueado_hasta) > new Date()) {
-      return returnLoginError('Cuenta bloqueada temporalmente.');
+        return returnLoginError('Cuenta bloqueada temporalmente. Intenta en 15 minutos.');
     }
     if (!user.estado) {
-      return returnLoginError('Cuenta desactivada.');
+        return returnLoginError('Cuenta desactivada. Contacta al administrador.');
     }
 
+    // D. Verificar Contraseña
     const isValidPassword = await comparePassword(password, user.password_hash);
 
     if (!isValidPassword) {
+      // Manejo de intentos fallidos
       const intentos = (user.intentos_login || 0) + 1;
       if (intentos >= 5) {
         await db.query("UPDATE Usuarios SET intentos_login = $1, bloqueado_hasta = NOW() + INTERVAL '15 minutes' WHERE id_usuario = $2", [intentos, user.id_usuario]);
@@ -170,17 +178,18 @@ const login = async (req, res) => {
       return returnLoginError('Credenciales inválidas.');
     }
 
+    // E. Login Exitoso (Resetear intentos)
     await db.query(
       'UPDATE Usuarios SET intentos_login = 0, ultimo_login = NOW(), bloqueado_hasta = NULL WHERE id_usuario = $1',
       [user.id_usuario]
     );
 
+    // F. Generar Token y Sesión
     const token = generateToken(user);
-
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 24 * 60 * 60 * 1000
+    res.cookie('token', token, { 
+        httpOnly: true, 
+        secure: process.env.NODE_ENV === 'production', 
+        maxAge: 24 * 60 * 60 * 1000 
     });
 
     req.session.user = {
@@ -192,15 +201,31 @@ const login = async (req, res) => {
       foto_perfil: user.foto_perfil
     };
 
-    // --- LÓGICA DE REDIRECCIÓN CORREGIDA ---
-    let redirectPath = '/dashboard/patient'; // Por defecto a paciente para seguridad
+    // G. REDIRECCIÓN INTELIGENTE POR ROL
+    let redirectPath = '/dashboard/patient'; // Default
 
-    if (user.nombre_rol === 'Administrador' || user.nombre_rol === 'Admin') {
-        redirectPath = '/dashboard/admin';
-    } else if (user.nombre_rol === 'Terapeuta') {
-        redirectPath = '/dashboard/therapist';
+    switch (user.nombre_rol) {
+        case 'Administrador':
+        case 'Admin':
+            redirectPath = '/dashboard/admin';
+            break;
+        case 'Terapeuta':
+            redirectPath = '/dashboard/therapist';
+            break;
+        case 'Monitorista':        // Jhosep
+            redirectPath = '/dashboard/monitoring';
+            break;
+        case 'GestorCitas':        // Alan
+            redirectPath = '/dashboard/appointments';
+            break;
+        case 'GestorHistorial':    // Renan
+            redirectPath = '/dashboard/history';
+            break;
+        case 'GestorComunicacion': // Jimmy
+            redirectPath = '/dashboard/communication';
+            break;
     }
-    
+
     res.redirect(redirectPath);
 
   } catch (error) {
@@ -214,14 +239,16 @@ const login = async (req, res) => {
   }
 };
 
+// 3. CERRAR SESIÓN
 const logout = (req, res) => {
   res.clearCookie('token');
   req.session.destroy((err) => {
-    if (err) console.error('Error:', err);
+    if (err) console.error('Error logout:', err);
     res.redirect('/');
   });
 };
 
+// 4. VERIFICAR EMAIL
 const verifyEmail = async (req, res) => {
   try {
     const { token } = req.query;
@@ -229,20 +256,25 @@ const verifyEmail = async (req, res) => {
       'UPDATE Usuarios SET email_verificado = true, fecha_verificacion = NOW(), token_verificacion = NULL WHERE token_verificacion = $1 RETURNING id_usuario',
       [token]
     );
-    if (result.rows.length === 0) return res.redirect('/auth/login?error=token');
+    if (result.rows.length === 0) return res.redirect('/auth/login?error=token_invalido');
     res.redirect('/auth/login?verified=true');
   } catch (error) {
-    res.status(500).send('Error verificando email');
+    console.error(error);
+    res.status(500).send('Error en verificación');
   }
 };
 
+// 5. OBTENER USUARIO ACTUAL (API)
 const getCurrentUser = async (req, res) => {
   try {
     if (!req.user || !req.user.id_usuario) return res.status(401).json({ error: 'No autenticado' });
+    
     const result = await db.query('SELECT * FROM Usuarios WHERE id_usuario = $1', [req.user.id_usuario]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'No encontrado' });
+    
     const userData = result.rows[0];
-    delete userData.password_hash;
+    delete userData.password_hash; // Seguridad: nunca devolver password
+    
     res.json({ user: userData });
   } catch (error) {
     res.status(500).json({ error: 'Error servidor' });

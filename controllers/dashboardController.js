@@ -1,10 +1,12 @@
 const db = require('../config/database');
 const { hashPassword } = require('../utils/helpers');
 
-// 1. DASHBOARD PRINCIPAL
+// ==========================================
+// 1. DASHBOARD PRINCIPAL (EL CEREBRO)
+// ==========================================
 const getAdminDashboard = async (req, res) => {
     try {
-        // Estadísticas
+        // A. ESTADÍSTICAS GENERALES (KPIs)
         const statsQuery = await db.query(`
             SELECT 
                 (SELECT COUNT(*) FROM Usuarios) as total_usuarios,
@@ -14,7 +16,7 @@ const getAdminDashboard = async (req, res) => {
         `);
         const stats = statsQuery.rows[0];
 
-        // Lista de Usuarios
+        // B. LISTA DE USUARIOS (Para la tabla de gestión)
         const usersQuery = await db.query(`
             SELECT u.id_usuario, u.nombre, u.apellido, u.email, u.estado, r.nombre_rol, u.fecha_registro
             FROM Usuarios u
@@ -23,26 +25,83 @@ const getAdminDashboard = async (req, res) => {
             LIMIT 20
         `);
 
+        // C. MATCHMAKING: Pacientes SIN Terapeuta
+        const unassignedPatients = await db.query(`
+            SELECT p.id_paciente, u.nombre, u.apellido, u.email, p.fecha_inicio_tratamiento
+            FROM Pacientes p
+            JOIN Usuarios u ON p.id_usuario = u.id_usuario
+            WHERE p.id_terapeuta IS NULL
+        `);
+
+        // D. LISTA DE TERAPEUTAS (Para el selector de asignación)
+        const therapistsList = await db.query(`
+            SELECT t.id_terapeuta, u.nombre, u.apellido, t.especialidad 
+            FROM Terapeutas t
+            JOIN Usuarios u ON t.id_usuario = u.id_usuario
+            WHERE u.estado = true
+        `);
+
+        // E. MONITOR DE CRISIS
+        // --- DEBUGGER TEMPORAL ---
+        console.log(">>> DIAGNÓSTICO DE TABLAS <<<");
+        
+        const checkTable = await db.query("SELECT * FROM Checkins_Emocionales");
+        console.log(`Total Checkins en BD: ${checkTable.rowCount}`);
+        
+        if (checkTable.rowCount > 0) {
+            console.log("Primer Checkin:", checkTable.rows[0]);
+        }
+        
+        console.log("Alertas detectadas por la query:", riskAlerts.rowCount);
+        console.log("Pacientes sin doctor:", unassignedPatients.rowCount);
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+        // -------------------------s
+        // RENDERIZAR VISTA CON TODOS LOS DATOS
         res.render('dashboard/admin', {
-            title: 'Panel de Administración',
+            title: 'Centro de Comando MindCare',
             user: req.session.user,
             stats: stats,
             users: usersQuery.rows,
+            unassignedPatients: unassignedPatients.rows, // Nuevo
+            therapists: therapistsList.rows,             // Nuevo
+            alerts: riskAlerts.rows,                     // Nuevo
             msg: req.query.msg || null
         });
 
     } catch (error) {
-        console.error(error);
+        console.error('Error en Dashboard:', error);
         res.status(500).render('error', { 
             title: 'Error del Sistema',
-            message: 'Error cargando el panel', 
+            message: 'Error crítico cargando el panel de administración.', 
             error: error,
             user: req.session.user 
         });
     }
 };
 
-// 2. CREAR USUARIO
+// ==========================================
+// 2. FUNCIONALIDAD: ASIGNAR TERAPEUTA
+// ==========================================
+const assignTherapist = async (req, res) => {
+    const { id_paciente, id_terapeuta } = req.body;
+    
+    try {
+        await db.query(`
+            UPDATE Pacientes 
+            SET id_terapeuta = $1, estado_tratamiento = 'activo' 
+            WHERE id_paciente = $2`, 
+            [id_terapeuta, id_paciente]
+        );
+        res.redirect('/dashboard/admin?msg=assigned');
+    } catch (error) {
+        console.error('Error asignando terapeuta:', error);
+        res.redirect('/dashboard/admin?msg=error');
+    }
+};
+
+// ==========================================
+// 3. FUNCIONALIDAD: CREAR USUARIO
+// ==========================================
 const showCreateUserForm = async (req, res) => {
     res.render('dashboard/create-user', {
         title: 'Nuevo Usuario',
@@ -72,8 +131,11 @@ const createUser = async (req, res) => {
         }
 
         const hashedPassword = await hashPassword(password);
+        
+        // Obtener ID Rol
         const roleRes = await client.query('SELECT id_rol FROM Roles WHERE nombre_rol = $1', [rol]);
         
+        // Insertar Usuario
         const userRes = await client.query(`
             INSERT INTO Usuarios (id_rol, nombre, apellido, email, password_hash, telefono, estado, email_verificado, fecha_registro)
             VALUES ($1, $2, $3, $4, $5, $6, true, true, NOW())
@@ -83,8 +145,9 @@ const createUser = async (req, res) => {
 
         const newUserId = userRes.rows[0].id_usuario;
 
+        // Insertar en tabla vinculada según rol
         if (rol === 'Paciente') {
-            await client.query('INSERT INTO Pacientes (id_usuario) VALUES ($1)', [newUserId]);
+            await client.query('INSERT INTO Pacientes (id_usuario, estado_tratamiento, fecha_inicio_tratamiento) VALUES ($1, $2, CURRENT_DATE)', [newUserId, 'activo']);
         } else if (rol === 'Terapeuta') {
             await client.query('INSERT INTO Terapeutas (id_usuario) VALUES ($1)', [newUserId]);
         }
@@ -106,25 +169,24 @@ const createUser = async (req, res) => {
     }
 };
 
-// 3. EDITAR USUARIO
+// ==========================================
+// 4. FUNCIONALIDAD: EDITAR USUARIO
+// ==========================================
 const showEditUserForm = async (req, res) => {
     const { id } = req.params;
     try {
-        // Buscamos al usuario por ID
         const result = await db.query(`
             SELECT u.*, r.nombre_rol 
             FROM Usuarios u 
             JOIN Roles r ON u.id_rol = r.id_rol 
             WHERE u.id_usuario = $1`, [id]);
 
-        if (result.rows.length === 0) {
-            return res.redirect('/dashboard/admin'); // Si no existe, volver al admin
-        }
+        if (result.rows.length === 0) return res.redirect('/dashboard/admin');
 
         res.render('dashboard/edit-user', {
             title: 'Editar Usuario',
             user: req.session.user,
-            editUser: result.rows[0], // Pasamos los datos del usuario a editar
+            editUser: result.rows[0],
             error: null
         });
     } catch (error) {
@@ -133,7 +195,6 @@ const showEditUserForm = async (req, res) => {
     }
 };
 
-// 6. PROCESAR EDICIÓN (POST) - BLINDADO
 const updateUser = async (req, res) => {
     const { id } = req.params;
     const { nombre, apellido, email, telefono, password, rol, estado } = req.body; 
@@ -142,27 +203,24 @@ const updateUser = async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // 1. VERIFICACIÓN DE SEGURIDAD: ¿A quién estamos editando?
-        // Consultamos el rol actual del usuario en la BD antes de tocar nada
+        // -- PROTECCIÓN DE ADMIN --
         const checkUser = await client.query(`
             SELECT r.nombre_rol 
-            FROM Usuarios u 
-            JOIN Roles r ON u.id_rol = r.id_rol 
-            WHERE u.id_usuario = $1`, 
-            [id]
+            FROM Usuarios u JOIN Roles r ON u.id_rol = r.id_rol 
+            WHERE u.id_usuario = $1`, [id]
         );
 
-        let estadoBool = estado === 'true'; // Convertir input a booleano
+        let estadoBool = estado === 'true';
 
-        // SI EL USUARIO ES ADMIN -> FORZAR SIEMPRE ACTIVO (true)
+        // Si es Admin, forzamos estado activo para evitar auto-bloqueo
         if (checkUser.rows.length > 0) {
             const currentRole = checkUser.rows[0].nombre_rol;
             if (currentRole === 'Administrador' || currentRole === 'Admin') {
-                estadoBool = true; // ¡Protección activada!
+                estadoBool = true; 
             }
         }
 
-        // 2. Actualizar datos básicos + ESTADO FORZADO
+        // Actualizar Datos Básicos + Estado
         await client.query(`
             UPDATE Usuarios 
             SET nombre = $1, apellido = $2, email = $3, telefono = $4, estado = $5
@@ -170,13 +228,13 @@ const updateUser = async (req, res) => {
             [nombre, apellido, email, telefono, estadoBool, id]
         );
 
-        // 3. Actualizar contraseña si existe
+        // Actualizar Password (si viene)
         if (password && password.trim() !== '') {
             const hashedPassword = await hashPassword(password);
             await client.query('UPDATE Usuarios SET password_hash = $1 WHERE id_usuario = $2', [hashedPassword, id]);
         }
 
-        // 4. Actualizar rol
+        // Actualizar Rol (con lógica para IDs)
         const roleRes = await client.query('SELECT id_rol FROM Roles WHERE nombre_rol = $1', [rol]);
         if (roleRes.rows.length > 0) {
              await client.query('UPDATE Usuarios SET id_rol = $1 WHERE id_usuario = $2', [roleRes.rows[0].id_rol, id]);
@@ -188,6 +246,7 @@ const updateUser = async (req, res) => {
     } catch (error) {
         await client.query('ROLLBACK');
         console.error(error);
+        
         const userReload = { ...req.body, id_usuario: id, nombre_rol: rol }; 
         res.render('dashboard/edit-user', {
             title: 'Editar Usuario',
@@ -200,33 +259,28 @@ const updateUser = async (req, res) => {
     }
 };
 
-// ... (resto del código igual) ...
-
-// 4. CAMBIAR ESTADO (Bloquear/Desbloquear) - CON PROTECCIÓN DE ADMIN
+// ==========================================
+// 5. FUNCIONALIDAD: CAMBIAR ESTADO (Rápido)
+// ==========================================
 const toggleUserStatus = async (req, res) => {
     const { id } = req.params;
-    const client = await db.pool.connect(); // Usamos cliente para consultas seguras
+    const client = await db.pool.connect();
 
     try {
-        // 1. Averiguar qué rol tiene el usuario que intentan bloquear
+        // Verificar si es Admin antes de bloquear
         const checkQuery = await client.query(`
-            SELECT r.nombre_rol 
-            FROM Usuarios u 
-            JOIN Roles r ON u.id_rol = r.id_rol 
-            WHERE u.id_usuario = $1`, 
-            [id]
+            SELECT r.nombre_rol FROM Usuarios u JOIN Roles r ON u.id_rol = r.id_rol 
+            WHERE u.id_usuario = $1`, [id]
         );
 
         if (checkQuery.rows.length > 0) {
             const roleName = checkQuery.rows[0].nombre_rol;
-
-            // 2. SI ES ADMIN -> PROHIBIDO TOCAR
             if (roleName === 'Administrador' || roleName === 'Admin') {
                 return res.redirect('/dashboard/admin?msg=admin_protected');
             }
         }
 
-        // 3. Si no es admin, procedemos a cambiar el estado
+        // Cambiar estado
         await client.query('UPDATE Usuarios SET estado = NOT estado WHERE id_usuario = $1', [id]);
         res.redirect('/dashboard/admin?msg=status_changed');
 
@@ -240,9 +294,10 @@ const toggleUserStatus = async (req, res) => {
 
 module.exports = {
     getAdminDashboard,
-    showCreateUserForm,
-    createUser,
-    showEditUserForm,
-    updateUser,
-    toggleUserStatus
+    assignTherapist,    // <--- Matchmaking
+    showCreateUserForm, // <--- CRUD Create (Form)
+    createUser,         // <--- CRUD Create (Logic)
+    showEditUserForm,   // <--- CRUD Edit (Form)
+    updateUser,         // <--- CRUD Edit (Logic)
+    toggleUserStatus    // <--- Soft Delete
 };

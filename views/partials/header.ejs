@@ -3,107 +3,176 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %> - MindCare</title>
-<link href="https://unpkg.com/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title><%= typeof title !== 'undefined' ? title : 'MindCare' %> - MindCare</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-        body {
-            font-family: 'Inter', sans-serif;
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Gradiente Profesional de MindCare */
+        .brand-gradient {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); /* Indigo a Purple */
         }
-
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-
-        .card-hover:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary:hover {
-            opacity: 0.9;
-            transform: translateY(-2px);
-        }
+        
+        /* Animaciones */
+        .dropdown-enter { transform: scale(0.95); opacity: 0; }
+        .dropdown-enter-active { transform: scale(1); opacity: 1; transition: all 0.1s ease-out; }
     </style>
 </head>
-<body class="bg-gray-50">
-    <nav class="gradient-bg shadow-lg">
+<body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen">
+
+    <nav class="brand-gradient shadow-lg sticky top-0 z-50 border-b border-white/10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center">
-                    <a href="/" class="text-white text-2xl font-bold">
-                        <i class="fas fa-brain mr-2"></i>MindCare
-                    </a>
-                    <% if (user) { %>
-                    <div class="ml-10 flex items-baseline space-x-4">
-                        <a href="/dashboard" class="text-white hover:bg-white/20 px-3 py-2 rounded-md text-sm font-medium transition">
-                            <i class="fas fa-home mr-1"></i>Dashboard
+            <div class="flex justify-between h-16">
+                
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <a href="/" class="flex items-center gap-2 group">
+                            <div class="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm group-hover:bg-white/30 transition-all">
+                                <i class="fas fa-brain text-white text-xl"></i>
+                            </div>
+                            <span class="font-bold text-xl tracking-tight text-white drop-shadow-sm">MindCare</span>
                         </a>
-                        <% if (user.rol === 'Paciente') { %>
-                        <a href="/appointments" class="text-white hover:bg-white/20 px-3 py-2 rounded-md text-sm font-medium transition">
-                            <i class="fas fa-calendar mr-1"></i>Citas
+                    </div>
+                    
+                    <% if (locals.user) { %>
+                    <div class="hidden md:ml-10 md:flex md:space-x-2 items-center">
+                        <a href="/dashboard" class="text-white/90 hover:text-white hover:bg-white/10 px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center">
+                            <i class="fas fa-columns mr-2 opacity-75"></i> Dashboard
                         </a>
-                        <a href="/monitoring/check-in" class="text-white hover:bg-white/20 px-3 py-2 rounded-md text-sm font-medium transition">
-                            <i class="fas fa-heart mr-1"></i>Check-in
-                        </a>
-                        <% } else if (user.rol === 'Terapeuta') { %>
-                        <a href="/patients" class="text-white hover:bg-white/20 px-3 py-2 rounded-md text-sm font-medium transition">
-                            <i class="fas fa-users mr-1"></i>Pacientes
-                        </a>
-                        <a href="/appointments" class="text-white hover:bg-white/20 px-3 py-2 rounded-md text-sm font-medium transition">
-                            <i class="fas fa-calendar-alt mr-1"></i>Agenda
-                        </a>
-                        <% } %>
-                        <a href="/communication/messages" class="text-white hover:bg-white/20 px-3 py-2 rounded-md text-sm font-medium transition">
-                            <i class="fas fa-comments mr-1"></i>Mensajes
+                        <a href="/dashboard/communication" class="text-white/90 hover:text-white hover:bg-white/10 px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center">
+                            <i class="fas fa-comments mr-2 opacity-75"></i> Mensajes
                         </a>
                     </div>
                     <% } %>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <% if (user) { %>
-                    <a href="/communication/notifications" class="text-white hover:bg-white/20 p-2 rounded-full transition relative">
-                        <i class="fas fa-bell"></i>
-                        <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500"></span>
-                    </a>
-                    <div class="relative group">
-                        <button class="flex items-center text-white hover:bg-white/20 px-3 py-2 rounded-md text-sm font-medium transition">
-                            <% if (user.foto_perfil) { %>
-                            <img src="<%= user.foto_perfil %>" alt="Profile" class="h-8 w-8 rounded-full mr-2 border-2 border-white">
-                            <% } else { %>
-                            <div class="h-8 w-8 rounded-full bg-white/30 flex items-center justify-center mr-2">
-                                <i class="fas fa-user"></i>
+
+                <div class="flex items-center gap-3">
+                    
+                    <% if (locals.user) { %>
+                        <div class="relative">
+                            <button id="btn-notif" onclick="toggleDropdown('dropdown-notif')" class="relative p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-all focus:outline-none">
+                                <i class="fas fa-bell text-xl"></i>
+                                <span class="absolute top-1.5 right-2 flex h-2.5 w-2.5">
+                                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                  <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 border-2 border-white"></span>
+                                </span>
+                            </button>
+                            
+                            <div id="dropdown-notif" class="hidden absolute right-0 mt-3 w-80 bg-white rounded-xl shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none transform origin-top-right transition-all z-50 overflow-hidden text-gray-800">
+                                <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                                    <p class="text-sm font-bold text-slate-700">Notificaciones</p>
+                                    <span class="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full font-bold">2</span>
+                                </div>
+                                <div class="max-h-64 overflow-y-auto">
+                                    <a href="#" class="block px-4 py-3 hover:bg-slate-50 border-b border-slate-100 transition-colors">
+                                        <div class="flex items-start">
+                                            <div class="flex-shrink-0 text-purple-500 mt-0.5"><i class="fas fa-info-circle"></i></div>
+                                            <div class="ml-3">
+                                                <p class="text-sm font-medium text-slate-800">Sistema Activo</p>
+                                                <p class="text-xs text-slate-500 mt-1">Bienvenido a tu panel de control.</p>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="bg-slate-50 px-4 py-2 text-center">
+                                    <a href="#" class="text-xs font-bold text-purple-600 hover:text-purple-800">Ver todas</a>
+                                </div>
                             </div>
-                            <% } %>
-                            <%= user.nombre %>
-                            <i class="fas fa-chevron-down ml-2 text-xs"></i>
-                        </button>
-                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 hidden group-hover:block z-10">
-                            <a href="/users/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                <i class="fas fa-user-circle mr-2"></i>Mi Perfil
+                        </div>
+
+                        <div class="relative ml-2">
+                            <button id="btn-user" onclick="toggleDropdown('dropdown-user')" class="flex items-center gap-3 pl-1 pr-3 py-1 rounded-full bg-black/10 hover:bg-black/20 text-white transition-all focus:outline-none border border-white/10">
+                                <div class="h-8 w-8 rounded-full bg-white text-purple-600 flex items-center justify-center font-bold text-sm shadow-sm">
+                                    <%= user.nombre.charAt(0).toUpperCase() %>
+                                </div>
+                                <span class="hidden md:block text-sm font-medium max-w-[100px] truncate"><%= user.nombre %></span>
+                                <i class="fas fa-chevron-down text-xs opacity-70 transition-transform duration-200" id="arrow-user"></i>
+                            </button>
+
+                            <div id="dropdown-user" class="hidden absolute right-0 mt-3 w-60 bg-white rounded-xl shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none transform origin-top-right transition-all z-50 overflow-hidden text-gray-800">
+                                <div class="px-5 py-4 border-b border-slate-100 bg-slate-50">
+                                    <p class="text-sm font-bold text-slate-800"><%= user.nombre %> <%= user.apellido %></p>
+                                    <p class="text-xs text-slate-500 truncate mb-2"><%= user.email %></p>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-700">
+                                        <%= user.nombre_rol || 'Usuario' %>
+                                    </span>
+                                </div>
+                                
+                                <div class="py-1">
+                                    <a href="/users/profile" class="flex items-center px-5 py-2.5 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 transition-colors">
+                                        <i class="fas fa-user-circle w-5 mr-2 text-slate-400"></i> Mi Perfil
+                                    </a>
+                                    <a href="#" class="flex items-center px-5 py-2.5 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 transition-colors">
+                                        <i class="fas fa-cog w-5 mr-2 text-slate-400"></i> Configuración
+                                    </a>
+                                </div>
+                                
+                                <div class="border-t border-slate-100 py-1">
+                                    <button onclick="window.location.href='/auth/logout'" class="w-full text-left flex items-center px-5 py-3 text-sm text-rose-600 hover:bg-rose-50 font-medium transition-colors">
+                                        <i class="fas fa-sign-out-alt w-5 mr-2"></i> Cerrar Sesión
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    
+                    <% } else { %>
+                        <div class="flex items-center gap-3">
+                            <a href="/auth/login" class="text-white/90 hover:text-white font-medium text-sm px-4 py-2 transition-colors hover:bg-white/10 rounded-lg">
+                                Iniciar Sesión
                             </a>
-                            <a href="/auth/logout" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                <i class="fas fa-sign-out-alt mr-2"></i>Cerrar Sesión
+                            <a href="/auth/register" class="bg-white text-purple-700 px-5 py-2.5 rounded-lg font-bold text-sm shadow-md hover:shadow-lg hover:bg-gray-50 transition-all transform hover:-translate-y-0.5">
+                                Registrarse <i class="fas fa-arrow-right ml-1 text-xs"></i>
                             </a>
                         </div>
-                    </div>
-                    <% } else { %>
-                    <a href="/auth/login" class="text-white hover:bg-white/20 px-4 py-2 rounded-md text-sm font-medium transition">
-                        Iniciar Sesión
-                    </a>
-                    <a href="/auth/register" class="bg-white text-purple-700 hover:bg-gray-100 px-4 py-2 rounded-md text-sm font-medium transition">
-                        Registrarse
-                    </a>
                     <% } %>
+
                 </div>
             </div>
         </div>
     </nav>
-    <main>
+
+    <script>
+        function toggleDropdown(id) {
+            const dropdown = document.getElementById(id);
+            const isHidden = dropdown.classList.contains('hidden');
+            
+            // Cerrar otros
+            document.querySelectorAll('[id^="dropdown-"]').forEach(el => {
+                if(el.id !== id) {
+                    el.classList.add('hidden');
+                    el.classList.remove('dropdown-enter-active');
+                }
+            });
+
+            if (isHidden) {
+                dropdown.classList.remove('hidden');
+                setTimeout(() => {
+                    dropdown.classList.add('dropdown-enter-active');
+                }, 10);
+            } else {
+                dropdown.classList.remove('dropdown-enter-active');
+                dropdown.classList.add('hidden');
+            }
+        }
+
+        window.addEventListener('click', function(e) {
+            const buttons = ['btn-user', 'btn-notif'];
+            const dropdowns = ['dropdown-user', 'dropdown-notif'];
+            
+            if (!buttons.some(id => e.target.closest('#' + id)) && 
+                !dropdowns.some(id => e.target.closest('#' + id))) {
+                
+                document.querySelectorAll('[id^="dropdown-"]').forEach(el => {
+                    el.classList.add('hidden');
+                    el.classList.remove('dropdown-enter-active');
+                });
+            }
+        });
+    </script>
+
+    <main class="flex-grow">

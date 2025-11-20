@@ -1,62 +1,80 @@
 const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
-// Importamos el controlador (Asegúrate que el archivo exista en controllers)
 const dashboardController = require('../controllers/dashboardController');
 
-// Middleware para asegurar que solo Admin entre a rutas protegidas
-const requireAdmin = (req, res, next) => {
-    if (req.user.nombre_rol !== 'Admin' && req.user.nombre_rol !== 'Administrador') {
-        return res.redirect('/dashboard');
-    }
-    next();
+// Middleware de Seguridad Estricta por Rol
+const checkRole = (allowedRoles) => {
+    return (req, res, next) => {
+        const userRole = req.user.nombre_rol;
+        // Normalizamos Admin
+        const role = (userRole === 'Admin') ? 'Administrador' : userRole;
+        
+        if (allowedRoles.includes(role)) {
+            next();
+        } else {
+            // Si intenta entrar donde no debe, lo mandamos a SU lugar correcto
+            res.redirect('/dashboard'); 
+        }
+    };
 };
 
 // --- 1. EL LOBBY (Ruta Raíz /dashboard) ---
+// Distribuidor automático de tráfico
 router.get('/', authenticateToken, (req, res) => {
     const rol = req.user.nombre_rol;
-    if (rol === 'Administrador' || rol === 'Admin') {
-        return res.redirect('/dashboard/admin');
-    } else if (rol === 'Terapeuta') {
-        return res.redirect('/dashboard/therapist');
-    } else {
-        return res.redirect('/dashboard/patient');
-    }
+    if (rol === 'Administrador' || rol === 'Admin') return res.redirect('/dashboard/admin');
+    if (rol === 'Monitorista') return res.redirect('/dashboard/monitoring');
+    if (rol === 'GestorCitas') return res.redirect('/dashboard/appointments');
+    if (rol === 'GestorHistorial') return res.redirect('/dashboard/history');
+    if (rol === 'GestorComunicacion') return res.redirect('/dashboard/communication');
+    if (rol === 'Terapeuta') return res.redirect('/dashboard/therapist');
+    return res.redirect('/dashboard/patient');
 });
 
-// --- 2. RUTAS DE ADMINISTRADOR ---
+// ==========================================
+// 2. RUTAS DE FABIO (Administrador / Usuarios)
+// ==========================================
+router.get('/admin', authenticateToken, checkRole(['Administrador']), dashboardController.getAdminDashboard);
+router.get('/admin/create', authenticateToken, checkRole(['Administrador']), dashboardController.showCreateUserForm);
+router.post('/admin/create', authenticateToken, checkRole(['Administrador']), dashboardController.createUser);
+router.get('/admin/edit/:id', authenticateToken, checkRole(['Administrador']), dashboardController.showEditUserForm);
+router.post('/admin/edit/:id', authenticateToken, checkRole(['Administrador']), dashboardController.updateUser);
+router.get('/admin/toggle-user/:id', authenticateToken, checkRole(['Administrador']), dashboardController.toggleUserStatus);
+router.post('/admin/assign', authenticateToken, checkRole(['Administrador']), dashboardController.assignTherapist);
 
-// Dashboard Principal
-router.get('/admin', authenticateToken, requireAdmin, dashboardController.getAdminDashboard);
+// ==========================================
+// 3. RUTAS DEL EQUIPO (Dashboards Exclusivos)
+// ==========================================
 
-// Crear Usuario (Formulario y Acción)
-router.get('/admin/create', authenticateToken, requireAdmin, dashboardController.showCreateUserForm);
-router.post('/admin/create', authenticateToken, requireAdmin, dashboardController.createUser);
-
-// Editar Usuario (AQUÍ ESTABA EL PROBLEMA DEL 404 - Asegúrate de tener esto)
-router.get('/admin/edit/:id', authenticateToken, requireAdmin, dashboardController.showEditUserForm);
-router.post('/admin/edit/:id', authenticateToken, requireAdmin, dashboardController.updateUser);
-
-// Bloquear/Desbloquear Usuario
-router.get('/admin/toggle-user/:id', authenticateToken, requireAdmin, dashboardController.toggleUserStatus);
-
-
-// --- 3. RUTAS DE PACIENTE Y TERAPEUTA (Las mantenemos intactas) ---
-
-router.get('/patient', authenticateToken, (req, res) => {
-    if (req.user.nombre_rol !== 'Paciente') return res.redirect('/dashboard');
-    res.render('dashboard/patient', { 
-        title: 'Dashboard Paciente - MindCare', 
-        user: req.session.user 
-    });
+// JHOSEP (Monitoreo Emocional)
+router.get('/monitoring', authenticateToken, checkRole(['Monitorista']), (req, res) => {
+    res.render('dashboard/monitoring', { title: 'Monitoreo Emocional', user: req.session.user });
 });
 
-router.get('/therapist', authenticateToken, (req, res) => {
-    if (req.user.nombre_rol !== 'Terapeuta') return res.redirect('/dashboard');
-    res.render('dashboard/therapist', { 
-        title: 'Dashboard Terapeuta - MindCare', 
-        user: req.session.user 
-    });
+// ALAN (Gestión de Citas)
+router.get('/appointments', authenticateToken, checkRole(['GestorCitas']), (req, res) => {
+    res.render('dashboard/appointments', { title: 'Gestión de Citas', user: req.session.user });
+});
+
+// RENAN (Historial y Reportes)
+router.get('/history', authenticateToken, checkRole(['GestorHistorial']), (req, res) => {
+    res.render('dashboard/history', { title: 'Historial Clínico', user: req.session.user });
+});
+
+// JIMMY (Comunicación y Alertas)
+router.get('/communication', authenticateToken, checkRole(['GestorComunicacion']), (req, res) => {
+    res.render('dashboard/communication', { title: 'Centro de Comunicaciones', user: req.session.user });
+});
+
+// ==========================================
+// 4. RUTAS USUARIOS NORMALES
+// ==========================================
+router.get('/patient', authenticateToken, checkRole(['Paciente']), (req, res) => {
+    res.render('dashboard/patient', { title: 'Mi Bienestar', user: req.session.user });
+});
+router.get('/therapist', authenticateToken, checkRole(['Terapeuta']), (req, res) => {
+    res.render('dashboard/therapist', { title: 'Panel Terapeuta', user: req.session.user });
 });
 
 module.exports = router;
