@@ -192,10 +192,15 @@ const login = async (req, res) => {
       foto_perfil: user.foto_perfil
     };
 
-    const redirectPath = user.nombre_rol === 'Administrador' ? '/dashboard/admin' :
-                         user.nombre_rol === 'Terapeuta' ? '/dashboard/therapist' :
-                         '/dashboard';
+    // --- LÓGICA DE REDIRECCIÓN CORREGIDA ---
+    let redirectPath = '/dashboard/patient'; // Por defecto a paciente para seguridad
 
+    if (user.nombre_rol === 'Administrador' || user.nombre_rol === 'Admin') {
+        redirectPath = '/dashboard/admin';
+    } else if (user.nombre_rol === 'Terapeuta') {
+        redirectPath = '/dashboard/therapist';
+    }
+    
     res.redirect(redirectPath);
 
   } catch (error) {

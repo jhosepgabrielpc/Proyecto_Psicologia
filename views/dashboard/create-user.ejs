@@ -1,0 +1,77 @@
+<%- include('../partials/header') %>
+
+<div class="min-h-screen bg-gray-100 py-10">
+    <div class="max-w-2xl mx-auto px-4">
+        
+        <div class="mb-6 flex items-center justify-between">
+            <h1 class="text-3xl font-bold text-gray-900">Nuevo Usuario</h1>
+            <a href="/dashboard/admin" class="text-gray-600 hover:text-gray-900">
+                <i class="fas fa-arrow-left mr-2"></i>Volver
+            </a>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="bg-purple-600 px-6 py-4">
+                <h2 class="text-white text-lg font-semibold">Información de Registro</h2>
+            </div>
+
+            <form action="/dashboard/admin/create" method="POST" class="p-6 space-y-6">
+                
+                <% if (error) { %>
+                    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4">
+                        <%= error %>
+                    </div>
+                <% } %>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                        <input type="text" name="nombre" required value="<%= formData.nombre || '' %>"
+                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 border p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Apellido</label>
+                        <input type="text" name="apellido" required value="<%= formData.apellido || '' %>"
+                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 border p-2">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
+                    <input type="email" name="email" required value="<%= formData.email || '' %>"
+                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 border p-2">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                        <input type="password" name="password" required minlength="8"
+                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 border p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                        <input type="tel" name="telefono" value="<%= formData.telefono || '' %>"
+                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 border p-2">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Rol del Usuario</label>
+                    <select name="rol" class="w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 border p-2 bg-white">
+                        <option value="Paciente">Paciente</option>
+                        <option value="Terapeuta">Terapeuta</option>
+                        <option value="Administrador">Administrador</option>
+                    </select>
+                </div>
+
+                <div class="pt-4 flex justify-end">
+                    <button type="submit" class="bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-purple-700 transition shadow-md">
+                        <i class="fas fa-save mr-2"></i>Crear Usuario
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

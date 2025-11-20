@@ -1,112 +1,222 @@
-<%- include('../partials/header', { title: 'Dashboard Administrador' }) %>
+<%- include('../partials/header', { title: 'Admin Dashboard' }) %>
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">Panel de Administración 🛠️</h1>
-        <p class="text-gray-600 mt-2">Gestión completa de la plataforma MindCare</p>
-    </div>
+<div class="min-h-screen bg-slate-50 py-10 font-sans">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-200 pb-6">
+            <div>
+                <h1 class="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-800 to-slate-600">
+                    Panel de Control <span class="text-purple-600">Maestro</span>
+                </h1>
+                <p class="mt-2 text-lg text-slate-500 flex items-center">
+                    Hola, <span class="font-semibold text-slate-700 mx-1"><%= user.nombre %></span>. Tienes el control total hoy. 
+                    <span class="ml-2 text-xl">👋</span>
+                </p>
+            </div>
+            <div class="mt-4 md:mt-0">
+                <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-white shadow-sm text-slate-600 border border-slate-200">
+                    <i class="far fa-calendar-alt mr-2 text-purple-500"></i>
+                    <%= new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %>
+                </span>
+            </div>
+        </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
-            <div class="flex items-center">
-                <div class="bg-blue-100 p-3 rounded-lg">
-                    <i class="fas fa-users text-blue-600 text-xl"></i>
+        <% if (locals.msg) { %>
+            <div class="mb-8 rounded-xl p-4 shadow-lg transform transition-all duration-500 hover:scale-[1.01]
+                <%= (msg === 'error' || msg === 'admin_protected') ? 'bg-red-50 border-l-4 border-red-500' : 'bg-emerald-50 border-l-4 border-emerald-500' %>">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-2 rounded-full <%= (msg === 'error' || msg === 'admin_protected') ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600' %>">
+                        <i class="fas <%= (msg === 'error' || msg === 'admin_protected') ? 'fa-exclamation-triangle' : 'fa-check' %> text-lg"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-bold <%= (msg === 'error' || msg === 'admin_protected') ? 'text-red-800' : 'text-emerald-800' %>">
+                            <% if (msg === 'created') { %> ¡Éxito! Usuario registrado.
+                            <% } else if (msg === 'updated') { %> ¡Actualizado! Los datos se guardaron.
+                            <% } else if (msg === 'status_changed') { %> Estado modificado correctamente.
+                            <% } else if (msg === 'admin_protected') { %> Acción Denegada
+                            <% } else { %> Error del Sistema <% } %>
+                        </h3>
+                        <p class="text-sm mt-1 <%= (msg === 'error' || msg === 'admin_protected') ? 'text-red-700' : 'text-emerald-700' %>">
+                            <% if (msg === 'created') { %> El nuevo usuario ya puede acceder al sistema.
+                            <% } else if (msg === 'updated') { %> La información ha sido modificada en la base de datos.
+                            <% } else if (msg === 'status_changed') { %> El acceso del usuario ha cambiado.
+                            <% } else if (msg === 'admin_protected') { %> Por seguridad, no puedes bloquear o eliminar al Administrador Principal.
+                            <% } %>
+                        </p>
+                    </div>
                 </div>
-                <div class="ml-4">
-                    <h3 class="font-semibold text-gray-800">Total Usuarios</h3>
-                    <p class="text-2xl font-bold text-gray-900">45</p>
+            </div>
+        <% } %>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-bold tracking-wider text-slate-400 uppercase">Total Usuarios</p>
+                        <h3 class="text-4xl font-extrabold text-slate-800 mt-2"><%= stats.total_usuarios %></h3>
+                    </div>
+                    <div class="p-3 rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                        <i class="fas fa-users text-2xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-blue-400 to-blue-600 w-full rounded-full"></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-bold tracking-wider text-slate-400 uppercase">Pacientes Activos</p>
+                        <h3 class="text-4xl font-extrabold text-slate-800 mt-2"><%= stats.total_pacientes %></h3>
+                    </div>
+                    <div class="p-3 rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300">
+                        <i class="fas fa-heartbeat text-2xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 w-3/4 rounded-full"></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-bold tracking-wider text-slate-400 uppercase">Terapeutas</p>
+                        <h3 class="text-4xl font-extrabold text-slate-800 mt-2"><%= stats.total_terapeutas %></h3>
+                    </div>
+                    <div class="p-3 rounded-xl bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors duration-300">
+                        <i class="fas fa-user-md text-2xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-purple-400 to-purple-600 w-1/2 rounded-full"></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-bold tracking-wider text-slate-400 uppercase">Citas Pendientes</p>
+                        <h3 class="text-4xl font-extrabold text-slate-800 mt-2"><%= stats.citas_pendientes %></h3>
+                    </div>
+                    <div class="p-3 rounded-xl bg-amber-50 text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-colors duration-300">
+                        <i class="fas fa-calendar-alt text-2xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-amber-400 to-amber-600 w-1/4 rounded-full"></div>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
-            <div class="flex items-center">
-                <div class="bg-green-100 p-3 rounded-lg">
-                    <i class="fas fa-user-md text-green-600 text-xl"></i>
+        <div class="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+            
+            <div class="px-8 py-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center bg-white gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">Gestión de Usuarios</h2>
+                    <p class="text-sm text-slate-500 mt-1">Administra accesos y roles del sistema</p>
                 </div>
-                <div class="ml-4">
-                    <h3 class="font-semibold text-gray-800">Terapeutas</h3>
-                    <p class="text-2xl font-bold text-gray-900">8</p>
-                </div>
+                <a href="/dashboard/admin/create" class="group relative inline-flex items-center justify-center px-6 py-3 text-sm font-bold text-white transition-all duration-200 bg-purple-600 font-pj rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-600 hover:bg-purple-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                    <i class="fas fa-plus mr-2 transition-transform group-hover:rotate-90"></i>
+                    Nuevo Usuario
+                </a>
             </div>
-        </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-100">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-8 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Usuario / Email</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Rol</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</th>
+                            <th class="px-8 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-slate-100">
+                        <% users.forEach(function(u) { %>
+                        <tr class="group hover:bg-slate-50 transition-colors duration-200 <%= !u.estado ? 'bg-slate-50/80' : '' %>">
+                            
+                            <td class="px-8 py-5 whitespace-nowrap <%= !u.estado ? 'opacity-50 grayscale' : '' %>">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-12 w-12">
+                                        <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-600 font-bold text-xl shadow-sm border border-slate-100">
+                                            <%= u.nombre.charAt(0).toUpperCase() %>
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-bold text-slate-900"><%= u.nombre %> <%= u.apellido %></div>
+                                        <div class="text-xs text-slate-500 flex items-center mt-1">
+                                            <i class="far fa-envelope mr-1"></i> <%= u.email %>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
 
-        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-purple-500">
-            <div class="flex items-center">
-                <div class="bg-purple-100 p-3 rounded-lg">
-                    <i class="fas fa-calendar-alt text-purple-600 text-xl"></i>
-                </div>
-                <div class="ml-4">
-                    <h3 class="font-semibold text-gray-800">Citas del Mes</h3>
-                    <p class="text-2xl font-bold text-gray-900">127</p>
-                </div>
+                            <td class="px-6 py-5 whitespace-nowrap <%= !u.estado ? 'opacity-50 grayscale' : '' %>">
+                                <% 
+                                    let roleColor = 'bg-slate-100 text-slate-700 border-slate-200';
+                                    let roleIcon = 'fa-user';
+                                    if (u.nombre_rol.includes('Admin')) { 
+                                        roleColor = 'bg-rose-50 text-rose-700 border-rose-200';
+                                        roleIcon = 'fa-shield-alt';
+                                    } else if (u.nombre_rol === 'Terapeuta') { 
+                                        roleColor = 'bg-violet-50 text-violet-700 border-violet-200';
+                                        roleIcon = 'fa-user-md';
+                                    } else if (u.nombre_rol === 'Paciente') {
+                                        roleColor = 'bg-sky-50 text-sky-700 border-sky-200';
+                                        roleIcon = 'fa-user-injured';
+                                    }
+                                %>
+                                <span class="px-3 py-1.5 inline-flex items-center text-xs font-bold rounded-lg border <%= roleColor %>">
+                                    <i class="fas <%= roleIcon %> mr-1.5"></i> <%= u.nombre_rol %>
+                                </span>
+                            </td>
+
+                            <td class="px-6 py-5 whitespace-nowrap">
+                                <% if (u.estado) { %>
+                                    <span class="px-3 py-1.5 inline-flex text-xs font-bold rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-sm">
+                                        <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2 animate-pulse"></span> Activo
+                                    </span>
+                                <% } else { %>
+                                    <span class="px-3 py-1.5 inline-flex text-xs font-bold rounded-full bg-slate-200 text-slate-600 border border-slate-300">
+                                        <i class="fas fa-ban mr-1.5"></i> Bloqueado
+                                    </span>
+                                <% } %>
+                            </td>
+
+                            <td class="px-8 py-5 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end space-x-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                                    
+                                    <% if (u.nombre_rol.includes('Admin') || u.nombre_rol === 'Administrador') { %>
+                                        <span class="p-2 rounded-lg bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200" title="Admin protegido">
+                                            <i class="fas fa-lock"></i>
+                                        </span>
+                                    <% } else { %>
+                                        <a href="/dashboard/admin/toggle-user/<%= u.id_usuario %>" 
+                                           class="p-2 rounded-lg border transition-all duration-200 shadow-sm
+                                           <%= u.estado ? 'bg-white border-slate-200 text-rose-500 hover:bg-rose-50 hover:border-rose-300' : 'bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100' %>"
+                                           title="<%= u.estado ? 'Bloquear Usuario' : 'Reactivar Usuario' %>">
+                                            <i class="fas <%= u.estado ? 'fa-ban' : 'fa-undo' %>"></i>
+                                        </a>
+                                    <% } %>
+                                    
+                                    <a href="/dashboard/admin/edit/<%= u.id_usuario %>" 
+                                       class="p-2 rounded-lg bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 shadow-sm transition-all duration-200" 
+                                       title="Editar Detalles">
+                                        <i class="fas fa-pen"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
             </div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-red-500">
-            <div class="flex items-center">
-                <div class="bg-red-100 p-3 rounded-lg">
-                    <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
-                </div>
-                <div class="ml-4">
-                    <h3 class="font-semibold text-gray-800">Alertas Activas</h3>
-                    <p class="text-2xl font-bold text-gray-900">5</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div class="bg-white rounded-xl shadow-sm p-6">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4">Terapeutas Pendientes</h2>
-            <div class="space-y-3">
-                <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-                    <div>
-                        <p class="font-medium">Dr. Roberto Silva</p>
-                        <p class="text-sm text-gray-600">Especialidad: Ansiedad</p>
-                    </div>
-                    <div class="flex space-x-2">
-                        <button class="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600">Aprobar</button>
-                        <button class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600">Rechazar</button>
-                    </div>
-                </div>
-                <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-                    <div>
-                        <p class="font-medium">Dra. Laura Mendoza</p>
-                        <p class="text-sm text-gray-600">Especialidad: Depresión</p>
-                    </div>
-                    <div class="flex space-x-2">
-                        <button class="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600">Aprobar</button>
-                        <button class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600">Rechazar</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm p-6">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4">Actividad Reciente</h2>
-            <div class="space-y-3">
-                <div class="flex items-center p-3 bg-gray-50 rounded-lg">
-                    <i class="fas fa-user-plus text-green-500 mr-3"></i>
-                    <div>
-                        <p class="text-sm font-medium">Nuevo paciente registrado</p>
-                        <p class="text-xs text-gray-600">Hace 2 horas</p>
-                    </div>
-                </div>
-                <div class="flex items-center p-3 bg-gray-50 rounded-lg">
-                    <i class="fas fa-calendar-check text-blue-500 mr-3"></i>
-                    <div>
-                        <p class="text-sm font-medium">Cita completada</p>
-                        <p class="text-xs text-gray-600">Hace 4 horas</p>
-                    </div>
-                </div>
-                <div class="flex items-center p-3 bg-gray-50 rounded-lg">
-                    <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
-                    <div>
-                        <p class="text-sm font-medium">Alerta clínica generada</p>
-                        <p class="text-xs text-gray-600">Hace 6 horas</p>
-                    </div>
-                </div>
+            
+            <div class="bg-slate-50 px-8 py-4 border-t border-slate-200">
+                <p class="text-xs text-slate-500 text-center">Mostrando los últimos usuarios registrados.</p>
             </div>
         </div>
     </div>
