@@ -18,122 +18,142 @@ const io = socketIO(server);
 
 const PORT = process.env.PORT || 3000;
 
-// Seguridad
+// ==========================================
+// 1. CONFIGURACIÓN DE SEGURIDAD Y MIDDLEWARE
+// ==========================================
 app.use(helmet({
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: false, // Permitir scripts inline (necesario para Tailwind/Socket)
   crossOriginEmbedderPolicy: false
 }));
 
-// CORS
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true
 }));
 
-// Logs y Parsers
-app.use(morgan('dev'));
+app.use(morgan('dev')); // Logs en consola
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Configuración de Sesión
+// Configuración de Sesión (CRÍTICO para el login)
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'mindcare_secret_key',
+  secret: process.env.SESSION_SECRET || 'mindcare_secret_key_super_segura',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV === 'production', // true solo en HTTPS
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000
+    maxAge: 24 * 60 * 60 * 1000 // 24 horas
   }
 }));
 
-// --- 🛡️ EL SALVAVIDAS GLOBAL (ESTO ES LO NUEVO) ---
-// Esto inyecta variables por defecto en TODAS las vistas para evitar errores
+// --- 🛡️ EL SALVAVIDAS GLOBAL ---
+// Inyecta variables comunes en todas las vistas para evitar errores
 app.use((req, res, next) => {
-  // Si no hay título, ponemos uno por defecto
   res.locals.title = 'MindCare'; 
-  // Si no hay usuario, ponemos null (para que el header no falle)
-  res.locals.user = req.session.user || null;
-  // Variables globales de la app
+  res.locals.user = req.session.user || null; // Usuario disponible en todos los EJS
   res.locals.appName = 'MindCare';
-  res.locals.baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+  res.locals.url = req.originalUrl; // Para resaltar items activos en el menú
   next();
 });
 
-// Motor de Vistas
+// ==========================================
+// 2. MOTOR DE VISTAS Y ARCHIVOS ESTÁTICOS
+// ==========================================
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Archivos Estáticos
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// --- RUTAS ---
-// (Asegúrate de que estos archivos existan en tu carpeta routes)
+// ==========================================
+// 3. RUTAS (EL ORDEN IMPORTA MUCHO AQUÍ)
+// ==========================================
+
+// Importar archivos de rutas
 const authRoutes = require('./routes/authRoutes');
-const userRoutes = require('./routes/userRoutes');
-const therapistRoutes = require('./routes/therapistRoutes');
-const patientRoutes = require('./routes/patientRoutes');
-const communicationRoutes = require('./routes/communicationRoutes');
-const monitoringRoutes = require('./routes/monitoringRoutes');
-const appointmentRoutes = require('./routes/appointmentRoutes');
-const reportRoutes = require('./routes/reportRoutes');
-const adminRoutes = require('./routes/adminRoutes');
-const indexRoutes = require('./routes/index');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const communicationRoutes = require('./routes/communicationRoutes');
+const indexRoutes = require('./routes/index');
+// const userRoutes = require('./routes/userRoutes'); // (Opcional si los usas)
 
+// --- DEFINICIÓN DE ENDPOINTS ---
+
+// A. Rutas Principales
+app.use('/', indexRoutes);      // Landing Page (Home)
+app.use('/auth', authRoutes);   // Login/Registro
+
+// B. Rutas Específicas (Deben ir ANTES de las generales)
+// Montamos comunicación DENTRO de dashboard para que coincida con los enlaces
+app.use('/dashboard/communication', communicationRoutes); 
+
+// C. Ruta General de Dashboard (El "Lobby")
 app.use('/dashboard', dashboardRoutes);
-app.use('/auth', authRoutes);
-app.use('/users', userRoutes);
-app.use('/therapists', therapistRoutes);
-app.use('/patients', patientRoutes);
-app.use('/communication', communicationRoutes);
-app.use('/monitoring', monitoringRoutes);
-app.use('/appointments', appointmentRoutes);
-app.use('/reports', reportRoutes);
-app.use('/admin', adminRoutes);
-app.use('/', indexRoutes);
 
-// Error 404
+// D. Otras rutas (Si las necesitas activas)
+// app.use('/users', userRoutes);
+
+
+// ==========================================
+// 4. MANEJO DE ERRORES (404 y 500)
+// ==========================================
+
+// 404: Página no encontrada
 app.use((req, res) => {
   res.status(404).render('error', {
-    title: 'Página No Encontrada', // Título explícito
-    message: 'La página que buscas no existe',
-    error: { status: 404 }
+    title: 'Página No Encontrada',
+    message: 'La ruta que buscas no existe o ha cambiado.',
+    error: { status: 404 },
+    user: req.session.user || null
   });
 });
 
-// Error 500 (General)
+// 500: Error del Servidor
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('🔥 ERROR DEL SERVIDOR:', err.stack);
   res.status(err.status || 500).render('error', {
-    title: 'Error del Sistema', // Título explícito
-    message: err.message || 'Ha ocurrido un error en el servidor',
-    error: process.env.NODE_ENV === 'development' ? err : {}
+    title: 'Error del Sistema',
+    message: 'Ha ocurrido un error interno. Por favor intenta más tarde.',
+    error: process.env.NODE_ENV === 'development' ? err : {},
+    user: req.session.user || null
   });
 });
 
-// Socket.IO
-global.io = io;
+// ==========================================
+// 5. CONFIGURACIÓN SOCKET.IO (CHAT REALTIME)
+// ==========================================
+global.io = io; // Hacerlo global para usarlo en controladores
+
 io.on('connection', (socket) => {
-  console.log('Usuario conectado:', socket.id);
-  socket.on('join-room', (roomId, userId) => {
-    socket.join(roomId);
-    socket.to(roomId).emit('user-connected', userId);
+  // console.log('Cliente conectado al socket:', socket.id);
+
+  // Unirse a sala privada (Para recibir mensajes personales)
+  socket.on('join-room', (roomName) => {
+    socket.join(roomName);
+    // console.log(`Socket ${socket.id} se unió a: ${roomName}`);
   });
+
+  // Reenviar mensaje (Backup por si falla la API REST)
   socket.on('send-message', (data) => {
-    io.to(data.roomId).emit('receive-message', data);
+    // data debería tener { roomId, content, senderId }
+    socket.to(data.roomId).emit('receive-message', data);
   });
+
   socket.on('disconnect', () => {
-    console.log('Usuario desconectado:', socket.id);
+    // console.log('Cliente desconectado:', socket.id);
   });
 });
 
-// Iniciar
+// ==========================================
+// 6. INICIAR SERVIDOR
+// ==========================================
 server.listen(PORT, () => {
-  console.log(`✓ Servidor MindCare corriendo en http://localhost:${PORT}`);
-  console.log(`✓ Modo: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`
+  🚀 Servidor MindCare activo
+  📡 URL: http://localhost:${PORT}
+  📝 Modo: ${process.env.NODE_ENV || 'development'}
+  `);
 });
 
 module.exports = app;

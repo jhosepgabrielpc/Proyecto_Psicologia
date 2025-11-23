@@ -1,48 +1,58 @@
-<%- include('../partials/header', { title: 'Centro de Comando MindCare' }) %>
+<%- include('../partials/header', { title: 'Centro de Comando' }) %>
 
 <div class="min-h-screen bg-slate-50 py-10 font-sans">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <div class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-200 pb-6">
-            <div>
-                <h1 class="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-800 to-slate-600">
-                    Torre de Control <span class="text-purple-600">MindCare</span>
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mb-8 flex flex-col md:flex-row justify-between items-center gap-4 relative overflow-hidden">
+            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 rounded-full bg-indigo-50 blur-xl opacity-50"></div>
+            
+            <div class="z-10">
+                <h1 class="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">
+                    Torre de Control <span class="text-indigo-600">MindCare</span>
                 </h1>
-                <p class="mt-2 text-lg text-slate-500 flex items-center">
-                    Bienvenido, <span class="font-bold text-slate-700 mx-1"><%= user.nombre %></span>.
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 ml-2">
-                        Administrador
+                <p class="text-slate-500 mt-1 flex items-center gap-2 text-sm md:text-base">
+                    <span>Bienvenido de nuevo,</span>
+                    <span class="font-bold text-slate-700 px-2 py-0.5 bg-slate-100 rounded-md border border-slate-200">
+                        <%= user.nombre %> <%= user.apellido %>
                     </span>
                 </p>
             </div>
-            <div class="mt-4 md:mt-0">
-                <div class="inline-flex items-center px-4 py-2 rounded-xl bg-white shadow-sm border border-slate-200 text-slate-500 text-sm font-medium">
-                    <i class="far fa-calendar-alt mr-2 text-purple-500"></i>
-                    <%= new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %>
+            
+            <div class="z-10 flex items-center gap-3">
+                <div class="hidden md:flex flex-col text-right mr-2">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha del Sistema</span>
+                    <span class="text-sm font-semibold text-slate-700">
+                        <%= new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }) %>
+                    </span>
+                </div>
+                <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100">
+                    <i class="far fa-calendar-alt text-xl"></i>
                 </div>
             </div>
         </div>
 
         <% if (locals.msg) { %>
-            <div class="mb-8 rounded-xl p-4 shadow-lg border-l-4 transition-all duration-300 hover:scale-[1.01]
-                <%= (msg.includes('error') || msg.includes('protected')) ? 'bg-rose-50 border-rose-500' : 'bg-emerald-50 border-emerald-500' %>">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
+            <div class="mb-8 animate-fade-in">
+                <div class="rounded-xl p-4 border-l-4 shadow-md flex items-center gap-4 bg-white
+                    <%= (msg.includes('error') || msg.includes('protected')) ? 'border-rose-500 text-rose-800' : 'border-emerald-500 text-emerald-800' %>">
+                    
+                    <div class="flex-shrink-0 p-2 rounded-full bg-slate-50">
                         <i class="fas <%= (msg.includes('error') || msg.includes('protected')) ? 'fa-exclamation-triangle text-rose-500' : 'fa-check-circle text-emerald-500' %> text-xl"></i>
                     </div>
-                    <div class="ml-4">
-                        <h3 class="text-sm font-bold <%= (msg.includes('error') || msg.includes('protected')) ? 'text-rose-800' : 'text-emerald-800' %>">
-                            <% if (msg === 'created') { %> ¡Usuario Registrado!
-                            <% } else if (msg === 'assigned') { %> ¡Asignación Exitosa!
-                            <% } else if (msg === 'updated') { %> ¡Datos Actualizados!
+                    
+                    <div>
+                        <h3 class="font-bold text-sm uppercase tracking-wide">
+                            <% if (msg === 'created') { %> Usuario Registrado
+                            <% } else if (msg === 'assigned') { %> Vinculación Exitosa
+                            <% } else if (msg === 'updated') { %> Perfil Actualizado
                             <% } else if (msg === 'status_changed') { %> Estado Modificado
-                            <% } else if (msg === 'admin_protected') { %> ACCIÓN DENEGADA
-                            <% } else { %> Error del Sistema <% } %>
+                            <% } else if (msg === 'admin_protected') { %> Acción Denegada
+                            <% } else { %> Notificación del Sistema <% } %>
                         </h3>
-                        <p class="text-sm mt-1 <%= (msg.includes('error') || msg.includes('protected')) ? 'text-rose-700' : 'text-emerald-700' %>">
-                            <% if (msg === 'assigned') { %> El paciente ha sido vinculado con su terapeuta correctamente.
-                            <% } else if (msg === 'admin_protected') { %> Por seguridad, no puedes bloquear o eliminar al Administrador Principal.
-                            <% } else { %> La operación se ha completado en la base de datos. <% } %>
+                        <p class="text-sm opacity-90 mt-0.5">
+                            <% if (msg === 'admin_protected') { %> Por seguridad, no puedes bloquear al Administrador Principal.
+                            <% } else if (msg === 'assigned') { %> El paciente ahora tiene acceso a su terapeuta.
+                            <% } else { %> La operación se completó correctamente en la base de datos. <% } %>
                         </p>
                     </div>
                 </div>
@@ -50,94 +60,122 @@
         <% } %>
 
         <% if (locals.alerts && alerts.length > 0) { %>
-            <div class="mb-10 bg-white rounded-2xl shadow-xl border border-rose-100 overflow-hidden animate-pulse-slow">
-                <div class="bg-rose-600 px-6 py-4 flex justify-between items-center">
-                    <h2 class="text-white font-bold text-lg flex items-center">
-                        <span class="relative flex h-3 w-3 mr-3">
+            <div class="mb-10 rounded-2xl shadow-xl border border-rose-200 overflow-hidden bg-white relative animate-pulse-slow">
+                <div class="bg-gradient-to-r from-rose-600 to-red-700 px-6 py-4 flex justify-between items-center text-white">
+                    <div class="flex items-center gap-3">
+                        <span class="relative flex h-4 w-4">
                           <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-200 opacity-75"></span>
-                          <span class="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                          <span class="relative inline-flex rounded-full h-4 w-4 bg-white"></span>
                         </span>
-                        ALERTA DE RIESGO CLÍNICO
-                    </h2>
-                    <span class="bg-rose-800 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                        <h2 class="font-bold text-lg tracking-wide">ALERTA DE RIESGO CLÍNICO</h2>
+                    </div>
+                    <span class="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-lg text-xs font-bold border border-white/30">
                         <%= alerts.length %> Casos Activos
                     </span>
                 </div>
-                <div class="p-6 bg-rose-50">
-                    <div class="grid gap-4">
-                        <% alerts.forEach(function(alert) { %>
-                            <div class="flex items-start p-4 bg-white rounded-xl border-l-4 border-rose-500 shadow-sm hover:shadow-md transition">
-                                <div class="flex-shrink-0 text-rose-500 mt-1">
-                                    <i class="fas fa-heart-broken text-2xl"></i>
-                                </div>
-                                <div class="ml-4 flex-1">
-                                    <div class="flex justify-between items-center">
-                                        <h3 class="text-lg font-bold text-gray-900"><%= alert.nombre %> <%= alert.apellido %></h3>
-                                        <span class="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded"><%= new Date(alert.fecha_hora).toLocaleString() %></span>
+
+                <div class="p-6 bg-rose-50/30 grid gap-4">
+                    <% alerts.forEach(function(alert) { %>
+                        <div class="flex flex-col md:flex-row items-start bg-white p-5 rounded-xl border-l-4 border-rose-500 shadow-sm hover:shadow-md transition-all group">
+                            <div class="flex-1 w-full">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h3 class="text-lg font-bold text-slate-800 group-hover:text-rose-700 transition-colors">
+                                            <%= alert.nombre %> <%= alert.apellido %>
+                                        </h3>
+                                        <p class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                                            <i class="far fa-clock"></i> <%= new Date(alert.fecha_hora).toLocaleString() %>
+                                        </p>
                                     </div>
-                                    <p class="text-sm text-rose-700 font-bold mt-1 uppercase tracking-wide">
-                                        <%= alert.emocion_principal %> (Nivel <%= alert.valencia %>/5)
-                                    </p>
-                                    <p class="text-sm text-gray-600 mt-2 italic border-l-2 border-gray-200 pl-3">"<%= alert.notas %>"</p>
+                                    <div class="text-right">
+                                        <span class="block text-xs font-bold text-rose-600 uppercase tracking-wider">Nivel de Riesgo</span>
+                                        <div class="flex gap-1 mt-1 justify-end">
+                                            <% for(let i=1; i<=5; i++) { %>
+                                                <div class="w-2 h-2 rounded-full <%= i <= (6 - alert.valencia) ? 'bg-rose-500' : 'bg-slate-200' %>"></div>
+                                            <% } %>
+                                        </div>
+                                    </div>
                                 </div>
-                                <button class="ml-4 px-4 py-2 bg-rose-600 text-white text-sm font-bold rounded-lg hover:bg-rose-700 transition shadow-md">
-                                    Intervenir
+                                
+                                <div class="mt-3 bg-rose-50 p-3 rounded-lg border border-rose-100">
+                                    <p class="text-sm font-bold text-rose-800 mb-1"><%= alert.emocion_principal %></p>
+                                    <p class="text-sm text-slate-600 italic">"<%= alert.notas %>"</p>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 md:mt-0 md:ml-6 w-full md:w-auto flex md:flex-col gap-2">
+                                <a href="/dashboard/communication?chat=<%= alert.id_usuario %>" class="flex-1 text-center bg-rose-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-rose-700 transition shadow-sm hover:shadow-rose-200">
+                                    <i class="fas fa-comments mr-2"></i> Contactar
+                                </a>
+                                <button class="flex-1 text-center bg-white text-slate-600 border border-slate-200 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition">
+                                    Archivar
                                 </button>
                             </div>
-                        <% }); %>
-                    </div>
+                        </div>
+                    <% }); %>
                 </div>
             </div>
         <% } %>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-xs font-bold tracking-wider text-slate-400 uppercase">Usuarios</p>
-                        <h3 class="text-4xl font-extrabold text-slate-800 mt-2"><%= stats.total_usuarios %></h3>
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+                <div class="absolute right-0 top-0 w-24 h-24 bg-indigo-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                <div class="relative z-10">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 rounded-xl bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                            <i class="fas fa-users text-xl"></i>
+                        </div>
+                        <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">+12%</span>
                     </div>
-                    <div class="p-3 rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                        <i class="fas fa-users text-2xl"></i>
-                    </div>
+                    <h3 class="text-3xl font-extrabold text-slate-800"><%= stats.total_usuarios %></h3>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">Usuarios Totales</p>
                 </div>
-                <div class="mt-4 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-blue-500 w-full rounded-full"></div></div>
             </div>
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-xs font-bold tracking-wider text-slate-400 uppercase">Pacientes</p>
-                        <h3 class="text-4xl font-extrabold text-slate-800 mt-2"><%= stats.total_pacientes %></h3>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+                <div class="absolute right-0 top-0 w-24 h-24 bg-emerald-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                <div class="relative z-10">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                            <i class="fas fa-user-injured text-xl"></i>
+                        </div>
                     </div>
-                    <div class="p-3 rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                        <i class="fas fa-user-injured text-2xl"></i>
+                    <h3 class="text-3xl font-extrabold text-slate-800"><%= stats.total_pacientes %></h3>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">Pacientes Activos</p>
+                    <div class="w-full bg-slate-100 h-1.5 mt-3 rounded-full overflow-hidden">
+                        <div class="bg-emerald-500 h-full w-[70%]"></div>
                     </div>
                 </div>
-                <div class="mt-4 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-emerald-500 w-3/4 rounded-full"></div></div>
             </div>
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-xs font-bold tracking-wider text-slate-400 uppercase">Terapeutas</p>
-                        <h3 class="text-4xl font-extrabold text-slate-800 mt-2"><%= stats.total_terapeutas %></h3>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+                <div class="absolute right-0 top-0 w-24 h-24 bg-purple-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                <div class="relative z-10">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 rounded-xl bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                            <i class="fas fa-user-md text-xl"></i>
+                        </div>
                     </div>
-                    <div class="p-3 rounded-xl bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
-                        <i class="fas fa-user-md text-2xl"></i>
+                    <h3 class="text-3xl font-extrabold text-slate-800"><%= stats.total_terapeutas %></h3>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">Staff Médico</p>
+                    <div class="w-full bg-slate-100 h-1.5 mt-3 rounded-full overflow-hidden">
+                        <div class="bg-purple-500 h-full w-[40%]"></div>
                     </div>
                 </div>
-                <div class="mt-4 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-purple-500 w-1/2 rounded-full"></div></div>
             </div>
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-xs font-bold tracking-wider text-slate-400 uppercase">Citas Pendientes</p>
-                        <h3 class="text-4xl font-extrabold text-slate-800 mt-2"><%= stats.citas_pendientes %></h3>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+                <div class="absolute right-0 top-0 w-24 h-24 bg-amber-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                <div class="relative z-10">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 rounded-xl bg-amber-50 text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-colors">
+                            <i class="fas fa-calendar-check text-xl"></i>
+                        </div>
+                        <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-full">Hoy</span>
                     </div>
-                    <div class="p-3 rounded-xl bg-amber-50 text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-colors">
-                        <i class="fas fa-calendar-check text-2xl"></i>
-                    </div>
+                    <h3 class="text-3xl font-extrabold text-slate-800"><%= stats.citas_pendientes %></h3>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">Citas Pendientes</p>
                 </div>
-                <div class="mt-4 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-amber-500 w-1/4 rounded-full"></div></div>
             </div>
         </div>
 
@@ -145,43 +183,49 @@
         <div class="mb-10 bg-white rounded-2xl shadow-lg border border-orange-100 overflow-hidden">
             <div class="px-8 py-5 bg-gradient-to-r from-orange-500 to-orange-600 flex justify-between items-center">
                 <div>
-                    <h2 class="text-lg font-bold text-white flex items-center">
-                        <i class="fas fa-link mr-2"></i> Matchmaking Clínico
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-link"></i> Matchmaking Clínico
                     </h2>
-                    <p class="text-xs text-orange-100">Pacientes nuevos esperando asignación de terapeuta</p>
+                    <p class="text-xs text-orange-100 opacity-90">Pacientes nuevos esperando asignación de terapeuta</p>
                 </div>
                 <span class="bg-white text-orange-600 px-3 py-1 rounded-lg text-xs font-bold shadow-sm">
                     <%= unassignedPatients.length %> Pendientes
                 </span>
             </div>
-            <div class="p-6 bg-orange-50">
+            
+            <div class="p-6 bg-orange-50/50">
                 <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     <% unassignedPatients.forEach(function(p) { %>
-                        <div class="bg-white p-5 rounded-xl border border-orange-200 shadow-sm hover:shadow-lg transition-all">
+                        <div class="bg-white p-5 rounded-xl border border-orange-200 shadow-sm hover:shadow-lg transition-all group">
                             <div class="flex items-center mb-4">
-                                <div class="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-lg border border-orange-200">
+                                <div class="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-lg border border-orange-200 group-hover:scale-110 transition-transform">
                                     <%= p.nombre.charAt(0) %>
                                 </div>
                                 <div class="ml-3 overflow-hidden">
-                                    <h4 class="text-sm font-bold text-gray-900 truncate"><%= p.nombre %> <%= p.apellido %></h4>
-                                    <p class="text-xs text-gray-500 truncate"><%= p.email %></p>
+                                    <h4 class="text-sm font-bold text-slate-900 truncate"><%= p.nombre %> <%= p.apellido %></h4>
+                                    <p class="text-xs text-slate-500 truncate"><%= p.email %></p>
+                                    <p class="text-[10px] text-orange-500 mt-0.5 font-medium">Registrado: <%= new Date(p.fecha_inicio_tratamiento).toLocaleDateString() %></p>
                                 </div>
                             </div>
                             
-                            <form action="/dashboard/admin/assign" method="POST" class="mt-2">
+                            <form action="/dashboard/admin/assign" method="POST" class="mt-3">
                                 <input type="hidden" name="id_paciente" value="<%= p.id_paciente %>">
                                 <div class="space-y-2">
-                                    <label class="text-xs font-bold text-gray-500 uppercase">Asignar a:</label>
                                     <div class="flex gap-2">
-                                        <select name="id_terapeuta" required class="block w-full rounded-lg border-gray-300 text-xs shadow-sm focus:border-orange-500 focus:ring-orange-500 py-2">
-                                            <option value="" disabled selected>Seleccionar...</option>
-                                            <% therapists.forEach(function(t) { %>
-                                                <option value="<%= t.id_terapeuta %>">
-                                                    <%= t.nombre %> <%= t.apellido %>
-                                                </option>
-                                            <% }); %>
-                                        </select>
-                                        <button type="submit" class="bg-orange-600 text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-orange-700 transition shadow-md">
+                                        <div class="relative w-full">
+                                            <div class="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                                                <i class="fas fa-user-md text-slate-400 text-xs"></i>
+                                            </div>
+                                            <select name="id_terapeuta" required class="block w-full pl-7 rounded-lg border-slate-300 text-xs shadow-sm focus:border-orange-500 focus:ring-orange-500 py-2 bg-slate-50">
+                                                <option value="" disabled selected>Seleccionar Terapeuta...</option>
+                                                <% therapists.forEach(function(t) { %>
+                                                    <option value="<%= t.id_terapeuta %>">
+                                                        <%= t.nombre %> <%= t.apellido %> - <%= t.especialidad %>
+                                                    </option>
+                                                <% }); %>
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="bg-orange-600 text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-orange-700 transition shadow-md flex items-center justify-center">
                                             <i class="fas fa-check"></i>
                                         </button>
                                     </div>
@@ -194,110 +238,140 @@
         </div>
         <% } %>
 
-        <div class="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
-            <div class="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white">
+        <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+            <div class="px-8 py-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center bg-white gap-4">
                 <div>
-                    <h2 class="text-xl font-bold text-slate-800">Gestión de Usuarios</h2>
-                    <p class="text-sm text-slate-500 mt-1">Base de datos completa del sistema</p>
+                    <h2 class="text-xl font-bold text-slate-800">Base de Datos de Usuarios</h2>
+                    <p class="text-sm text-slate-500 mt-1">Gestión centralizada de accesos y roles</p>
                 </div>
-                <a href="/dashboard/admin/create" class="group inline-flex items-center justify-center px-6 py-3 text-sm font-bold text-white transition-all duration-200 bg-purple-600 rounded-xl hover:bg-purple-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
-                    <i class="fas fa-plus mr-2 transition-transform group-hover:rotate-90"></i>
-                    Nuevo Usuario
-                </a>
+                <div class="flex gap-3">
+                    <div class="relative">
+                        <input type="text" placeholder="Buscar usuario..." class="pl-9 pr-4 py-2 rounded-xl border-slate-200 bg-slate-50 text-sm focus:ring-indigo-500 focus:border-indigo-500 w-full md:w-64">
+                        <i class="fas fa-search absolute left-3 top-3 text-slate-400 text-xs"></i>
+                    </div>
+                    <a href="/dashboard/admin/create" class="group inline-flex items-center justify-center px-5 py-2 text-sm font-bold text-white transition-all duration-200 bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                        <i class="fas fa-plus mr-2 transition-transform group-hover:rotate-90"></i>
+                        Nuevo
+                    </a>
+                </div>
             </div>
             
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-100">
                     <thead class="bg-slate-50">
                         <tr>
-                            <th class="px-8 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Usuario</th>
+                            <th class="px-8 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Perfil</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Rol</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Registro</th>
                             <th class="px-8 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Acciones</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-slate-100">
                         <% users.forEach(function(u) { %>
-                        <tr class="group hover:bg-slate-50 transition-colors duration-200 <%= !u.estado ? 'bg-slate-50/80' : '' %>">
-                            
-                            <td class="px-8 py-5 whitespace-nowrap <%= !u.estado ? 'opacity-50 grayscale' : '' %>">
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0 h-12 w-12">
-                                        <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-600 font-bold text-xl border border-slate-200 shadow-sm">
-                                            <%= u.nombre.charAt(0).toUpperCase() %>
+                            <% if (u) { %> <tr class="group hover:bg-indigo-50/30 transition-colors duration-200 <%= !u.estado ? 'bg-slate-50/80' : '' %>">
+                                
+                                <td class="px-8 py-5 whitespace-nowrap <%= !u.estado ? 'opacity-60 grayscale' : '' %>">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <div class="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-100 to-slate-200 flex items-center justify-center text-indigo-600 font-bold text-sm border border-slate-200 shadow-sm ring-2 ring-white">
+                                                <%= u.nombre ? u.nombre.charAt(0).toUpperCase() : '?' %>
+                                            </div>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-bold text-slate-900"><%= u.nombre %> <%= u.apellido %></div>
+                                            <div class="text-xs text-slate-500 flex items-center mt-0.5">
+                                                <%= u.email %>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="ml-4">
-                                        <div class="text-sm font-bold text-slate-900"><%= u.nombre %> <%= u.apellido %></div>
-                                        <div class="text-xs text-slate-500 flex items-center mt-1">
-                                            <i class="far fa-envelope mr-1.5"></i> <%= u.email %>
+                                </td>
+
+                                <td class="px-6 py-5 whitespace-nowrap <%= !u.estado ? 'opacity-60 grayscale' : '' %>">
+                                    <% 
+                                        // LÓGICA BLINDADA PARA EL ROL
+                                        let roleName = u.nombre_rol || 'Sin Rol'; // Si es undefined, pone 'Sin Rol'
+                                        let roleStyle = 'bg-slate-100 text-slate-600 border-slate-200';
+                                        let roleIcon = 'fa-user';
+                                        
+                                        if (roleName.includes('Admin')) { 
+                                            roleStyle = 'bg-rose-50 text-rose-700 border-rose-200 ring-1 ring-rose-100'; 
+                                            roleIcon = 'fa-shield-alt';
+                                        } else if (roleName === 'Terapeuta') { 
+                                            roleStyle = 'bg-purple-50 text-purple-700 border-purple-200 ring-1 ring-purple-100';
+                                            roleIcon = 'fa-user-md';
+                                        } else if (roleName === 'Paciente') {
+                                            roleStyle = 'bg-emerald-50 text-emerald-700 border-emerald-200 ring-1 ring-emerald-100';
+                                            roleIcon = 'fa-user-injured';
+                                        }
+                                    %>
+                                    <span class="px-3 py-1 inline-flex items-center text-xs font-bold rounded-full border <%= roleStyle %>">
+                                        <i class="fas <%= roleIcon %> mr-1.5 text-[10px]"></i> <%= roleName %>
+                                    </span>
+                                </td>
+
+                                <td class="px-6 py-5 whitespace-nowrap">
+                                    <% if (u.estado) { %>
+                                        <div class="flex items-center">
+                                            <span class="relative flex h-2.5 w-2.5 mr-2">
+                                              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                                            </span>
+                                            <span class="text-xs font-bold text-emerald-700">Activo</span>
                                         </div>
-                                    </div>
-                                </div>
-                            </td>
-
-                            <td class="px-6 py-5 whitespace-nowrap <%= !u.estado ? 'opacity-50 grayscale' : '' %>">
-                                <% 
-                                    let roleStyle = 'bg-slate-100 text-slate-700 border-slate-200';
-                                    let roleIcon = 'fa-user';
-                                    if (u.nombre_rol.includes('Admin')) { 
-                                        roleStyle = 'bg-rose-50 text-rose-700 border-rose-200'; 
-                                        roleIcon = 'fa-shield-alt';
-                                    } else if (u.nombre_rol === 'Terapeuta') { 
-                                        roleStyle = 'bg-violet-50 text-violet-700 border-violet-200';
-                                        roleIcon = 'fa-user-md';
-                                    } else if (u.nombre_rol === 'Paciente') {
-                                        roleStyle = 'bg-sky-50 text-sky-700 border-sky-200';
-                                        roleIcon = 'fa-user-injured';
-                                    }
-                                %>
-                                <span class="px-3 py-1.5 inline-flex items-center text-xs font-bold rounded-lg border <%= roleStyle %>">
-                                    <i class="fas <%= roleIcon %> mr-1.5"></i> <%= u.nombre_rol %>
-                                </span>
-                            </td>
-
-                            <td class="px-6 py-5 whitespace-nowrap">
-                                <% if (u.estado) { %>
-                                    <span class="px-3 py-1.5 inline-flex text-xs font-bold rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
-                                        <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2 animate-pulse"></span> Activo
-                                    </span>
-                                <% } else { %>
-                                    <span class="px-3 py-1.5 inline-flex text-xs font-bold rounded-full bg-slate-200 text-slate-600 border border-slate-300">
-                                        <i class="fas fa-ban mr-1.5"></i> Bloqueado
-                                    </span>
-                                <% } %>
-                            </td>
-
-                            <td class="px-8 py-5 whitespace-nowrap text-right text-sm font-medium">
-                                <div class="flex justify-end space-x-2 opacity-80 group-hover:opacity-100 transition-opacity">
-                                    
-                                    <% if (u.nombre_rol.includes('Admin') || u.nombre_rol === 'Administrador') { %>
-                                        <span class="p-2 rounded-lg bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200" title="Protegido">
-                                            <i class="fas fa-lock"></i>
-                                        </span>
                                     <% } else { %>
-                                        <a href="/dashboard/admin/toggle-user/<%= u.id_usuario %>" 
-                                           class="p-2 rounded-lg border transition-all duration-200 shadow-sm <%= u.estado ? 'bg-white text-rose-500 hover:bg-rose-50 hover:border-rose-300' : 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100' %>"
-                                           title="<%= u.estado ? 'Bloquear Acceso' : 'Reactivar Acceso' %>">
-                                            <i class="fas <%= u.estado ? 'fa-ban' : 'fa-undo' %>"></i>
-                                        </a>
+                                        <div class="flex items-center px-2 py-1 rounded bg-slate-100 w-max border border-slate-200">
+                                            <i class="fas fa-lock mr-1.5 text-slate-400 text-xs"></i>
+                                            <span class="text-xs font-bold text-slate-500">Bloqueado</span>
+                                        </div>
                                     <% } %>
-                                    
-                                    <a href="/dashboard/admin/edit/<%= u.id_usuario %>" 
-                                       class="p-2 rounded-lg bg-white border border-slate-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 shadow-sm transition-all duration-200"
-                                       title="Editar Detalles">
-                                        <i class="fas fa-pen"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
+                                </td>
+                                
+                                <td class="px-6 py-5 whitespace-nowrap text-xs text-slate-500">
+                                    <%= new Date(u.fecha_registro).toLocaleDateString() %>
+                                </td>
+
+                                <td class="px-8 py-5 whitespace-nowrap text-right text-sm font-medium">
+                                    <div class="flex justify-end items-center space-x-2">
+                                        
+                                        <% 
+                                            // Variable segura para verificar admin
+                                            let isAdmin = (roleName.includes('Admin') || roleName === 'Administrador');
+                                        %>
+
+                                        <% if (isAdmin) { %>
+                                            <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-50 text-slate-300 cursor-not-allowed border border-slate-100" title="Protegido">
+                                                <i class="fas fa-lock"></i>
+                                            </span>
+                                        <% } else { %>
+                                            <a href="/dashboard/admin/toggle-user/<%= u.id_usuario %>" 
+                                               class="w-8 h-8 flex items-center justify-center rounded-lg border transition-all duration-200 shadow-sm 
+                                               <%= u.estado ? 'bg-white text-rose-500 border-slate-200 hover:bg-rose-50 hover:border-rose-300' : 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100' %>"
+                                               title="<%= u.estado ? 'Bloquear Acceso' : 'Reactivar Acceso' %>">
+                                                <i class="fas <%= u.estado ? 'fa-ban' : 'fa-undo' %>"></i>
+                                            </a>
+                                        <% } %>
+                                        
+                                        <a href="/dashboard/admin/edit/<%= u.id_usuario %>" 
+                                           class="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 shadow-sm transition-all duration-200"
+                                           title="Editar Detalles">
+                                            <i class="fas fa-pen"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            <% } %>
                         <% }); %>
                     </tbody>
                 </table>
             </div>
             
-            <div class="bg-slate-50 px-8 py-4 border-t border-slate-200 text-center">
-                <p class="text-xs text-slate-400">Mostrando registros recientes.</p>
+            <div class="bg-slate-50 px-8 py-4 border-t border-slate-200 flex justify-between items-center">
+                <p class="text-xs text-slate-500">Mostrando los últimos 20 registros</p>
+                <div class="flex gap-1">
+                    <button class="px-3 py-1 rounded-md bg-white border border-slate-200 text-slate-400 text-xs hover:bg-slate-100 disabled:opacity-50" disabled>Anterior</button>
+                    <button class="px-3 py-1 rounded-md bg-white border border-slate-200 text-slate-600 text-xs hover:bg-slate-100 font-medium">Siguiente</button>
+                </div>
             </div>
         </div>
     </div>

@@ -1,37 +1,34 @@
 const express = require('express');
 const router = express.Router();
 const communicationController = require('../controllers/communicationController');
-const { authenticateToken } = require('../middleware/auth');
-const { validateMessage } = require('../middleware/validation');
 
-router.use(authenticateToken);
+// CORRECCIÓN AQUÍ: Apuntamos a 'auth' que es el nombre real de tu archivo
+const { isAuthenticated } = require('../middleware/auth'); 
 
-router.get('/chat', (req, res) => {
-    res.render('communication/chat', {
-        title: 'Chat - MindCare',
-        user: req.session.user
-    });
-});
+// ==================================================================
+// 1. VISTAS (RENDERIZADO DEL HTML)
+// ==================================================================
 
-router.get('/notifications', (req, res) => {
-    res.render('communication/notifications', {
-        title: 'Notificaciones - MindCare',
-        user: req.session.user
-    });
-});
+// GET /communication/
+// Carga la interfaz principal: Lista de contactos + Chat + Historial
+router.get('/', isAuthenticated, communicationController.getChatInterface);
 
-router.get('/alerts', (req, res) => {
-    res.render('communication/alerts', {
-        title: 'Alertas Clínicas - MindCare',
-        user: req.session.user
-    });
-});
 
-router.get('/conversations', communicationController.getConversations);
-router.get('/conversations/:conversationId/messages', communicationController.getMessages);
-router.post('/conversations/:conversationId/messages', validateMessage, communicationController.sendMessage);
-router.get('/notifications', communicationController.getNotifications);
-router.put('/notifications/:notificationId/read', communicationController.markNotificationAsRead);
-router.get('/clinical-alerts', communicationController.getClinicalAlerts);
+// ==================================================================
+// 2. API ENDPOINTS (PARA AJAX / FETCH / SOCKET)
+// ==================================================================
+
+// POST /communication/save
+// Guarda un mensaje en la BD y crea la notificación
+router.post('/save', isAuthenticated, communicationController.sendMessage);
+
+// GET /communication/notifications
+// Obtiene el JSON de notificaciones para la campanita del header
+router.get('/notifications', isAuthenticated, communicationController.getNotifications);
+
+// POST /communication/notifications/:id/read
+// Marca una notificación específica como leída
+router.post('/notifications/:id/read', isAuthenticated, communicationController.markNotificationAsRead);
+
 
 module.exports = router;

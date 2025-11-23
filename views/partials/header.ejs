@@ -1,132 +1,217 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= typeof title !== 'undefined' ? title : 'MindCare' %> - MindCare</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <title><%= typeof title !== 'undefined' ? title : 'MindCare' %> | Plataforma de Salud Mental</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            light: '#818cf8', // Indigo 400
+                            DEFAULT: '#4f46e5', // Indigo 600
+                            dark: '#312e81', // Indigo 900
+                            purple: '#7e22ce', // Purple 700
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.2s ease-out',
+                        'slide-down': 'slideDown 0.2s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideDown: {
+                            '0%': { transform: 'translateY(-10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        
-        /* Gradiente Profesional de MindCare */
-        .brand-gradient {
-            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); /* Indigo a Purple */
+        /* Estilos base para asegurar consistencia */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Slate 50 - Evita el fondo blanco puro */
+            color: #1e293b; /* Slate 800 - Texto oscuro legible */
         }
         
-        /* Animaciones */
-        .dropdown-enter { transform: scale(0.95); opacity: 0; }
-        .dropdown-enter-active { transform: scale(1); opacity: 1; transition: all 0.1s ease-out; }
+        /* Scrollbar personalizada sutil */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Utilidad para ocultar elementos con transición */
+        .dropdown-hidden {
+            display: none;
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        .dropdown-visible {
+            display: block;
+            opacity: 1;
+            transform: scale(1);
+            transition: all 0.15s ease-out;
+        }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen">
+<body class="flex flex-col h-full min-h-screen antialiased">
 
-    <nav class="brand-gradient shadow-lg sticky top-0 z-50 border-b border-white/10">
+    <nav class="bg-gradient-to-r from-violet-700 via-indigo-600 to-indigo-700 shadow-lg sticky top-0 z-50 border-b border-white/10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 
-                <div class="flex">
-                    <div class="flex-shrink-0 flex items-center">
-                        <a href="/" class="flex items-center gap-2 group">
-                            <div class="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm group-hover:bg-white/30 transition-all">
-                                <i class="fas fa-brain text-white text-xl"></i>
-                            </div>
-                            <span class="font-bold text-xl tracking-tight text-white drop-shadow-sm">MindCare</span>
-                        </a>
-                    </div>
+                <div class="flex items-center gap-8">
+                    <a href="/" class="flex items-center gap-3 group focus:outline-none">
+                        <div class="bg-white/10 p-2 rounded-xl backdrop-blur-sm border border-white/10 group-hover:bg-white/20 transition-all duration-300 shadow-inner">
+                            <i class="fas fa-brain text-white text-xl group-hover:scale-110 transition-transform"></i>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="font-bold text-xl tracking-tight text-white leading-none">MindCare</span>
+                            <span class="text-[10px] font-medium text-indigo-200 tracking-wider uppercase">Salud Mental</span>
+                        </div>
+                    </a>
                     
                     <% if (locals.user) { %>
-                    <div class="hidden md:ml-10 md:flex md:space-x-2 items-center">
-                        <a href="/dashboard" class="text-white/90 hover:text-white hover:bg-white/10 px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center">
-                            <i class="fas fa-columns mr-2 opacity-75"></i> Dashboard
+                    <div class="hidden md:flex items-center space-x-1">
+                        <a href="/dashboard/admin" 
+                           class="text-indigo-100 hover:text-white hover:bg-white/10 px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 group">
+                            <i class="fas fa-th-large opacity-70 group-hover:opacity-100 transition-opacity"></i>
+                            Dashboard
                         </a>
-                        <a href="/dashboard/communication" class="text-white/90 hover:text-white hover:bg-white/10 px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center">
-                            <i class="fas fa-comments mr-2 opacity-75"></i> Mensajes
-                        </a>
+                        
+                        <a href="/dashboard/communication" 
+                           class="text-indigo-100 hover:text-white hover:bg-white/10 px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 group">
+                            <i class="fas fa-comments opacity-70 group-hover:opacity-100 transition-opacity"></i>
+                            Comunicación
+                            </a>
                     </div>
                     <% } %>
                 </div>
 
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-4">
                     
                     <% if (locals.user) { %>
                         <div class="relative">
-                            <button id="btn-notif" onclick="toggleDropdown('dropdown-notif')" class="relative p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-all focus:outline-none">
-                                <i class="fas fa-bell text-xl"></i>
+                            <button onclick="toggleDropdown('dropdown-notif')" 
+                                    class="relative p-2 text-indigo-100 hover:text-white hover:bg-white/10 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-white/20">
+                                <span class="sr-only">Ver notificaciones</span>
+                                <i class="fas fa-bell text-lg"></i>
                                 <span class="absolute top-1.5 right-2 flex h-2.5 w-2.5">
-                                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                                  <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 border-2 border-white"></span>
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 border-2 border-indigo-600"></span>
                                 </span>
                             </button>
                             
-                            <div id="dropdown-notif" class="hidden absolute right-0 mt-3 w-80 bg-white rounded-xl shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none transform origin-top-right transition-all z-50 overflow-hidden text-gray-800">
+                            <div id="dropdown-notif" class="hidden absolute right-0 mt-3 w-80 bg-white rounded-xl shadow-2xl ring-1 ring-black ring-opacity-5 transform origin-top-right z-50 overflow-hidden animate-slide-down">
                                 <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                                    <p class="text-sm font-bold text-slate-700">Notificaciones</p>
-                                    <span class="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full font-bold">2</span>
+                                    <p class="text-sm font-bold text-slate-800">Centro de Notificaciones</p>
+                                    <span class="text-xs font-medium text-indigo-600 hover:text-indigo-800 cursor-pointer">Marcar leídas</span>
                                 </div>
                                 <div class="max-h-64 overflow-y-auto">
-                                    <a href="#" class="block px-4 py-3 hover:bg-slate-50 border-b border-slate-100 transition-colors">
-                                        <div class="flex items-start">
-                                            <div class="flex-shrink-0 text-purple-500 mt-0.5"><i class="fas fa-info-circle"></i></div>
-                                            <div class="ml-3">
-                                                <p class="text-sm font-medium text-slate-800">Sistema Activo</p>
-                                                <p class="text-xs text-slate-500 mt-1">Bienvenido a tu panel de control.</p>
+                                    <a href="#" class="block px-4 py-3 hover:bg-indigo-50/50 border-b border-slate-100 transition-colors group">
+                                        <div class="flex items-start gap-3">
+                                            <div class="flex-shrink-0 bg-green-100 rounded-full p-1.5 text-green-600 mt-0.5">
+                                                <i class="fas fa-check text-xs"></i>
+                                            </div>
+                                            <div>
+                                                <p class="text-sm font-semibold text-slate-800 group-hover:text-indigo-700">Sistema Actualizado</p>
+                                                <p class="text-xs text-slate-500 mt-0.5">El dashboard está listo para usar.</p>
+                                                <p class="text-[10px] text-slate-400 mt-1">Hace 2 min</p>
                                             </div>
                                         </div>
                                     </a>
                                 </div>
-                                <div class="bg-slate-50 px-4 py-2 text-center">
-                                    <a href="#" class="text-xs font-bold text-purple-600 hover:text-purple-800">Ver todas</a>
+                                <div class="bg-slate-50 px-4 py-2 text-center border-t border-slate-100">
+                                    <a href="/dashboard/communication" class="text-xs font-bold text-indigo-600 hover:text-indigo-800">Ver todo el historial</a>
                                 </div>
                             </div>
                         </div>
 
                         <div class="relative ml-2">
-                            <button id="btn-user" onclick="toggleDropdown('dropdown-user')" class="flex items-center gap-3 pl-1 pr-3 py-1 rounded-full bg-black/10 hover:bg-black/20 text-white transition-all focus:outline-none border border-white/10">
-                                <div class="h-8 w-8 rounded-full bg-white text-purple-600 flex items-center justify-center font-bold text-sm shadow-sm">
+                            <button onclick="toggleDropdown('dropdown-user')" 
+                                    class="flex items-center gap-3 pl-1 pr-4 py-1 rounded-full bg-black/20 hover:bg-black/30 border border-white/10 text-white transition-all focus:outline-none focus:ring-2 focus:ring-white/20 group">
+                                <div class="h-8 w-8 rounded-full bg-white text-indigo-700 flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-transparent group-hover:ring-white/50 transition-all">
                                     <%= user.nombre.charAt(0).toUpperCase() %>
                                 </div>
-                                <span class="hidden md:block text-sm font-medium max-w-[100px] truncate"><%= user.nombre %></span>
-                                <i class="fas fa-chevron-down text-xs opacity-70 transition-transform duration-200" id="arrow-user"></i>
+                                <div class="hidden md:flex flex-col items-start">
+                                    <span class="text-sm font-bold leading-none"><%= user.nombre %></span>
+                                    <span class="text-[10px] text-indigo-200 font-medium leading-none mt-0.5 opacity-90"><%= user.nombre_rol || 'Usuario' %></span>
+                                </div>
+                                <i class="fas fa-chevron-down text-xs text-indigo-200 group-hover:text-white transition-colors ml-1"></i>
                             </button>
 
-                            <div id="dropdown-user" class="hidden absolute right-0 mt-3 w-60 bg-white rounded-xl shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none transform origin-top-right transition-all z-50 overflow-hidden text-gray-800">
+                            <div id="dropdown-user" class="hidden absolute right-0 mt-3 w-64 bg-white rounded-xl shadow-2xl ring-1 ring-black ring-opacity-5 transform origin-top-right z-50 overflow-hidden animate-slide-down">
                                 <div class="px-5 py-4 border-b border-slate-100 bg-slate-50">
                                     <p class="text-sm font-bold text-slate-800"><%= user.nombre %> <%= user.apellido %></p>
-                                    <p class="text-xs text-slate-500 truncate mb-2"><%= user.email %></p>
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-700">
-                                        <%= user.nombre_rol || 'Usuario' %>
+                                    <p class="text-xs text-slate-500 truncate font-medium mb-2"><%= user.email %></p>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 border border-indigo-200">
+                                        ID: #<%= user.id_usuario %>
                                     </span>
                                 </div>
                                 
-                                <div class="py-1">
-                                    <a href="/users/profile" class="flex items-center px-5 py-2.5 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 transition-colors">
-                                        <i class="fas fa-user-circle w-5 mr-2 text-slate-400"></i> Mi Perfil
+                                <div class="py-2">
+                                    <a href="/users/profile" class="flex items-center px-5 py-2.5 text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors group">
+                                        <i class="fas fa-user-circle w-5 mr-2 text-slate-400 group-hover:text-indigo-500"></i> 
+                                        Mi Perfil
                                     </a>
-                                    <a href="#" class="flex items-center px-5 py-2.5 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 transition-colors">
-                                        <i class="fas fa-cog w-5 mr-2 text-slate-400"></i> Configuración
+                                    <a href="#" class="flex items-center px-5 py-2.5 text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors group">
+                                        <i class="fas fa-cog w-5 mr-2 text-slate-400 group-hover:text-indigo-500"></i> 
+                                        Configuración
+                                    </a>
+                                    <a href="#" class="flex items-center px-5 py-2.5 text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors group">
+                                        <i class="fas fa-question-circle w-5 mr-2 text-slate-400 group-hover:text-indigo-500"></i> 
+                                        Ayuda y Soporte
                                     </a>
                                 </div>
                                 
-                                <div class="border-t border-slate-100 py-1">
-                                    <button onclick="window.location.href='/auth/logout'" class="w-full text-left flex items-center px-5 py-3 text-sm text-rose-600 hover:bg-rose-50 font-medium transition-colors">
-                                        <i class="fas fa-sign-out-alt w-5 mr-2"></i> Cerrar Sesión
-                                    </button>
+                                <div class="border-t border-slate-100 bg-slate-50 py-2">
+                                    <form action="/auth/logout" method="GET"> <button type="submit" class="w-full text-left flex items-center px-5 py-2 text-sm text-rose-600 hover:bg-rose-50 hover:text-rose-800 font-bold transition-colors">
+                                            <i class="fas fa-sign-out-alt w-5 mr-2"></i> Cerrar Sesión
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
                         </div>
                     
                     <% } else { %>
                         <div class="flex items-center gap-3">
-                            <a href="/auth/login" class="text-white/90 hover:text-white font-medium text-sm px-4 py-2 transition-colors hover:bg-white/10 rounded-lg">
+                            <a href="/auth/login" class="text-indigo-100 hover:text-white font-bold text-sm px-4 py-2 transition-colors hover:bg-white/10 rounded-lg">
                                 Iniciar Sesión
                             </a>
-                            <a href="/auth/register" class="bg-white text-purple-700 px-5 py-2.5 rounded-lg font-bold text-sm shadow-md hover:shadow-lg hover:bg-gray-50 transition-all transform hover:-translate-y-0.5">
-                                Registrarse <i class="fas fa-arrow-right ml-1 text-xs"></i>
+                            <a href="/auth/register" class="bg-white text-indigo-600 px-5 py-2.5 rounded-lg font-bold text-sm shadow-md hover:shadow-lg hover:bg-indigo-50 transition-all transform hover:-translate-y-0.5 flex items-center gap-2">
+                                Registrarse <i class="fas fa-arrow-right text-xs"></i>
                             </a>
                         </div>
                     <% } %>
@@ -139,40 +224,43 @@
     <script>
         function toggleDropdown(id) {
             const dropdown = document.getElementById(id);
+            const allDropdowns = document.querySelectorAll('[id^="dropdown-"]');
             const isHidden = dropdown.classList.contains('hidden');
             
-            // Cerrar otros
-            document.querySelectorAll('[id^="dropdown-"]').forEach(el => {
-                if(el.id !== id) {
+            // 1. Cerrar todos los demás dropdowns primero
+            allDropdowns.forEach(el => {
+                if (el.id !== id) {
                     el.classList.add('hidden');
-                    el.classList.remove('dropdown-enter-active');
+                    el.classList.remove('animate-slide-down');
                 }
             });
 
+            // 2. Alternar el actual
             if (isHidden) {
                 dropdown.classList.remove('hidden');
-                setTimeout(() => {
-                    dropdown.classList.add('dropdown-enter-active');
-                }, 10);
+                // Reiniciar animación
+                dropdown.classList.remove('animate-slide-down');
+                void dropdown.offsetWidth; // Trigger reflow
+                dropdown.classList.add('animate-slide-down');
             } else {
-                dropdown.classList.remove('dropdown-enter-active');
                 dropdown.classList.add('hidden');
             }
         }
 
+        // 3. Cerrar al hacer click fuera
         window.addEventListener('click', function(e) {
-            const buttons = ['btn-user', 'btn-notif'];
-            const dropdowns = ['dropdown-user', 'dropdown-notif'];
-            
-            if (!buttons.some(id => e.target.closest('#' + id)) && 
-                !dropdowns.some(id => e.target.closest('#' + id))) {
-                
-                document.querySelectorAll('[id^="dropdown-"]').forEach(el => {
-                    el.classList.add('hidden');
-                    el.classList.remove('dropdown-enter-active');
-                });
+            const buttons = document.querySelectorAll('button[onclick^="toggleDropdown"]');
+            const dropdowns = document.querySelectorAll('[id^="dropdown-"]');
+            let clickedInside = false;
+
+            // Verificar si el click fue en un botón o dentro de un dropdown
+            buttons.forEach(btn => { if(btn.contains(e.target)) clickedInside = true; });
+            dropdowns.forEach(drop => { if(drop.contains(e.target)) clickedInside = true; });
+
+            if (!clickedInside) {
+                dropdowns.forEach(el => el.classList.add('hidden'));
             }
         });
     </script>
 
-    <main class="flex-grow">
+    <main class="flex-grow relative z-0">

@@ -1,23 +1,39 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
+const { check } = require('express-validator');
 
-// Importamos los validadores (recuerda que ya les quitamos el handleValidationErrors)
-const { validateRegistration, validateLogin } = require('../middleware/validation');
-const { authenticateToken } = require('../middleware/auth');
+// ==================================================================
+// 1. RUTAS DE VISTA (GET)
+// ==================================================================
 
-// --- RUTAS GET (Vistas) ---
+// Formulario de Registro
 router.get('/register', authController.showRegisterForm);
+
+// Formulario de Login
 router.get('/login', authController.showLoginForm);
 
-// --- RUTAS POST (Procesamiento con Validación) ---
-// El orden es: Ruta -> Validador -> Controlador
-router.post('/register', validateRegistration, authController.register);
-router.post('/login', validateLogin, authController.login);
+// Cerrar Sesión
+router.get('/logout', authController.logout);
 
-// --- OTRAS RUTAS ---
-router.get('/logout', authController.logout); // GET para que funcione con un simple enlace
-router.get('/verify-email', authController.verifyEmail);
-router.get('/me', authenticateToken, authController.getCurrentUser);
+
+// ==================================================================
+// 2. RUTAS DE LÓGICA (POST)
+// ==================================================================
+
+// Procesar Registro
+router.post('/register', [
+    check('nombre', 'El nombre es obligatorio').not().isEmpty(),
+    check('apellido', 'El apellido es obligatorio').not().isEmpty(),
+    check('email', 'Agrega un email válido').isEmail(),
+    check('password', 'La contraseña debe tener al menos 6 caracteres').isLength({ min: 6 })
+], authController.register);
+
+// Procesar Login
+router.post('/login', [
+    check('email', 'El email es obligatorio').isEmail(),
+    check('password', 'La contraseña es obligatoria').not().isEmpty()
+], authController.login);
+
 
 module.exports = router;
