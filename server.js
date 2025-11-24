@@ -22,7 +22,7 @@ const PORT = process.env.PORT || 3000;
 // 1. CONFIGURACIÓN DE SEGURIDAD Y MIDDLEWARE
 // ==========================================
 app.use(helmet({
-  contentSecurityPolicy: false, // Permitir scripts inline (necesario para Tailwind/Socket)
+  contentSecurityPolicy: false, // Permitir scripts inline (necesario para Tailwind/Socket/Chart.js)
   crossOriginEmbedderPolicy: false
 }));
 
@@ -55,6 +55,10 @@ app.use((req, res, next) => {
   res.locals.user = req.session.user || null; // Usuario disponible en todos los EJS
   res.locals.appName = 'MindCare';
   res.locals.url = req.originalUrl; // Para resaltar items activos en el menú
+  
+  // Variables globales vacías para evitar errores en vistas compartidas
+  if (!res.locals.msg) res.locals.msg = null;
+  
   next();
 });
 
@@ -75,8 +79,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const authRoutes = require('./routes/authRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const communicationRoutes = require('./routes/communicationRoutes');
+const monitoringRoutes = require('./routes/monitoringRoutes'); // <--- NUEVO: Importar Monitoreo
 const indexRoutes = require('./routes/index');
-// const userRoutes = require('./routes/userRoutes'); // (Opcional si los usas)
 
 // --- DEFINICIÓN DE ENDPOINTS ---
 
@@ -84,15 +88,12 @@ const indexRoutes = require('./routes/index');
 app.use('/', indexRoutes);      // Landing Page (Home)
 app.use('/auth', authRoutes);   // Login/Registro
 
-// B. Rutas Específicas (Deben ir ANTES de las generales)
-// Montamos comunicación DENTRO de dashboard para que coincida con los enlaces
+// B. Rutas Específicas (Deben ir ANTES de la general /dashboard)
 app.use('/dashboard/communication', communicationRoutes); 
+app.use('/dashboard/monitoring', monitoringRoutes); // <--- NUEVO: Activar Monitoreo
 
 // C. Ruta General de Dashboard (El "Lobby")
 app.use('/dashboard', dashboardRoutes);
-
-// D. Otras rutas (Si las necesitas activas)
-// app.use('/users', userRoutes);
 
 
 // ==========================================
@@ -112,6 +113,10 @@ app.use((req, res) => {
 // 500: Error del Servidor
 app.use((err, req, res, next) => {
   console.error('🔥 ERROR DEL SERVIDOR:', err.stack);
+  // Evitar doble respuesta si ya se enviaron headers
+  if (res.headersSent) {
+    return next(err);
+  }
   res.status(err.status || 500).render('error', {
     title: 'Error del Sistema',
     message: 'Ha ocurrido un error interno. Por favor intenta más tarde.',
@@ -126,22 +131,14 @@ app.use((err, req, res, next) => {
 global.io = io; // Hacerlo global para usarlo en controladores
 
 io.on('connection', (socket) => {
-  // console.log('Cliente conectado al socket:', socket.id);
-
   // Unirse a sala privada (Para recibir mensajes personales)
   socket.on('join-room', (roomName) => {
     socket.join(roomName);
-    // console.log(`Socket ${socket.id} se unió a: ${roomName}`);
   });
 
   // Reenviar mensaje (Backup por si falla la API REST)
   socket.on('send-message', (data) => {
-    // data debería tener { roomId, content, senderId }
     socket.to(data.roomId).emit('receive-message', data);
-  });
-
-  socket.on('disconnect', () => {
-    // console.log('Cliente desconectado:', socket.id);
   });
 });
 

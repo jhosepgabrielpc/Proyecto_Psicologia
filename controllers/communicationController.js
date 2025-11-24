@@ -3,74 +3,46 @@ const db = require('../config/database');
 // ====================================================================
 // 1. INTERFAZ PRINCIPAL DEL CHAT (VISTA)
 // ====================================================================
-// Carga la lista de contactos (izquierda) y el historial de chat (derecha)
-// Fusiona la lógica de tu código anterior con la nueva estructura DB.
+// Carga la lista de contactos (todos los usuarios) y el historial.
 // ====================================================================
 const getChatInterface = async (req, res) => {
     // Verificar sesión
-    if (!req.session.user) return res.redirect('/auth/login');
+    if (!req.session || !req.session.user) {
+        return res.redirect('/auth/login');
+    }
 
     const userId = req.session.user.id_usuario;
-    const userRole = req.session.user.nombre_rol; // 'Paciente', 'Terapeuta', 'Administrador'
     const selectedChatId = req.query.chat || null; // ID del usuario con quien chateamos
 
     try {
         let contacts = [];
 
         // -------------------------------------------------------
-        // A. OBTENER LISTA DE CONTACTOS (SIDEBAR)
+        // A. OBTENER TODOS LOS CONTACTOS (CHAT ABIERTO)
         // -------------------------------------------------------
-        // La consulta varía según el rol para mantener la privacidad.
+        // Traemos a TODOS los usuarios del sistema excepto a uno mismo.
+        // Ordenamos primero a los que tienen mensajes no leídos.
+        const contactsResult = await db.query(`
+            SELECT 
+                u.id_usuario, 
+                u.nombre, 
+                u.apellido, 
+                u.foto_perfil, 
+                COALESCE(r.nombre_rol, 'Usuario') as nombre_rol,
+                (SELECT COUNT(*) FROM Mensajes_Seguros 
+                 WHERE id_remitente = u.id_usuario 
+                 AND id_destinatario = $1 
+                 AND leido = false) as sin_leer
+            FROM Usuarios u
+            LEFT JOIN Roles r ON u.id_rol = r.id_rol
+            WHERE u.id_usuario != $1 -- Excluirse a sí mismo
+            ORDER BY sin_leer DESC, u.nombre ASC
+        `, [userId]);
         
-        let queryContacts = "";
-        
-        if (userRole === 'Paciente') {
-            // Paciente ve: Su Terapeuta asignado + Administradores
-            queryContacts = `
-                SELECT u.id_usuario, u.nombre, u.apellido, u.foto_perfil, r.nombre_rol,
-                       (SELECT COUNT(*) FROM Mensajes_Seguros WHERE id_remitente = u.id_usuario AND id_destinatario = $1 AND leido = false) as sin_leer
-                FROM Usuarios u
-                JOIN Roles r ON u.id_rol = r.id_rol
-                WHERE u.id_usuario IN (
-                    SELECT id_terapeuta FROM Pacientes WHERE id_usuario = $1
-                ) 
-                OR r.nombre_rol = 'Administrador'
-                OR u.id_usuario IN (SELECT id_destinatario FROM Mensajes_Seguros WHERE id_remitente = $1) -- También con quien ya hablé antes
-            `;
-        } 
-        else if (userRole === 'Terapeuta') {
-            // Terapeuta ve: Sus Pacientes asignados + Administradores
-            queryContacts = `
-                SELECT u.id_usuario, u.nombre, u.apellido, u.foto_perfil, r.nombre_rol,
-                       (SELECT COUNT(*) FROM Mensajes_Seguros WHERE id_remitente = u.id_usuario AND id_destinatario = $1 AND leido = false) as sin_leer
-                FROM Usuarios u
-                JOIN Roles r ON u.id_rol = r.id_rol
-                WHERE u.id_usuario IN (
-                    SELECT p.id_usuario FROM Pacientes p 
-                    JOIN Terapeutas t ON p.id_terapeuta = t.id_terapeuta 
-                    WHERE t.id_usuario = $1
-                )
-                OR r.nombre_rol = 'Administrador'
-                OR u.id_usuario IN (SELECT id_destinatario FROM Mensajes_Seguros WHERE id_remitente = $1)
-            `;
-        } 
-        else {
-            // Admin ve: A TODOS (Para soporte)
-            queryContacts = `
-                SELECT u.id_usuario, u.nombre, u.apellido, u.foto_perfil, r.nombre_rol,
-                       (SELECT COUNT(*) FROM Mensajes_Seguros WHERE id_remitente = u.id_usuario AND id_destinatario = $1 AND leido = false) as sin_leer
-                FROM Usuarios u
-                JOIN Roles r ON u.id_rol = r.id_rol
-                WHERE u.id_usuario != $1 -- No mostrarse a sí mismo
-                ORDER BY u.nombre ASC
-            `;
-        }
-
-        const contactsResult = await db.query(queryContacts, [userId]);
         contacts = contactsResult.rows;
 
         // -------------------------------------------------------
-        // B. OBTENER HISTORIAL DE CHAT (SI SELECCIONADO)
+        // B. OBTENER HISTORIAL DE CHAT (SI HAY UNO SELECCIONADO)
         // -------------------------------------------------------
         let chatHistory = [];
         let activeContact = null;
@@ -85,10 +57,10 @@ const getChatInterface = async (req, res) => {
 
             // 2. Obtener datos del contacto activo (Header del chat)
             const contactRes = await db.query(`
-                SELECT id_usuario, nombre, apellido, foto_perfil, r.nombre_rol 
+                SELECT u.id_usuario, u.nombre, u.apellido, u.foto_perfil, COALESCE(r.nombre_rol, 'Usuario') as nombre_rol 
                 FROM Usuarios u
-                JOIN Roles r ON u.id_rol = r.id_rol 
-                WHERE id_usuario = $1
+                LEFT JOIN Roles r ON u.id_rol = r.id_rol 
+                WHERE u.id_usuario = $1
             `, [selectedChatId]);
             
             if (contactRes.rows.length > 0) {
@@ -120,7 +92,7 @@ const getChatInterface = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error obteniendo interfaz de chat:', error);
+        console.error('Error cargando chat:', error);
         res.status(500).render('error', {
             title: 'Error de Comunicación',
             message: 'No se pudo cargar el sistema de mensajería.',
@@ -138,6 +110,11 @@ const sendMessage = async (req, res) => {
         const { id_destinatario, contenido, tipo_mensaje } = req.body;
         const id_remitente = req.session.user.id_usuario;
 
+        // Validación simple
+        if (!id_destinatario || !contenido) {
+            return res.status(400).json({ success: false, error: 'Faltan datos' });
+        }
+
         // 1. Insertar Mensaje en BD
         const result = await db.query(`
             INSERT INTO Mensajes_Seguros (id_remitente, id_destinatario, contenido, tipo_mensaje, fecha_envio)
@@ -148,9 +125,10 @@ const sendMessage = async (req, res) => {
         const nuevoMensaje = result.rows[0];
 
         // 2. Crear Notificación Interna para el destinatario
+        // Usamos subconsulta segura para obtener el nombre del remitente
         await db.query(`
             INSERT INTO Notificaciones (id_usuario, tipo, mensaje, enlace_accion, fecha_creacion)
-            VALUES ($1, 'mensaje', 'Tienes un nuevo mensaje de ' || (SELECT nombre FROM Usuarios WHERE id_usuario = $2), $3, NOW())
+            VALUES ($1, 'mensaje', 'Nuevo mensaje de ' || (SELECT nombre FROM Usuarios WHERE id_usuario = $2), $3, NOW())
         `, [id_destinatario, id_remitente, `/dashboard/communication?chat=${id_remitente}`]);
 
         // 3. Emitir evento Socket.IO (Tiempo Real)
@@ -172,7 +150,7 @@ const sendMessage = async (req, res) => {
 };
 
 // ====================================================================
-// 3. OBTENER NOTIFICACIONES (API) - RESTAURADO
+// 3. OBTENER NOTIFICACIONES (API)
 // ====================================================================
 const getNotifications = async (req, res) => {
     try {
@@ -194,7 +172,7 @@ const getNotifications = async (req, res) => {
 };
 
 // ====================================================================
-// 4. MARCAR NOTIFICACIÓN COMO LEÍDA (API) - RESTAURADO
+// 4. MARCAR NOTIFICACIÓN COMO LEÍDA (API)
 // ====================================================================
 const markNotificationAsRead = async (req, res) => {
     try {

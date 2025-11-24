@@ -1,0 +1,171 @@
+<%- include('../partials/header', { title: 'Evaluación PHQ-9' }) %>
+
+<div class="min-h-screen bg-slate-50 py-10 font-sans">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 mb-8">
+            <div class="flex items-start gap-6">
+                <div class="hidden md:flex flex-shrink-0 bg-indigo-50 text-indigo-600 p-4 rounded-xl">
+                    <i class="fas fa-clipboard-list text-4xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-extrabold text-slate-900">Cuestionario de Salud del Paciente (PHQ-9)</h1>
+                    <p class="text-slate-500 mt-2 text-lg leading-relaxed">
+                        Durante las <strong>últimas 2 semanas</strong>, ¿con qué frecuencia le han molestado los siguientes problemas?
+                    </p>
+                    <div class="mt-4 flex gap-2 text-sm">
+                        <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-bold">Confidencial</span>
+                        <span class="bg-slate-100 text-slate-600 px-3 py-1 rounded-full font-bold">Tiempo estimado: 2 min</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form id="phq9Form" class="space-y-6">
+            
+            <% 
+                const questions = [
+                    "Tener poco interés o placer en hacer las cosas.",
+                    "Sentirse desanimado/a, deprimido/a o sin esperanza.",
+                    "Tener problemas para dormir o mantenerse dormido/a, o dormir demasiado.",
+                    "Sentirse cansado/a o tener poca energía.",
+                    "Tener poco apetito o comer en exceso.",
+                    "Sentirse mal con usted mismo/a (sentirse fracasado/a o que se ha fallado a sí mismo/a o a su familia).",
+                    "Tener dificultad para concentrarse en ciertas cosas, tales como leer el periódico o ver la televisión.",
+                    "Moverse o hablar tan lentamente que otras personas podrían haberlo notado. O lo contrario: estar tan inquieto/a o agitado/a que se ha estado moviendo mucho más de lo habitual.",
+                    "Pensamientos de que sería mejor estar muerto/a o de lastimarse de alguna manera."
+                ];
+                
+                const options = [
+                    { val: 0, text: "Para nada" },
+                    { val: 1, text: "Varios días" },
+                    { val: 2, text: "Más de la mitad de los días" },
+                    { val: 3, text: "Casi todos los días" }
+                ];
+            %>
+
+            <% questions.forEach((question, index) => { %>
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden transition-all hover:shadow-md">
+                    <div class="p-6 border-b border-slate-50 bg-slate-50/50">
+                        <h3 class="text-lg font-bold text-slate-800 flex gap-3">
+                            <span class="flex-shrink-0 bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-sm">
+                                <%= index + 1 %>
+                            </span>
+                            <%= question %>
+                        </h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <% options.forEach(opt => { %>
+                                <label class="relative cursor-pointer group">
+                                    <input type="radio" name="q<%= index %>" value="<%= opt.val %>" class="peer sr-only" required>
+                                    <div class="p-4 rounded-xl border-2 border-slate-100 text-center transition-all
+                                                peer-checked:border-indigo-500 peer-checked:bg-indigo-50 peer-checked:text-indigo-700
+                                                group-hover:border-slate-300">
+                                        <div class="text-xl mb-1 opacity-50 peer-checked:opacity-100 peer-checked:scale-110 transition-transform">
+                                            <% if(opt.val === 0) { %> 🙂
+                                            <% } else if(opt.val === 1) { %> 😐
+                                            <% } else if(opt.val === 2) { %> 😟
+                                            <% } else { %> 😫 <% } %>
+                                        </div>
+                                        <span class="text-sm font-bold block"><%= opt.text %></span>
+                                    </div>
+                                    <div class="absolute top-3 right-3 opacity-0 peer-checked:opacity-100 transition-opacity text-indigo-600">
+                                        <i class="fas fa-check-circle"></i>
+                                    </div>
+                                </label>
+                            <% }); %>
+                        </div>
+                    </div>
+                </div>
+            <% }); %>
+
+            <div class="flex items-center justify-end gap-4 pt-4">
+                <a href="/dashboard/patient" class="text-slate-500 font-bold hover:text-slate-700 px-6 py-3">Cancelar</a>
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all flex items-center gap-2">
+                    <span>Enviar Evaluación</span>
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<div id="successModal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center transform scale-95 transition-transform" id="modalCard">
+        <div class="w-20 h-20 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl shadow-inner">
+            <i class="fas fa-check"></i>
+        </div>
+        <h2 class="text-2xl font-extrabold text-slate-900 mb-2">¡Evaluación Completada!</h2>
+        <p class="text-slate-500 mb-8">Tus respuestas han sido guardadas en tu historial clínico. Tu terapeuta podrá revisarlas para darte un mejor seguimiento.</p>
+        
+        <div class="bg-slate-50 rounded-xl p-4 mb-8 border border-slate-100">
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Resultado Preliminar</p>
+            <h3 class="text-xl font-bold text-indigo-600" id="resultSeverity">Calculando...</h3>
+        </div>
+
+        <a href="/dashboard/monitoring" class="block w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition shadow-lg">
+            Ver mi Progreso
+        </a>
+    </div>
+</div>
+
+<script>
+    const form = document.getElementById('phq9Form');
+    const modal = document.getElementById('successModal');
+    const modalCard = document.getElementById('modalCard');
+    const resultText = document.getElementById('resultSeverity');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // 1. Recopilar respuestas
+        const formData = new FormData(form);
+        const answers = [];
+        // Iteramos 9 veces (0 a 8)
+        for (let i = 0; i < 9; i++) {
+            const val = formData.get(`q${i}`);
+            if (val === null) {
+                alert('Por favor responde todas las preguntas.');
+                return;
+            }
+            answers.push(parseInt(val));
+        }
+
+        // 2. Enviar al Backend
+        try {
+            const response = await fetch('/dashboard/test/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tipo_test: 'PHQ-9',
+                    respuestas: answers
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // 3. Mostrar Modal de Éxito
+                resultText.innerText = data.severidad; // Ej: "Depresión Moderada"
+                
+                modal.classList.remove('hidden');
+                // Animación de entrada
+                setTimeout(() => {
+                    modalCard.classList.remove('scale-95');
+                    modalCard.classList.add('scale-100');
+                }, 10);
+                
+            } else {
+                alert('Error al guardar: ' + (data.error || 'Intente nuevamente'));
+            }
+
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error de conexión.');
+        }
+    });
+</script>
+
+<%- include('../partials/footer') %>

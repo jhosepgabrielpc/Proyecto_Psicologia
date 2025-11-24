@@ -50,14 +50,12 @@
     </script>
 
     <style>
-        /* Estilos base para asegurar consistencia */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc; /* Slate 50 - Evita el fondo blanco puro */
-            color: #1e293b; /* Slate 800 - Texto oscuro legible */
+            background-color: #f8fafc;
+            color: #1e293b;
         }
         
-        /* Scrollbar personalizada sutil */
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -72,7 +70,6 @@
             background: #94a3b8;
         }
 
-        /* Utilidad para ocultar elementos con transición */
         .dropdown-hidden {
             display: none;
             opacity: 0;
@@ -105,7 +102,7 @@
                     
                     <% if (locals.user) { %>
                     <div class="hidden md:flex items-center space-x-1">
-                        <a href="/dashboard/admin" 
+                        <a href="/dashboard" 
                            class="text-indigo-100 hover:text-white hover:bg-white/10 px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 group">
                             <i class="fas fa-th-large opacity-70 group-hover:opacity-100 transition-opacity"></i>
                             Dashboard
@@ -115,7 +112,7 @@
                            class="text-indigo-100 hover:text-white hover:bg-white/10 px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 group">
                             <i class="fas fa-comments opacity-70 group-hover:opacity-100 transition-opacity"></i>
                             Comunicación
-                            </a>
+                        </a>
                     </div>
                     <% } %>
                 </div>
@@ -163,7 +160,7 @@
                             <button onclick="toggleDropdown('dropdown-user')" 
                                     class="flex items-center gap-3 pl-1 pr-4 py-1 rounded-full bg-black/20 hover:bg-black/30 border border-white/10 text-white transition-all focus:outline-none focus:ring-2 focus:ring-white/20 group">
                                 <div class="h-8 w-8 rounded-full bg-white text-indigo-700 flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-transparent group-hover:ring-white/50 transition-all">
-                                    <%= user.nombre.charAt(0).toUpperCase() %>
+                                    <%= user.nombre ? user.nombre.charAt(0).toUpperCase() : 'U' %>
                                 </div>
                                 <div class="hidden md:flex flex-col items-start">
                                     <span class="text-sm font-bold leading-none"><%= user.nombre %></span>
@@ -197,7 +194,8 @@
                                 </div>
                                 
                                 <div class="border-t border-slate-100 bg-slate-50 py-2">
-                                    <form action="/auth/logout" method="GET"> <button type="submit" class="w-full text-left flex items-center px-5 py-2 text-sm text-rose-600 hover:bg-rose-50 hover:text-rose-800 font-bold transition-colors">
+                                    <form action="/auth/logout" method="GET">
+                                        <button type="submit" class="w-full text-left flex items-center px-5 py-2 text-sm text-rose-600 hover:bg-rose-50 hover:text-rose-800 font-bold transition-colors">
                                             <i class="fas fa-sign-out-alt w-5 mr-2"></i> Cerrar Sesión
                                         </button>
                                     </form>

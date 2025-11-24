@@ -1,21 +1,24 @@
 const express = require('express');
 const router = express.Router();
 const monitoringController = require('../controllers/monitoringController');
-const { authenticateToken, requirePatient } = require('../middleware/auth');
-const { validateEmotionalCheckIn } = require('../middleware/validation');
+const { isAuthenticated } = require('../middleware/auth');
 
-router.use(authenticateToken);
+// ==================================================================
+// 1. DASHBOARD DE MONITOREO (Vista Principal)
+// ==================================================================
+// Ruta: GET /dashboard/monitoring
+router.get('/', isAuthenticated, monitoringController.getMonitoringDashboard);
 
-router.get('/check-in', requirePatient, (req, res) => {
-    res.render('monitoring/checkin', {
-        title: 'Check-in Emocional - MindCare',
-        user: req.session.user
-    });
-});
 
-router.post('/check-in', requirePatient, validateEmotionalCheckIn, monitoringController.submitEmotionalCheckIn);
-router.post('/scales/submit', requirePatient, monitoringController.submitScaleResponse);
-router.get('/scales/pending', requirePatient, monitoringController.getPendingScales);
-router.get('/patient/:patientId/history', monitoringController.getPatientEmotionalHistory);
+// ==================================================================
+// 2. PROCESAMIENTO DE DATOS (Check-in Diario)
+// ==================================================================
+// Ruta: POST /dashboard/monitoring/checkin
+router.post('/checkin', isAuthenticated, monitoringController.saveCheckin);
+
+
+// NOTA: Las rutas de los tests (PHQ-9/GAD-7) fueron movidas a 
+// 'dashboardRoutes.js' y usan 'testController.js'. 
+// Por eso las eliminamos de aquí para evitar el error "Undefined".
 
 module.exports = router;

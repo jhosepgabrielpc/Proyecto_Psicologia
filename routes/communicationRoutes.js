@@ -1,34 +1,31 @@
 const express = require('express');
 const router = express.Router();
 const communicationController = require('../controllers/communicationController');
-
-// CORRECCIÓN AQUÍ: Apuntamos a 'auth' que es el nombre real de tu archivo
-const { isAuthenticated } = require('../middleware/auth'); 
+const { isAuthenticated } = require('../middleware/auth');
 
 // ==================================================================
-// 1. VISTAS (RENDERIZADO DEL HTML)
+// RUTAS DEL SISTEMA DE CHAT
+// (Montado en /dashboard/communication por server.js)
 // ==================================================================
 
-// GET /communication/
-// Carga la interfaz principal: Lista de contactos + Chat + Historial
+// 1. VISTA PRINCIPAL
+// GET /dashboard/communication
+// Carga la interfaz, contactos y mensajes.
 router.get('/', isAuthenticated, communicationController.getChatInterface);
 
-
-// ==================================================================
-// 2. API ENDPOINTS (PARA AJAX / FETCH / SOCKET)
-// ==================================================================
-
-// POST /communication/save
-// Guarda un mensaje en la BD y crea la notificación
+// 2. ENVIAR MENSAJE (API)
+// POST /dashboard/communication/save
+// Esta es la ruta que llama el fetch() del EJS. Es vital que se llame '/save'.
 router.post('/save', isAuthenticated, communicationController.sendMessage);
 
-// GET /communication/notifications
-// Obtiene el JSON de notificaciones para la campanita del header
+// 3. NOTIFICACIONES (API)
+// GET /dashboard/communication/notifications
+// Obtiene las alertas para la campanita.
 router.get('/notifications', isAuthenticated, communicationController.getNotifications);
 
-// POST /communication/notifications/:id/read
-// Marca una notificación específica como leída
+// 4. LEER NOTIFICACIÓN (API)
+// POST /dashboard/communication/notifications/:id/read
+// Marca como leída.
 router.post('/notifications/:id/read', isAuthenticated, communicationController.markNotificationAsRead);
-
 
 module.exports = router;

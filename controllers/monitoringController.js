@@ -1,200 +1,177 @@
 const db = require('../config/database');
-const { interpretPHQ9Score, interpretGAD7Score, checkForCriticalAlert } = require('../utils/helpers');
 
-const submitEmotionalCheckIn = async (req, res) => {
-  const client = await db.pool.connect();
+// ====================================================================
+// 1. DASHBOARD DE MONITOREO (VISTA PRINCIPAL)
+// ====================================================================
+const getMonitoringDashboard = async (req, res) => {
+    const userId = req.session.user.id_usuario;
+    const role = req.session.user.nombre_rol;
+    const targetPatientId = req.query.patient ? req.query.patient : null;
 
-  try {
-    await client.query('BEGIN');
+    console.log(`--> Cargando Monitoreo para: ${req.session.user.email} (${role})`);
 
-    const { valencia_personal, activacion_personal, notas_paciente, id_emocion } = req.body;
+    try {
+        let patientIdToFetch = null;
+        let patientsList = []; // Lista para el selector (Solo profesionales)
 
-    const patientResult = await client.query(
-      'SELECT id_paciente FROM Pacientes WHERE id_usuario = $1',
-      [req.user.id_usuario]
-    );
+        // A. LÓGICA SEGÚN ROL
+        if (role === 'Paciente') {
+            // Si soy paciente, busco mi propio ID
+            const pRes = await db.query('SELECT id_paciente FROM Pacientes WHERE id_usuario = $1', [userId]);
+            if (pRes.rows.length > 0) {
+                patientIdToFetch = pRes.rows[0].id_paciente;
+            }
+        } 
+        else {
+            // SI SOY PROFESIONAL (Terapeuta, Monitorista, Admin)
+            
+            if (targetPatientId) {
+                // Caso 1: Ya seleccioné un paciente en la URL -> Ver sus datos
+                patientIdToFetch = targetPatientId;
+            } else {
+                // Caso 2: No he seleccionado a nadie -> Cargar lista de mis pacientes
+                
+                // Buscamos si soy un Terapeuta específico
+                const tRes = await db.query('SELECT id_terapeuta FROM Terapeutas WHERE id_usuario = $1', [userId]);
+                
+                let queryPatients = "";
+                let params = [];
 
-    if (patientResult.rows.length === 0) {
-      await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Paciente no encontrado' });
+                if (tRes.rows.length > 0) {
+                    // Es un Terapeuta: Traer solo SUS pacientes
+                    queryPatients = `
+                        SELECT p.id_paciente, u.nombre, u.apellido, u.email, u.foto_perfil,
+                               (SELECT valencia FROM Checkins_Emocionales WHERE id_paciente = p.id_paciente ORDER BY fecha_hora DESC LIMIT 1) as ultima_valencia,
+                               (SELECT fecha_hora FROM Checkins_Emocionales WHERE id_paciente = p.id_paciente ORDER BY fecha_hora DESC LIMIT 1) as ultimo_checkin
+                        FROM Pacientes p
+                        JOIN Usuarios u ON p.id_usuario = u.id_usuario
+                        WHERE p.id_terapeuta = $1
+                    `;
+                    params = [tRes.rows[0].id_terapeuta];
+                } else if (role.includes('Admin') || role === 'Monitorista') {
+                    // Es Admin o Monitorista global: Traer TODOS los pacientes
+                    queryPatients = `
+                        SELECT p.id_paciente, u.nombre, u.apellido, u.email, u.foto_perfil,
+                               (SELECT valencia FROM Checkins_Emocionales WHERE id_paciente = p.id_paciente ORDER BY fecha_hora DESC LIMIT 1) as ultima_valencia,
+                               (SELECT fecha_hora FROM Checkins_Emocionales WHERE id_paciente = p.id_paciente ORDER BY fecha_hora DESC LIMIT 1) as ultimo_checkin
+                        FROM Pacientes p
+                        JOIN Usuarios u ON p.id_usuario = u.id_usuario
+                    `;
+                }
+
+                if (queryPatients) {
+                    const listRes = await db.query(queryPatients, params);
+                    patientsList = listRes.rows;
+                }
+            }
+        }
+
+        // B. OBTENER DATOS (Solo si hay un paciente identificado para ver)
+        let checkins = [];
+        let testResults = [];
+        let patientData = null;
+
+        if (patientIdToFetch) {
+            // 1. Historial de Check-ins
+            const checkinsRes = await db.query(`
+                SELECT * FROM Checkins_Emocionales 
+                WHERE id_paciente = $1 
+                ORDER BY fecha_hora DESC 
+                LIMIT 30`, 
+                [patientIdToFetch]
+            );
+            checkins = checkinsRes.rows;
+
+            // 2. Resultados de Tests
+            const testsRes = await db.query(`
+                SELECT * FROM Resultados_Tests 
+                WHERE id_paciente = $1 
+                ORDER BY fecha_realizacion DESC 
+                LIMIT 5`, 
+                [patientIdToFetch]
+            );
+            testResults = testsRes.rows;
+
+            // 3. Datos del Paciente
+            const patientInfo = await db.query(`
+                SELECT u.nombre, u.apellido, u.foto_perfil, u.email, u.id_usuario
+                FROM Pacientes p
+                JOIN Usuarios u ON p.id_usuario = u.id_usuario
+                WHERE p.id_paciente = $1`,
+                [patientIdToFetch]
+            );
+            if(patientInfo.rows.length > 0) {
+                patientData = patientInfo.rows[0];
+            }
+        }
+
+        // C. RENDERIZAR VISTA
+        res.render('dashboard/monitoring', {
+            title: 'Monitoreo Clínico',
+            user: req.session.user,
+            
+            // Datos para la vista
+            checkins: checkins,
+            tests: testResults,
+            viewingPatient: patientData, // null si no he seleccionado a nadie
+            patientsList: patientsList   // Array lleno si soy profesional en modo selección
+        });
+
+    } catch (error) {
+        console.error('Error cargando monitoreo:', error);
+        res.status(500).render('error', {
+            title: 'Error de Monitoreo',
+            message: 'No se pudieron cargar los datos.',
+            error: error,
+            user: req.session.user
+        });
     }
-
-    const idPaciente = patientResult.rows[0].id_paciente;
-
-    const checkInResult = await client.query(
-      `INSERT INTO Checkins_Emocionales (id_paciente, id_emocion, valencia_personal, activacion_personal, notas_paciente)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [idPaciente, id_emocion, valencia_personal, activacion_personal, notas_paciente]
-    );
-
-    if (valencia_personal <= 2 || activacion_personal >= 4) {
-      await client.query(
-        `INSERT INTO Alertas_Automaticas (id_paciente, tipo_alerta, fuente, datos_deteccion, severidad)
-         VALUES ($1, 'Estado emocional bajo', 'check-in', $2, 'media')`,
-        [idPaciente, JSON.stringify({ valencia: valencia_personal, activacion: activacion_personal })]
-      );
-    }
-
-    await client.query('COMMIT');
-
-    res.status(201).json({
-      message: 'Check-in emocional registrado exitosamente',
-      checkIn: checkInResult.rows[0]
-    });
-
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error en check-in emocional:', error);
-    res.status(500).json({ error: 'Error al registrar check-in emocional' });
-  } finally {
-    client.release();
-  }
 };
 
-const submitScaleResponse = async (req, res) => {
-  const client = await db.pool.connect();
+// ====================================================================
+// 2. GUARDAR CHECK-IN DIARIO (POST)
+// ====================================================================
+const saveCheckin = async (req, res) => {
+    const userId = req.session.user.id_usuario;
+    const { valencia, activacion, emocion, notas } = req.body;
 
-  try {
-    await client.query('BEGIN');
-
-    const { id_asignacion, respuestas, observaciones_paciente, tiempo_completacion } = req.body;
-
-    const assignmentResult = await client.query(
-      `SELECT ea.*, te.nombre_escala, te.puntuacion_maxima, p.id_paciente, p.id_terapeuta_principal
-       FROM Escalas_Asignadas ea
-       JOIN Tipos_Escala te ON ea.id_tipo_escala = te.id_tipo_escala
-       JOIN Pacientes p ON ea.id_paciente = p.id_paciente
-       WHERE ea.id_asignacion = $1 AND ea.estado = 'activa'`,
-      [id_asignacion]
-    );
-
-    if (assignmentResult.rows.length === 0) {
-      await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Asignación de escala no encontrada o ya completada' });
+    if (!valencia || !emocion) {
+        return res.redirect('/dashboard/monitoring?msg=error_missing_fields');
     }
 
-    const assignment = assignmentResult.rows[0];
+    try {
+        const pRes = await db.query('SELECT id_paciente, id_terapeuta FROM Pacientes WHERE id_usuario = $1', [userId]);
+        if (pRes.rows.length === 0) throw new Error('Usuario no es paciente.');
+        
+        const { id_paciente, id_terapeuta } = pRes.rows[0];
+        const esCritico = parseInt(valencia) <= 2;
+        const actVal = activacion || 3; 
+        
+        await db.query(`
+            INSERT INTO Checkins_Emocionales (id_paciente, valencia, activacion, emocion_principal, notas, requiere_atencion, fecha_hora)
+            VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+            [id_paciente, valencia, actVal, emocion, notas, esCritico]
+        );
 
-    const puntuacionTotal = Object.values(respuestas).reduce((sum, val) => sum + parseInt(val), 0);
+        if (esCritico && id_terapeuta) {
+            const tRes = await db.query('SELECT id_usuario FROM Terapeutas WHERE id_terapeuta = $1', [id_terapeuta]);
+            if (tRes.rows.length > 0) {
+                await db.query(`
+                    INSERT INTO Notificaciones (id_usuario, tipo, mensaje, enlace_accion, fecha_creacion)
+                    VALUES ($1, 'alerta_medica', 'ALERTA: Paciente ${req.session.user.nombre} reportó estado crítico.', '/dashboard/monitoring?patient=${id_paciente}', NOW())
+                `, [tRes.rows[0].id_usuario]);
+            }
+        }
 
-    let interpretacion;
-    if (assignment.nombre_escala === 'PHQ-9') {
-      interpretacion = interpretPHQ9Score(puntuacionTotal);
-    } else if (assignment.nombre_escala === 'GAD-7') {
-      interpretacion = interpretGAD7Score(puntuacionTotal);
+        res.redirect('/dashboard/monitoring?msg=checkin_saved');
+
+    } catch (error) {
+        console.error('Error checkin:', error);
+        res.redirect('/dashboard/monitoring?msg=error');
     }
-
-    const resultadoInsert = await client.query(
-      `INSERT INTO Resultados_Escalas (id_asignacion, puntuacion_total, respuestas, interpretacion_automatica, observaciones_paciente, tiempo_completacion_minutos)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [id_asignacion, puntuacionTotal, JSON.stringify(respuestas), interpretacion?.descripcion, observaciones_paciente, tiempo_completacion]
-    );
-
-    await client.query(
-      'UPDATE Escalas_Asignadas SET estado = $1 WHERE id_asignacion = $2',
-      ['completada', id_asignacion]
-    );
-
-    const alertSeverity = checkForCriticalAlert(assignment.nombre_escala, puntuacionTotal);
-
-    if (alertSeverity) {
-      await client.query(
-        `INSERT INTO Alertas_Clinicas (id_paciente, id_terapeuta, tipo_alerta, severidad, descripcion, datos_origen)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
-          assignment.id_paciente,
-          assignment.id_terapeuta_principal,
-          `Puntuación ${alertSeverity} en ${assignment.nombre_escala}`,
-          alertSeverity,
-          `El paciente obtuvo ${puntuacionTotal} puntos en ${assignment.nombre_escala}: ${interpretacion.descripcion}`,
-          JSON.stringify({ escala: assignment.nombre_escala, puntuacion: puntuacionTotal, interpretacion })
-        ]
-      );
-    }
-
-    await client.query('COMMIT');
-
-    res.status(201).json({
-      message: 'Escala completada exitosamente',
-      resultado: resultadoInsert.rows[0],
-      interpretacion
-    });
-
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error al procesar escala:', error);
-    res.status(500).json({ error: 'Error al procesar respuesta de escala' });
-  } finally {
-    client.release();
-  }
-};
-
-const getPatientEmotionalHistory = async (req, res) => {
-  try {
-    const { patientId } = req.params;
-    const { days = 30 } = req.query;
-
-    const checkInsResult = await db.query(
-      `SELECT ce.*, em.nombre as emocion_nombre, em.color_hex
-       FROM Checkins_Emocionales ce
-       LEFT JOIN Emociones_Modelo em ON ce.id_emocion = em.id_emocion
-       WHERE ce.id_paciente = $1 AND ce.fecha_registro >= NOW() - INTERVAL '${parseInt(days)} days'
-       ORDER BY ce.fecha_registro DESC`,
-      [patientId]
-    );
-
-    const scalesResult = await db.query(
-      `SELECT re.*, ea.id_tipo_escala, te.nombre_escala
-       FROM Resultados_Escalas re
-       JOIN Escalas_Asignadas ea ON re.id_asignacion = ea.id_asignacion
-       JOIN Tipos_Escala te ON ea.id_tipo_escala = te.id_tipo_escala
-       WHERE ea.id_paciente = $1 AND re.fecha_completacion >= NOW() - INTERVAL '${parseInt(days)} days'
-       ORDER BY re.fecha_completacion DESC`,
-      [patientId]
-    );
-
-    res.json({
-      checkIns: checkInsResult.rows,
-      scaleResults: scalesResult.rows
-    });
-
-  } catch (error) {
-    console.error('Error obteniendo historial emocional:', error);
-    res.status(500).json({ error: 'Error al obtener historial emocional' });
-  }
-};
-
-const getPendingScales = async (req, res) => {
-  try {
-    const patientResult = await db.query(
-      'SELECT id_paciente FROM Pacientes WHERE id_usuario = $1',
-      [req.user.id_usuario]
-    );
-
-    if (patientResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Paciente no encontrado' });
-    }
-
-    const result = await db.query(
-      `SELECT ea.*, te.nombre_escala, te.descripcion as escala_descripcion
-       FROM Escalas_Asignadas ea
-       JOIN Tipos_Escala te ON ea.id_tipo_escala = te.id_tipo_escala
-       WHERE ea.id_paciente = $1 AND ea.estado = 'activa'
-       ORDER BY ea.fecha_limite ASC`,
-      [patientResult.rows[0].id_paciente]
-    );
-
-    res.json({ pendingScales: result.rows });
-
-  } catch (error) {
-    console.error('Error obteniendo escalas pendientes:', error);
-    res.status(500).json({ error: 'Error al obtener escalas pendientes' });
-  }
 };
 
 module.exports = {
-  submitEmotionalCheckIn,
-  submitScaleResponse,
-  getPatientEmotionalHistory,
-  getPendingScales
+    getMonitoringDashboard,
+    saveCheckin
 };
