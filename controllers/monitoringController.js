@@ -82,19 +82,24 @@ const getMonitoringDashboard = async (req, res) => {
             );
             checkins = checkinsRes.rows;
 
-            // 2. Resultados de Tests
+            // 2. Resultados de Tests (CORREGIDO: JOIN CORRECTO A TABLAS EXISTENTES)
+            // Se une Resultados_Escalas -> Escalas_Asignadas -> Tipos_Escala
             const testsRes = await db.query(`
-                SELECT * FROM Resultados_Tests 
-                WHERE id_paciente = $1 
-                ORDER BY fecha_realizacion DESC 
+                SELECT re.puntuacion_total as puntaje_total, re.fecha_completacion as fecha_realizacion, te.nombre_escala as tipo_test
+                FROM Resultados_Escalas re
+                JOIN Escalas_Asignadas ea ON re.id_asignacion = ea.id_asignacion
+                JOIN Tipos_Escala te ON ea.id_tipo_escala = te.id_tipo_escala
+                WHERE ea.id_paciente = $1
+                ORDER BY re.fecha_completacion DESC
                 LIMIT 5`, 
                 [patientIdToFetch]
             );
             testResults = testsRes.rows;
 
             // 3. Datos del Paciente
+            // 3. Datos del Paciente (CORREGIDO: Agregamos p.id_paciente)
             const patientInfo = await db.query(`
-                SELECT u.nombre, u.apellido, u.foto_perfil, u.email, u.id_usuario
+                SELECT p.id_paciente, u.nombre, u.apellido, u.foto_perfil, u.email, u.id_usuario
                 FROM Pacientes p
                 JOIN Usuarios u ON p.id_usuario = u.id_usuario
                 WHERE p.id_paciente = $1`,
@@ -121,7 +126,7 @@ const getMonitoringDashboard = async (req, res) => {
         console.error('Error cargando monitoreo:', error);
         res.status(500).render('error', {
             title: 'Error de Monitoreo',
-            message: 'No se pudieron cargar los datos.',
+            message: 'No se pudieron cargar los datos del paciente. Verifica la conexión a la base de datos.',
             error: error,
             user: req.session.user
         });
