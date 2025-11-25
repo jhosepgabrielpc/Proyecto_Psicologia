@@ -1,10 +1,14 @@
 const express = require('express');
 const router = express.Router();
 
-// CONTROLADORES
+// ==================================================================
+// IMPORTACIÓN DE CONTROLADORES (AQUÍ ESTABA EL ERROR)
+// ==================================================================
 const dashboardController = require('../controllers/dashboardController');
 const monitoringController = require('../controllers/monitoringController');
-const testController = require('../controllers/testController'); // <--- NUEVO
+const testController = require('../controllers/testController');
+const therapistController = require('../controllers/therapistController');
+const managerController = require('../controllers/managerController'); // <--- ¡ESTA ES LA LÍNEA QUE FALTABA!
 
 const { isAuthenticated, requireAdmin } = require('../middleware/auth'); 
 
@@ -26,13 +30,14 @@ router.get('/', isAuthenticated, (req, res) => {
         return res.redirect('/dashboard/patient'); 
     } 
     else if (role === 'Terapeuta') {
-        return res.redirect('/dashboard/monitoring'); 
+        return res.redirect('/dashboard/therapist'); 
     } 
     else if (role === 'Monitorista') {
         return res.redirect('/dashboard/monitoring');
     }
     else if (role === 'GestorComunicacion') {
-        return res.redirect('/dashboard/communication');
+        // CORREGIDO: Ahora Jimmy va a su panel de control
+        return res.redirect('/dashboard/manager');
     }
     else {
         return res.redirect('/dashboard/monitoring');
@@ -65,18 +70,28 @@ router.get('/patient', isAuthenticated, (req, res) => {
 });
 
 // ==================================================================
-// 4. RUTAS DE TESTS PSICOLÓGICOS (CORREGIDO AQUÍ)
+// 4. RUTA DE TERAPEUTA (Panel Principal y Registro)
 // ==================================================================
+router.get('/therapist', isAuthenticated, therapistController.getTherapistDashboard);
+router.get('/register-patient', isAuthenticated, therapistController.showRegisterPatientForm);
+router.post('/register-patient', isAuthenticated, therapistController.registerPatient);
 
-// Usamos 'testController' porque ahí movimos la función
+
+// ==================================================================
+// 5. RUTA DE GESTOR (JIMMY - Command Center)
+// ==================================================================
+router.get('/manager', isAuthenticated, managerController.getManagerDashboard);
+
+
+// ==================================================================
+// 6. RUTAS DE TESTS PSICOLÓGICOS
+// ==================================================================
 router.get('/test/:type', isAuthenticated, testController.getTestView);
-
-// Ruta para guardar el test (POST)
 router.post('/test/save', isAuthenticated, testController.saveTestResult);
 
 
 // ==================================================================
-// 5. RUTAS PLACEHOLDER
+// 7. RUTAS PLACEHOLDER
 // ==================================================================
 router.get('/appointments', isAuthenticated, (req, res) => {
     res.render('dashboard/appointments', { 

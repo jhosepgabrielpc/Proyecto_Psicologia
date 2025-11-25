@@ -1,0 +1,79 @@
+<%- include('../partials/header', { title: 'Nuevo Paciente' }) %>
+
+<div class="min-h-screen bg-slate-50 py-10 font-sans">
+    <div class="max-w-2xl mx-auto px-4">
+        
+        <a href="/dashboard/therapist" class="inline-flex items-center text-sm font-bold text-slate-400 hover:text-indigo-600 mb-6 transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i> Volver al Panel
+        </a>
+
+        <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
+            <div class="bg-indigo-600 px-8 py-6">
+                <h1 class="text-2xl font-extrabold text-white flex items-center gap-3">
+                    <i class="fas fa-user-plus"></i> Registrar Paciente
+                </h1>
+                <p class="text-indigo-200 text-sm mt-1">Crea una cuenta para tu paciente y asígnalo a tu cartera automáticamente.</p>
+            </div>
+
+            <div class="p-8">
+                <% if (error) { %>
+                    <div class="mb-6 bg-rose-50 border border-rose-200 text-rose-600 px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2">
+                        <i class="fas fa-exclamation-circle"></i> <%= error %>
+                    </div>
+                <% } %>
+                
+                <% if (success) { %>
+                    <div class="mb-6 bg-emerald-50 border border-emerald-200 text-emerald-600 px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-2">
+                        <i class="fas fa-check-circle"></i> <%= success %>
+                    </div>
+                <% } %>
+
+                <form action="/dashboard/register-patient" method="POST" class="space-y-6">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Nombre</label>
+                            <input type="text" name="nombre" required class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none" placeholder="Ej: Juan">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Apellido</label>
+                            <input type="text" name="apellido" required class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none" placeholder="Ej: Pérez">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Correo Electrónico</label>
+                        <div class="relative">
+                            <i class="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="email" name="email" required class="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none" placeholder="correo@paciente.com">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Teléfono <span class="text-slate-400 font-normal">(Opcional)</span></label>
+                            <input type="tel" name="telefono" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none" placeholder="+591 ...">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2">Contraseña Temporal</label>
+                            <div class="relative">
+                                <i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                <input type="password" name="password" required class="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none" placeholder="******">
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1 ml-1">Comparte esta clave con el paciente.</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-4">
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-indigo-500/30 transition-all transform active:scale-[0.98] flex justify-center items-center gap-2">
+                            <span>Crear Expediente</span> <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

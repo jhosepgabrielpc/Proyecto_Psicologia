@@ -1,91 +1,69 @@
-<%- include('../partials/header', { title: 'Registro' }) %>
+<%- include('../partials/header', { title: 'Únete a MindCare' }) %>
 
-<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
-    <div class="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
-        <div>
-            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                Crea tu cuenta
-            </h2>
-            <p class="mt-2 text-center text-sm text-gray-600">
-                ¿Ya tienes cuenta? <a href="/auth/login" class="font-medium text-purple-600 hover:text-purple-500">Inicia sesión</a>
-            </p>
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans">
+    <div class="max-w-lg w-full space-y-8">
+        
+        <div class="text-center animate-fade-in-down">
+            <div class="mx-auto h-16 w-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4 text-indigo-600 text-3xl">
+                🧘
+            </div>
+            <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">Comienza tu bienestar</h2>
+            <p class="mt-2 text-slate-500">Crea tu cuenta de paciente en segundos.</p>
         </div>
 
-        <% if (locals.errors && errors.length > 0) { %>
-            <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
-                <div class="flex">
-                    <div class="flex-shrink-0"><i class="fas fa-exclamation-circle text-red-500"></i></div>
-                    <div class="ml-3">
-                        <h3 class="text-sm font-medium text-red-800">Corrige los siguientes errores:</h3>
-                        <ul class="mt-2 text-sm text-red-700 list-disc list-inside">
-                            <% errors.forEach(function(error) { %>
-                                <li><%= error.msg %></li>
-                            <% }); %>
-                        </ul>
+        <div class="bg-white rounded-3xl shadow-xl p-8 sm:p-10 border border-slate-100 relative overflow-hidden animate-slide-up">
+            <div class="absolute top-0 left-0 w-full h-1.5 bg-indigo-500"></div>
+
+            <% if (locals.errors && errors.length > 0) { %>
+                <div class="bg-rose-50 border border-rose-100 text-rose-600 p-3 rounded-lg mb-4 text-sm"><%= errors[0].msg %></div>
+            <% } %>
+
+            <form class="space-y-5" action="/auth/register" method="POST">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre</label>
+                        <input name="nombre" type="text" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Ej: Ana">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Apellido</label>
+                        <input name="apellido" type="text" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="López">
                     </div>
                 </div>
-            </div>
-        <% } %>
 
-        <form class="mt-8 space-y-6" action="/auth/register" method="POST">
-            
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-                    <input name="nombre" type="text" required 
-                        value="<%= locals.formData ? formData.nombre : '' %>"
-                        class="appearance-none rounded-md block w-full px-3 py-2 border <%= locals.errors && errors.find(e => e.path === 'nombre') ? 'border-red-500 bg-red-50' : 'border-gray-300' %> text-gray-900 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono</label>
+                        <input name="telefono" type="tel" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="70000000">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nacimiento</label>
+                        <input name="fecha_nacimiento" type="date" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-slate-600">
+                    </div>
                 </div>
+
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Apellido</label>
-                    <input name="apellido" type="text" required 
-                        value="<%= locals.formData ? formData.apellido : '' %>"
-                        class="appearance-none rounded-md block w-full px-3 py-2 border <%= locals.errors && errors.find(e => e.path === 'apellido') ? 'border-red-500 bg-red-50' : 'border-gray-300' %> text-gray-900 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label>
+                    <input name="email" type="email" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="correo@ejemplo.com">
                 </div>
-            </div>
 
-            <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono (8 dígitos)</label>
-                    <input name="telefono" type="tel" required placeholder="Ej: 77654321"
-                        value="<%= locals.formData ? formData.telefono : '' %>"
-                        class="appearance-none rounded-md block w-full px-3 py-2 border <%= locals.errors && errors.find(e => e.path === 'telefono') ? 'border-red-500 bg-red-50' : 'border-gray-300' %> text-gray-900 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Contraseña</label>
+                    <input name="password" type="password" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="••••••••">
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Fecha Nacimiento</label>
-                    <input name="fecha_nacimiento" type="date" required 
-                        value="<%= locals.formData ? formData.fecha_nacimiento : '' %>"
-                        class="appearance-none rounded-md block w-full px-3 py-2 border <%= locals.errors && errors.find(e => e.path === 'fecha_nacimiento') ? 'border-red-500 bg-red-50' : 'border-gray-300' %> text-gray-900 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm">
-                </div>
-            </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
-                <input name="email" type="email" required 
-                    value="<%= locals.formData ? formData.email : '' %>"
-                    class="appearance-none rounded-md block w-full px-3 py-2 border <%= locals.errors && errors.find(e => e.path === 'email') ? 'border-red-500 bg-red-50' : 'border-gray-300' %> text-gray-900 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm">
-            </div>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-indigo-500/40 transition-all transform active:scale-[0.98]">
+                    Crear Cuenta de Paciente
+                </button>
+            </form>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-                <input name="password" type="password" required 
-                    class="appearance-none rounded-md block w-full px-3 py-2 border <%= locals.errors && errors.find(e => e.path === 'password') ? 'border-red-500 bg-red-50' : 'border-gray-300' %> text-gray-900 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm">
-                <p class="mt-1 text-xs text-gray-500">Mín. 8 caracteres, mayúscula, número y símbolo.</p>
+            <div class="mt-6 text-center pt-4 border-t border-slate-100">
+                <p class="text-sm text-slate-500">¿Eres profesional de la salud? <a href="/auth/register-pro" class="text-indigo-600 font-bold hover:underline">Acceso Doctores</a></p>
             </div>
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Soy un:</label>
-                <select name="rol" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm rounded-md">
-                    <option value="Paciente">Paciente (Busco ayuda)</option>
-                    <option value="Terapeuta">Terapeuta (Soy profesional)</option>
-                </select>
-            </div>
-
-            <button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition duration-150 ease-in-out">
-                Registrarse
-            </button>
-        </form>
+        </div>
+        
+        <div class="text-center">
+            <a href="/auth/login" class="text-slate-400 text-sm font-bold hover:text-indigo-500">← Volver al Login</a>
+        </div>
     </div>
 </div>
-
 <%- include('../partials/footer') %>

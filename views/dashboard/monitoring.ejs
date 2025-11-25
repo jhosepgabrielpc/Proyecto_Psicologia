@@ -1,34 +1,49 @@
-<%- include('../partials/header', { title: 'Monitoreo Clínico' }) %>
+<%- include('../partials/header', { title: 'Monitoreo Clínico Avanzado' }) %>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <% 
-    // Variables Seguras
+    // ==========================================
+    // 1. DATA PRE-PROCESSING (Server Side)
+    // ==========================================
     const checkins = (locals.checkins && Array.isArray(locals.checkins)) ? locals.checkins : [];
     const tests = (locals.tests && Array.isArray(locals.tests)) ? locals.tests : [];
     const patientsList = (locals.patientsList && Array.isArray(locals.patientsList)) ? locals.patientsList : [];
     const viewingPatient = locals.viewingPatient || null;
     const user = locals.user || {};
+    const currentFilter = locals.currentFilter || 7; 
+    const kpis = locals.kpis || { total: 0, criticos: 0, sueno_bajo: 0, estables: 0 };
     
-    // Modos de Vista
+    // View Modes
     const isSelectionMode = (!viewingPatient && patientsList.length > 0);
     const isMonitoringMode = (viewingPatient || user.nombre_rol === 'Paciente');
     const hasData = checkins.length > 0;
 
-    // Cálculos para gráfica
+    // Filter URLs
+    const baseUrl = '/dashboard/monitoring';
+    const patientParam = viewingPatient ? `&patient=${viewingPatient.id_paciente}` : '';
+    const link7Days = `${baseUrl}?days=7${patientParam}`;
+    const link30Days = `${baseUrl}?days=30${patientParam}`;
+
+    // Statistical Calculations
     let avgValue = 0;
     let avgDisplay = "0.0";
     let widthPercent = 0;
-    let message = "Sin datos suficientes.";
+    let message = "Esperando datos...";
+    let trendIcon = "fa-minus";
+    let trendColor = "text-slate-400";
 
     if (hasData) {
         const sum = checkins.reduce((acc, curr) => acc + Number(curr.valencia), 0);
         avgValue = sum / checkins.length;
         avgDisplay = avgValue.toFixed(1);
         widthPercent = Math.round((avgValue / 5) * 100);
-        if (avgValue >= 4) message = "Estado óptimo. 🌟";
-        else if (avgValue >= 3) message = "Estado estable. ✨";
-        else message = "Requiere atención. ⚠️";
+        
+        // Diagnostic Logic
+        if (avgValue >= 4.2) { message = "Estado Óptimo 🌟"; trendIcon = "fa-arrow-up"; trendColor = "text-emerald-500"; }
+        else if (avgValue >= 3.0) { message = "Estado Estable ✨"; trendIcon = "fa-minus"; trendColor = "text-amber-500"; }
+        else { message = "Atención Requerida ⚠️"; trendIcon = "fa-arrow-down"; trendColor = "text-rose-500"; }
     }
 %>
 
@@ -37,243 +52,727 @@
 
         <% if (isSelectionMode) { %>
             
-            <div class="mb-8">
-                <h1 class="text-3xl font-extrabold text-slate-900">Panel de <span class="text-indigo-600">Pacientes</span></h1>
-                <p class="text-slate-500 mt-2">Selecciona un paciente para ver su evolución detallada.</p>
+            <div class="mb-10 animate-fade-in-down">
+                <h1 class="text-2xl font-extrabold text-slate-800 mb-6 flex items-center gap-3">
+                    <i class="fas fa-network-wired text-indigo-600"></i> Panel de Control de Casos
+                </h1>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:border-indigo-200 transition-all">
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Pacientes</p>
+                            <p class="text-3xl font-black text-slate-800 mt-1"><%= kpis.total %></p>
+                        </div>
+                        <div class="h-10 w-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><i class="fas fa-users"></i></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-rose-100 shadow-sm flex items-center justify-between relative overflow-hidden group hover:border-rose-200 transition-all">
+                        <% if (kpis.criticos > 0) { %><div class="absolute top-0 left-0 w-1 h-full bg-rose-500"></div><% } %>
+                        <div>
+                            <p class="text-xs font-bold text-rose-400 uppercase tracking-wider">Atención Prioritaria</p>
+                            <p class="text-3xl font-black text-rose-600 mt-1"><%= kpis.criticos %></p>
+                        </div>
+                        <div class="h-10 w-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center <%= kpis.criticos > 0 ? 'animate-pulse' : '' %>"><i class="fas fa-exclamation-triangle"></i></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:border-indigo-200 transition-all">
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Sueño Irregular</p>
+                            <p class="text-3xl font-black text-indigo-900 mt-1"><%= kpis.sueno_bajo %></p>
+                        </div>
+                        <div class="h-10 w-10 rounded-xl bg-indigo-900 text-indigo-200 flex items-center justify-center"><i class="fas fa-moon"></i></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm flex items-center justify-between hover:border-emerald-200 transition-all">
+                        <div>
+                            <p class="text-xs font-bold text-emerald-400 uppercase tracking-wider">En Seguimiento</p>
+                            <p class="text-3xl font-black text-emerald-600 mt-1"><%= kpis.estables %></p>
+                        </div>
+                        <div class="h-10 w-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><i class="fas fa-check-circle"></i></div>
+                    </div>
+                </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <% patientsList.forEach(p => { %>
-                    <a href="/dashboard/monitoring?patient=<%= p.id_paciente %>" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-lg hover:-translate-y-1 transition-all">
-                        <div class="flex items-center mb-4">
-                            <div class="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-lg border border-indigo-200 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                                <%= p.nombre.charAt(0) %>
-                            </div>
-                            <div class="ml-4">
-                                <h3 class="font-bold text-slate-800 text-lg group-hover:text-indigo-600 transition-colors"><%= p.nombre %> <%= p.apellido %></h3>
-                                <p class="text-xs text-slate-500"><%= p.email %></p>
-                            </div>
-                        </div>
-                        
-                        <div class="flex justify-between items-center border-t border-slate-50 pt-4">
-                            <div>
-                                <p class="text-[10px] font-bold text-slate-400 uppercase">Último Estado</p>
-                                <% if (p.ultima_valencia) { %>
-                                    <div class="flex items-center gap-1 mt-1">
-                                        <span class="text-lg font-extrabold <%= p.ultima_valencia < 3 ? 'text-rose-500' : 'text-emerald-500' %>">
-                                            <%= p.ultima_valencia %>/5
-                                        </span>
-                                        <span class="text-xs text-slate-400">
-                                            (<%= new Date(p.ultimo_checkin).toLocaleDateString() %>)
-                                        </span>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-slide-up">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-700 flex items-center gap-2"><i class="fas fa-folder-open text-indigo-400"></i> Expedientes Activos</h3>
+                    <div class="flex gap-2">
+                        <span class="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-500 shadow-sm"><i class="fas fa-filter mr-1"></i> Todos</span>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-white text-slate-400 text-xs uppercase tracking-wider border-b border-slate-100">
+                                <th class="px-6 py-4 font-bold">Paciente</th>
+                                <th class="px-6 py-4 font-bold">Estado Clínico</th>
+                                <th class="px-6 py-4 font-bold">Último Registro</th>
+                                <th class="px-6 py-4 font-bold">Calidad de Sueño</th>
+                                <th class="px-6 py-4 font-bold text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
+                            <% patientsList.forEach(p => { 
+                                const isCritical = p.ultima_valencia <= 2;
+                                const moodLabel = p.ultima_valencia ? (isCritical ? 'Riesgo Detectado' : (p.ultima_valencia == 3 ? 'Estable' : 'Óptimo')) : 'Sin Datos';
+                                const badgeColor = isCritical ? 'bg-rose-100 text-rose-700 border-rose-200' : (p.ultima_valencia ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200');
+                                const sleepVal = p.ultimo_sueno || 0;
+                                const sleepColor = sleepVal < 6 ? 'text-rose-500' : 'text-slate-600';
+                            %>
+                            <tr class="hover:bg-slate-50/80 transition-colors group">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold border border-indigo-200 text-sm shadow-sm">
+                                            <%= p.nombre.charAt(0) %>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-slate-800 text-sm"><%= p.nombre %> <%= p.apellido %></p>
+                                            <p class="text-xs text-slate-400"><%= p.email %></p>
+                                        </div>
                                     </div>
-                                <% } else { %>
-                                    <p class="text-xs text-slate-400 mt-1">Sin registros</p>
-                                <% } %>
-                            </div>
-                            <div class="h-8 w-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600">
-                                <i class="fas fa-chevron-right"></i>
-                            </div>
-                        </div>
-                    </a>
-                <% }); %>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold border <%= badgeColor %>">
+                                        <span class="w-1.5 h-1.5 rounded-full <%= isCritical ? 'bg-rose-500 animate-pulse' : (p.ultima_valencia ? 'bg-emerald-500' : 'bg-slate-400') %>"></span>
+                                        <%= moodLabel %>
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <% if (p.ultimo_checkin) { %>
+                                        <p class="text-sm font-medium text-slate-700"><%= new Date(p.ultimo_checkin).toLocaleDateString() %></p>
+                                        <p class="text-xs text-slate-400"><%= new Date(p.ultimo_checkin).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) %></p>
+                                    <% } else { %> <span class="text-xs text-slate-400 italic">--</span> <% } %>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-bed <%= sleepColor %>"></i>
+                                        <div class="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                            <div class="h-full rounded-full <%= sleepVal < 6 ? 'bg-rose-400' : 'bg-indigo-400' %>" style="width: <%= (sleepVal/12)*100 %>%"></div>
+                                        </div>
+                                        <span class="text-xs font-bold <%= sleepColor %>"><%= sleepVal %>h</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <div class="flex justify-end gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                                        <% if (isCritical) { %>
+                                            <button onclick="generateAlert('<%= p.nombre %> <%= p.apellido %>', '<%= p.ultima_valencia %>', '<%= p.ultima_emocion %>', '<%= p.ultimas_notas ? p.ultimas_notas.replace(/'/g, "\\'") : '' %>', '<%= p.ultimo_sueno %>')" 
+                                                    class="bg-white text-rose-600 hover:bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-sm"
+                                                    title="Generar Informe de Alerta">
+                                                <i class="fas fa-bell"></i> Informe
+                                            </button>
+                                        <% } %>
+                                        <a href="/dashboard/monitoring?patient=<%= p.id_paciente %>" class="bg-indigo-600 text-white hover:bg-indigo-700 border border-transparent px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md flex items-center gap-1">
+                                            <i class="fas fa-chart-line"></i> Ver
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
         <% } else if (isMonitoringMode) { %>
             
-            <div class="mb-8 flex justify-between items-end">
-                <div>
-                    <a href="/dashboard/monitoring" class="text-xs font-bold text-slate-400 hover:text-indigo-600 mb-2 inline-block <%= user.nombre_rol === 'Paciente' ? 'hidden' : '' %>">
-                        <i class="fas fa-arrow-left mr-1"></i> Volver a la lista
+            <div class="flex flex-col xl:flex-row justify-between items-end mb-8 gap-6 animate-fade-in">
+                <div class="w-full xl:w-auto">
+                    <a href="/dashboard/monitoring" class="text-xs font-bold text-slate-400 hover:text-indigo-600 mb-3 inline-flex items-center gap-1 transition-colors <%= user.nombre_rol === 'Paciente' ? 'hidden' : '' %>">
+                        <i class="fas fa-arrow-left"></i> Volver a la lista
                     </a>
-                    <h1 class="text-3xl font-extrabold text-slate-900">
+                    
+                    <h1 class="text-3xl font-extrabold text-slate-900 leading-tight">
                         <% if (viewingPatient) { %>
-                            Paciente: <span class="text-indigo-600"><%= viewingPatient.nombre %> <%= viewingPatient.apellido %></span>
+                            Análisis Clínico: <span class="text-indigo-600"><%= viewingPatient.nombre %> <%= viewingPatient.apellido %></span>
                         <% } else { %>
                             Tu Bienestar <span class="text-indigo-600">Emocional</span>
                         <% } %>
                     </h1>
+                    <p class="text-slate-500 text-sm mt-1">Correlación biométrica de sueño vs. estado anímico.</p>
                 </div>
-                <% if (user.nombre_rol === 'Paciente' && !viewingPatient) { %>
-                    <button onclick="toggleModal('checkinModal')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all">
-                        <i class="fas fa-plus-circle text-lg"></i> <span>Nuevo Registro</span>
+
+                <div class="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+                    <div class="bg-white p-1 rounded-xl border border-slate-200 flex shadow-sm">
+                        <a href="<%= link7Days %>" class="px-4 py-2 rounded-lg text-xs font-bold transition-all <%= currentFilter === 7 ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700' %>">
+                            7 Días
+                        </a>
+                        <a href="<%= link30Days %>" class="px-4 py-2 rounded-lg text-xs font-bold transition-all <%= currentFilter === 30 ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700' %>">
+                            30 Días
+                        </a>
+                    </div>
+
+                    <div class="h-8 w-[1px] bg-slate-200 hidden md:block"></div>
+
+                    <button onclick="downloadPDF()" class="bg-white text-slate-700 border border-slate-200 px-5 py-2.5 rounded-xl font-bold shadow-sm hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200 transition-all text-sm flex items-center gap-2">
+                        <i class="fas fa-file-pdf text-rose-500"></i> <span>Exportar</span>
                     </button>
-                <% } %>
+
+                    <% if (user.nombre_rol === 'Paciente') { %>
+                        <button onclick="toggleModal('checkinModal')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg hover:shadow-indigo-500/30 flex items-center gap-2 transition-all transform active:scale-95">
+                            <i class="fas fa-plus"></i> <span>Registrar</span>
+                        </button>
+                    <% } %>
+                </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-2 space-y-8">
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                        <div class="flex justify-between items-center mb-6">
-                            <h3 class="font-bold text-slate-800 text-lg">Evolución de Ánimo</h3>
+            <div id="monitoring-content" class="space-y-8 animate-slide-up">
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-lg">Correlación Sueño / Ánimo</h3>
+                                <p class="text-xs text-slate-400">Barras: Horas de Sueño | Línea: Estado de Ánimo</p>
+                            </div>
+                            <div class="flex items-center gap-2 px-3 py-1 bg-slate-50 rounded-lg border border-slate-100">
+                                <i class="fas <%= trendIcon %> <%= trendColor %> text-xs"></i>
+                                <span class="text-xs font-bold text-slate-600">Tendencia</span>
+                            </div>
                         </div>
-                        <div class="relative h-80 w-full">
+                        <div class="relative h-72 w-full">
                             <% if (hasData) { %>
                                 <canvas id="moodChart"></canvas>
                             <% } else { %>
                                 <div class="h-full flex flex-col items-center justify-center text-slate-300 bg-slate-50/50 rounded-xl border-2 border-dashed border-slate-200">
-                                    <p class="font-medium text-sm">Sin datos suficientes.</p>
+                                    <i class="fas fa-chart-area text-4xl mb-2 opacity-30"></i>
+                                    <p class="font-medium text-xs">Insuficientes datos.</p>
                                 </div>
                             <% } %>
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                        <div class="px-6 py-4 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
-                            <h3 class="font-bold text-slate-800">Historial Reciente</h3>
-                            <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-1 rounded-lg"><%= checkins.length %></span>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+                        <div class="mb-4">
+                            <h3 class="font-bold text-slate-800 text-lg">Perfil Emocional</h3>
+                            <p class="text-xs text-slate-400">Distribución de emociones.</p>
                         </div>
-                        <div class="divide-y divide-slate-50 max-h-[400px] overflow-y-auto">
+                        <div class="relative flex-1 flex items-center justify-center min-h-[250px]">
+                            <% if (hasData) { %>
+                                <canvas id="radarChart"></canvas>
+                            <% } else { %>
+                                <div class="text-center text-slate-300">
+                                    <i class="fas fa-circle-notch text-3xl mb-2 opacity-30"></i>
+                                    <p class="text-xs">Sin datos.</p>
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                        <div class="px-6 py-4 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-list-ul text-indigo-400"></i>
+                                <h3 class="font-bold text-slate-800">Bitácora de Registros</h3>
+                            </div>
+                            <span class="bg-white border border-slate-200 text-slate-600 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider">Total: <%= checkins.length %></span>
+                        </div>
+                        <div class="divide-y divide-slate-50 max-h-[400px] overflow-y-auto custom-scrollbar">
                             <% if (hasData) { %>
                                 <% checkins.forEach(c => { %>
-                                    <div class="p-5 flex items-start justify-between hover:bg-slate-50 transition-colors">
+                                    <div class="p-5 flex items-start justify-between hover:bg-slate-50 transition-colors group">
                                         <div class="flex gap-4">
-                                            <div class="flex-shrink-0 h-12 w-12 rounded-2xl flex items-center justify-center text-2xl shadow-sm border border-slate-100">
-                                                <%= c.emocion_principal && c.emocion_principal.includes('Feliz') ? '😄' : '😐' %>
+                                            <div class="flex-shrink-0 h-12 w-12 rounded-2xl flex items-center justify-center text-2xl shadow-sm border border-slate-100 bg-white group-hover:scale-110 transition-transform">
+                                                <%= c.emocion_principal && c.emocion_principal.includes('Feliz') ? '😄' : 
+                                                    c.emocion_principal && c.emocion_principal.includes('Triste') ? '😢' : 
+                                                    c.emocion_principal && c.emocion_principal.includes('Ansioso') ? '😰' : 
+                                                    c.emocion_principal && c.emocion_principal.includes('Enojado') ? '😠' : 
+                                                    c.emocion_principal && c.emocion_principal.includes('Cansado') ? '😴' : 
+                                                    c.emocion_principal && c.emocion_principal.includes('Calmado') ? '😌' : '😐' %>
                                             </div>
                                             <div>
                                                 <h4 class="text-sm font-bold text-slate-900"><%= c.emocion_principal %></h4>
-                                                <p class="text-xs text-slate-400 mt-0.5"><%= new Date(c.fecha_hora).toLocaleDateString() %></p>
+                                                <p class="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
+                                                    <span><i class="far fa-clock"></i> <%= new Date(c.fecha_hora).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }) %></span>
+                                                    <span class="text-indigo-500 bg-indigo-50 px-1.5 rounded font-bold"><i class="fas fa-bed text-[10px]"></i> <%= c.horas_sueno || 0 %>h</span>
+                                                </p>
+                                                <% if (c.notas) { %>
+                                                    <p class="text-xs text-slate-500 mt-2 italic border-l-2 border-indigo-100 pl-2 max-w-md">"<%= c.notas %>"</p>
+                                                <% } %>
                                             </div>
                                         </div>
                                         <div class="text-right">
-                                            <span class="text-lg font-extrabold text-indigo-600"><%= c.valencia %>/5</span>
+                                            <span class="text-lg font-extrabold <%= c.valencia < 3 ? 'text-rose-500' : (c.valencia == 3 ? 'text-amber-500' : 'text-indigo-600') %>"><%= c.valencia %>/5</span>
+                                            <p class="text-[10px] font-bold text-slate-300 uppercase">Nivel</p>
                                         </div>
                                     </div>
                                 <% }) %>
                             <% } else { %>
-                                <div class="p-10 text-center text-slate-500">No hay registros.</div>
+                                <div class="p-12 text-center">
+                                    <div class="inline-block p-4 rounded-full bg-slate-50 mb-3 text-slate-300"><i class="fas fa-inbox text-2xl"></i></div>
+                                    <p class="text-sm text-slate-500">No hay registros en este periodo.</p>
+                                </div>
                             <% } %>
                         </div>
                     </div>
-                </div>
 
-                <div class="space-y-6">
-                    <div class="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-                        <h3 class="text-indigo-100 text-xs font-bold uppercase mb-1">Promedio General</h3>
-                        <div class="flex items-baseline gap-2">
-                            <span class="text-5xl font-extrabold"><%= avgDisplay %></span>
-                            <span class="text-indigo-200 text-lg font-medium">/ 5.0</span>
+                    <div class="space-y-6">
+                        
+                        <div class="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 -mr-6 -mt-6 w-32 h-32 bg-indigo-500 rounded-full blur-3xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                            
+                            <h3 class="text-slate-400 text-xs font-bold uppercase mb-2 relative z-10 tracking-widest">Score General</h3>
+                            <div class="flex items-baseline gap-2 relative z-10">
+                                <span class="text-5xl font-black tracking-tight"><%= avgDisplay %></span>
+                                <span class="text-slate-400 text-lg font-medium">/ 5.0</span>
+                            </div>
+                            
+                            <div class="mt-5 h-1.5 bg-white/10 rounded-full overflow-hidden relative z-10">
+                                <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full transition-all duration-1000" style="width: <%= widthPercent %>%"></div>
+                            </div>
+                            
+                            <p class="mt-4 text-sm font-medium pt-4 border-t border-white/10 relative z-10 flex items-center gap-2">
+                                <i class="fas fa-info-circle text-indigo-400"></i> <%= message %>
+                            </p>
                         </div>
-                        <div class="mt-4 h-2 bg-black/20 rounded-full overflow-hidden">
-                            <div class="bg-white h-full rounded-full transition-all duration-1000" style="width: <%= widthPercent %>%"></div>
-                        </div>
-                        <p class="mt-4 text-sm text-indigo-50 pt-3 border-t border-white/10"><%= message %></p>
-                    </div>
 
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                        <h3 class="font-bold text-slate-800 mb-4">Evaluaciones</h3>
-                        <div class="space-y-3">
-                            <% if (tests.length > 0) { %>
-                                <% tests.forEach(t => { %>
-                                    <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                        <div><p class="text-xs font-bold text-slate-700"><%= t.tipo_test %></p></div>
-                                        <span class="text-xs font-bold px-2 py-1 rounded-lg bg-slate-200 text-slate-700"><%= t.puntaje_total %> pts</span>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                            <h3 class="font-bold text-slate-800 mb-4 flex justify-between items-center">
+                                Evaluaciones
+                                <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold"><%= tests.length %></span>
+                            </h3>
+                            <div class="space-y-3">
+                                <% if (tests.length > 0) { %>
+                                    <% tests.forEach((t, index) => { %>
+                                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-indigo-100 transition-colors">
+                                            <div class="flex justify-between items-start mb-2">
+                                                <div>
+                                                    <p class="text-xs font-bold text-slate-900 uppercase tracking-wide"><%= t.tipo_test %></p>
+                                                    <p class="text-[10px] text-slate-400"><%= new Date(t.fecha_realizacion).toLocaleDateString() %></p>
+                                                </div>
+                                                <span class="text-[10px] font-bold px-2 py-1 rounded <%= t.severidad === 'Severa' || t.severidad === 'Grave' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700' %>">
+                                                    <%= t.puntaje_total %> pts
+                                                </span>
+                                            </div>
+                                            <button onclick="showTestDetails(<%= index %>)" class="w-full text-center text-[10px] font-bold text-indigo-600 hover:text-indigo-800 hover:bg-white py-2 rounded-lg transition-colors border border-transparent hover:border-indigo-100 hover:shadow-sm">
+                                                VER DETALLE
+                                            </button>
+                                        </div>
+                                    <% }) %>
+                                <% } else { %>
+                                    <div class="text-center py-8 border-2 border-dashed border-slate-100 rounded-xl">
+                                        <p class="text-xs text-slate-400 font-medium">Sin evaluaciones.</p>
                                     </div>
-                                <% }) %>
-                            <% } else { %>
-                                <div class="text-center py-4 border-2 border-dashed border-slate-100 rounded-xl"><p class="text-xs text-slate-400">Sin datos.</p></div>
-                            <% } %>
+                                <% } %>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> 
 
         <% } else { %>
-            <div class="p-12 text-center text-slate-400">
-                <h2 class="text-xl font-bold">Bienvenido al Panel de Monitoreo</h2>
-                <p>No hay datos para mostrar en este momento.</p>
+            <div class="min-h-[60vh] flex flex-col items-center justify-center text-center p-8">
+                <div class="h-24 w-24 bg-white rounded-full flex items-center justify-center shadow-sm mb-6 text-slate-200 text-5xl">
+                    <i class="fas fa-cube"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800">Panel de Monitoreo</h2>
+                <p class="text-slate-500 mt-2 max-w-md">El sistema está sincronizando sus datos. Seleccione una opción del menú o espere a la carga.</p>
             </div>
         <% } %>
         
     </div>
 </div>
 
-<% if (user.nombre_rol === 'Paciente' && !viewingPatient) { %>
-<div id="checkinModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-        <div class="bg-indigo-600 p-6 text-white flex justify-between items-start rounded-t-2xl">
-            <h3 class="text-xl font-bold">Registrar Estado</h3>
-            <button onclick="toggleModal('checkinModal')" class="text-white/70 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+<div id="alertModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in-up">
+        <div class="bg-rose-600 px-6 py-4 flex justify-between items-center">
+            <h3 class="text-white font-bold flex items-center gap-2">
+                <i class="fas fa-tower-broadcast"></i> Reporte a Gestión
+            </h3>
+            <button onclick="closeAlertModal()" class="text-white/80 hover:text-white p-1"><i class="fas fa-times"></i></button>
         </div>
-        <form action="/dashboard/monitoring/checkin" method="POST" class="p-6 space-y-6">
-            <div>
-                <label class="text-sm font-bold text-slate-700 mb-2 block">Nivel (1-5)</label>
-                <input type="range" name="valencia" min="1" max="5" step="1" value="3" class="w-full h-2 bg-slate-200 rounded-lg accent-indigo-600" oninput="updateMoodLabel(this.value)">
-                <div class="flex justify-between text-xs text-slate-400 mt-1 font-bold uppercase"><span>Mal</span><span id="moodText" class="text-indigo-600 font-bold">Normal</span><span>Bien</span></div>
+        <div class="p-6">
+            <div class="flex items-center gap-3 mb-4 p-3 bg-indigo-50 rounded-xl border border-indigo-100">
+                <div class="h-10 w-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold">J</div>
+                <div>
+                    <p class="text-xs font-bold text-indigo-600 uppercase">Destinatario</p>
+                    <p class="text-sm font-bold text-slate-800">Jimmy (Gestión de Comunicación)</p>
+                </div>
             </div>
+
+            <p class="text-sm text-slate-500 mb-3">El sistema ha redactado este informe automático. Confirma el envío para escalar el caso.</p>
+            
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 relative group">
+                <textarea id="reportText" rows="8" class="w-full bg-transparent border-none text-slate-700 text-sm font-mono resize-none focus:ring-0" readonly></textarea>
+                <button onclick="copyReport()" class="absolute top-2 right-2 bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 px-2 py-1 rounded text-xs font-bold shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
+
+            <div class="flex gap-3 justify-end">
+                <button onclick="closeAlertModal()" class="px-4 py-2 text-slate-500 font-bold text-sm hover:bg-slate-50 rounded-lg">Cancelar</button>
+                <a href="#" id="sendToJimmyBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-lg flex items-center gap-2 transition-all">
+                    <i class="fas fa-paper-plane"></i> Enviar Informe
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<% if (user.nombre_rol === 'Paciente') { %>
+<div id="checkinModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4 transition-all duration-300 opacity-0" style="opacity: 0;">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform scale-95 transition-all duration-300" id="checkinModalContent">
+        <div class="bg-indigo-600 px-6 py-5 text-white flex justify-between items-center">
+            <h3 class="text-lg font-bold">Registro Diario</h3>
+            <button onclick="toggleModal('checkinModal')" class="text-white/60 hover:text-white transition-colors bg-white/10 hover:bg-white/20 rounded-full h-8 w-8 flex items-center justify-center">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <form action="/dashboard/monitoring/checkin" method="POST" class="p-6 space-y-6">
+            <div class="space-y-3">
+                <div class="flex justify-between items-end">
+                    <label class="text-sm font-bold text-slate-700">Estado de Ánimo</label>
+                    <span id="moodText" class="text-indigo-600 font-bold text-lg">Normal 😐</span>
+                </div>
+                <input type="range" name="valencia" min="1" max="5" step="1" value="3" 
+                       class="w-full h-2 bg-slate-200 rounded-lg accent-indigo-600 cursor-pointer hover:accent-indigo-500 transition-all" 
+                       oninput="updateMoodLabel(this.value)">
+                <div class="flex justify-between text-[10px] text-slate-400 font-bold uppercase tracking-widest px-1">
+                    <span>Mal</span>
+                    <span>Regular</span>
+                    <span>Excelente</span>
+                </div>
+            </div>
+
+            <div class="space-y-3 pt-2 border-t border-slate-100">
+                <div class="flex justify-between items-end">
+                    <label class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                        <i class="fas fa-bed text-indigo-400"></i> Horas de Sueño
+                    </label>
+                    <span id="sleepText" class="text-slate-600 font-bold text-lg">8h</span>
+                </div>
+                <input type="range" name="horas_sueno" min="0" max="12" step="1" value="8" 
+                       class="w-full h-2 bg-slate-200 rounded-lg accent-indigo-400 cursor-pointer" 
+                       oninput="document.getElementById('sleepText').innerText = this.value + 'h'">
+                <div class="flex justify-between text-[10px] text-slate-400 font-bold uppercase tracking-widest px-1">
+                    <span>0h</span>
+                    <span>6h</span>
+                    <span>12h+</span>
+                </div>
+            </div>
+            
             <div>
-                <label class="block text-sm font-bold text-slate-700 mb-3">Emoción</label>
+                <label class="block text-sm font-bold text-slate-700 mb-3">¿Qué sientes hoy?</label>
                 <div class="grid grid-cols-3 gap-3">
-                    <% const emojis = {Feliz:'😄', Ansioso:'😰', Triste:'😢', Enojado:'😠', Calmado:'😌', Cansado:'😴'}; %>
+                    <% const emojis = {Feliz:'😄', Calmado:'😌', Cansado:'😴', Ansioso:'😰', Triste:'😢', Enojado:'😠'}; %>
                     <% Object.keys(emojis).forEach(emo => { %>
-                        <label class="cursor-pointer group">
+                        <label class="cursor-pointer group relative">
                             <input type="radio" name="emocion" value="<%= emo %>" class="peer sr-only">
-                            <div class="peer-checked:bg-indigo-50 peer-checked:border-indigo-500 peer-checked:text-indigo-700 border-2 border-slate-100 rounded-xl p-2 text-center hover:border-slate-300 transition-all">
-                                <div class="text-xl"><%= emojis[emo] %></div>
-                                <span class="text-xs font-bold"><%= emo %></span>
+                            <div class="peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 border border-slate-200 rounded-2xl p-3 text-center hover:border-indigo-300 transition-all shadow-sm">
+                                <div class="text-2xl mb-1 group-hover:scale-110 transition-transform"><%= emojis[emo] %></div>
+                                <span class="text-[10px] font-bold block opacity-70 peer-checked:opacity-100"><%= emo %></span>
                             </div>
                         </label>
                     <% }); %>
                 </div>
             </div>
+
             <div>
-                <label class="block text-sm font-bold text-slate-700 mb-2">Notas</label>
-                <textarea name="notas" rows="3" class="w-full rounded-xl border-slate-200 text-sm focus:ring-indigo-500 resize-none"></textarea>
+                <label class="block text-sm font-bold text-slate-700 mb-2">Notas <span class="text-slate-400 font-normal text-xs">(Opcional)</span></label>
+                <textarea name="notas" rows="2" class="w-full rounded-xl border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none p-3 bg-slate-50 focus:bg-white transition-colors placeholder:text-slate-400" placeholder="Escribe aquí..."></textarea>
             </div>
-            <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl hover:bg-indigo-700 shadow-lg">Guardar</button>
+            
+            <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl hover:bg-indigo-700 shadow-xl hover:shadow-indigo-500/30 transition-all transform active:scale-[0.98]">
+                Guardar Registro
+            </button>
         </form>
     </div>
 </div>
 <% } %>
 
-<script>
-    // Inyección Segura de Datos
-    const rawData = '<%- JSON.stringify(checkins || []) %>'; 
-    const checkinData = JSON.parse(rawData).reverse();
+<div id="testDetailModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col animate-fade-in-up">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-2xl">
+            <h3 class="text-lg font-bold text-slate-800" id="testModalTitle">Resultados</h3>
+            <button onclick="toggleModal('testDetailModal')" class="text-slate-400 hover:text-slate-600 transition-colors p-1">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="p-6 overflow-y-auto custom-scrollbar" id="testModalContent">
+            </div>
+    </div>
+</div>
 
+<script>
+    // =========================================================================
+    // JAVASCRIPT LOGIC - "THE BRAIN"
+    // =========================================================================
+
+    // 1. DATA INJECTION
+    const rawData = '<%- JSON.stringify(checkins || []) %>'; 
+    const checkinData = JSON.parse(rawData).reverse(); 
+    const rawTests = '<%- JSON.stringify(tests || []) %>';
+    const testsData = JSON.parse(rawTests);
+
+    // 2. RADAR CHART LOGIC
+    const emotionMap = { 'Feliz': 0, 'Calmado': 0, 'Cansado': 0, 'Triste': 0, 'Ansioso': 0, 'Enojado': 0 };
+    checkinData.forEach(c => {
+        if (c.emocion_principal && emotionMap.hasOwnProperty(c.emocion_principal)) {
+            emotionMap[c.emocion_principal]++;
+        }
+    });
+    const radarValues = Object.values(emotionMap);
+    const radarLabels = Object.keys(emotionMap);
+
+    // 3. CHART INITIALIZATION (COMBO & RADAR)
     document.addEventListener('DOMContentLoaded', function() {
-        const ctx = document.getElementById('moodChart');
-        if (ctx && checkinData.length > 0) {
-            const last7 = checkinData.slice(-7);
-            new Chart(ctx, {
-                type: 'line',
+        
+        // A. COMBO CHART (Line + Bar)
+        const ctxLine = document.getElementById('moodChart');
+        if (ctxLine && checkinData.length > 0) {
+            const labels = checkinData.map(c => new Date(c.fecha_hora).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' }));
+            const moodData = checkinData.map(c => c.valencia);
+            const sleepData = checkinData.map(c => c.horas_sueno || 0); // Default 0
+
+            new Chart(ctxLine, {
+                type: 'bar', // Chart type must be bar to support bars mixed with lines
                 data: {
-                    labels: last7.map(c => new Date(c.fecha_hora).toLocaleDateString('es-ES', {weekday:'short'})),
+                    labels: labels,
+                    datasets: [
+                        {
+                            type: 'line', // Mood Line
+                            label: 'Ánimo (1-5)',
+                            data: moodData,
+                            borderColor: '#6366f1', // Indigo 500
+                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#fff',
+                            pointBorderColor: '#6366f1',
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        },
+                        {
+                            type: 'bar', // Sleep Bars
+                            label: 'Sueño (Horas)',
+                            data: sleepData,
+                            backgroundColor: 'rgba(203, 213, 225, 0.5)', // Slate-300 Transparent
+                            borderRadius: 4,
+                            barThickness: 20,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: true, position: 'bottom' }, tooltip: { backgroundColor: '#1e293b', padding: 12 } },
+                    scales: { 
+                        y: { 
+                            min: 0, max: 6, position: 'left', 
+                            grid: { borderDash: [4, 4], color: '#f1f5f9' }, 
+                            title: { display: true, text: 'Nivel de Ánimo' } 
+                        },
+                        y1: { 
+                            min: 0, max: 12, position: 'right', 
+                            grid: { display: false }, 
+                            title: { display: true, text: 'Horas de Sueño' } 
+                        },
+                        x: { grid: { display: false } } 
+                    }
+                }
+            });
+        }
+
+        // B. RADAR CHART
+        const ctxRadar = document.getElementById('radarChart');
+        if (ctxRadar && checkinData.length > 0) {
+            new Chart(ctxRadar, {
+                type: 'radar',
+                data: {
+                    labels: radarLabels,
                     datasets: [{
-                        label: 'Ánimo',
-                        data: last7.map(c => c.valencia),
-                        borderColor: '#4f46e5',
-                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                        borderWidth: 3,
-                        tension: 0.4,
-                        fill: true
+                        label: 'Frecuencia',
+                        data: radarValues,
+                        backgroundColor: 'rgba(244, 63, 94, 0.2)', // Rose-500
+                        borderColor: '#f43f5e',
+                        pointBackgroundColor: '#f43f5e',
+                        borderWidth: 2
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
-                    scales: { y: { min: 1, max: 5, ticks: { stepSize: 1 } }, x: { grid: { display: false } } }
+                    scales: {
+                        r: {
+                            angleLines: { color: '#e2e8f0' },
+                            grid: { color: '#f1f5f9' },
+                            pointLabels: { font: { size: 11, weight: 'bold' }, color: '#64748b' },
+                            ticks: { display: false, backdropColor: 'transparent' }
+                        }
+                    }
                 }
             });
         }
     });
 
+    // 4. ALERT GENERATOR SYSTEM (NUEVA FUNCIÓN)
+    // --- ALERT GENERATOR SYSTEM (CONEXIÓN CON JIMMY) ---
+    // Recibimos el ID de Jimmy desde el servidor
+    const jimmyId = '<%= locals.jimmyId || "" %>'; 
+
+    function generateAlert(name, valencia, emotion, notes, sleep) {
+        const modal = document.getElementById('alertModal');
+        const textArea = document.getElementById('reportText');
+        const sendBtn = document.getElementById('sendToJimmyBtn');
+        
+        const date = new Date();
+        const apptDate = new Date(date); 
+        apptDate.setDate(apptDate.getDate() + 1); // Sugerir cita mañana
+        const dateStr = apptDate.toLocaleDateString('es-ES', {weekday: 'long', day: 'numeric'});
+
+        // REDACCIÓN PROFESIONAL DEL INFORME
+        const report = `🚨 REPORTE DE INCIDENCIA CLÍNICA
+PARA: Gestión de Comunicación (Jimmy)
+DE: Centro de Monitoreo (Jhosep)
+FECHA: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}
+----------------------------------------
+
+PACIENTE: ${name}
+
+SITUACIÓN ACTUAL:
+El paciente presenta marcadores biométricos fuera del rango estable.
+
+DATOS REGISTRADOS:
+• Ánimo: ${valencia}/5 (${emotion ? emotion.toUpperCase() : 'N/A'})
+• Sueño: ${sleep || 0} Horas (Déficit Crítico)
+• Notas: "${notes || 'Sin observaciones adicionales'}"
+
+ACCIÓN REQUERIDA:
+Por favor, contactar al terapeuta asignado inmediatamente.
+Se recomienda agendar una intervención de crisis para el ${dateStr}.
+
+Esperando confirmación de enlace.`;
+
+        textArea.value = report;
+        
+        // Configurar el botón para ir al chat con Jimmy
+        if (jimmyId) {
+            // Codificamos el mensaje para pasarlo por URL (opcional) o simplemente abrimos el chat
+            // Opción A: Abrir chat y que el usuario pegue (más seguro para textos largos)
+            sendBtn.href = `/dashboard/communication?chat=${jimmyId}`;
+            sendBtn.onclick = () => {
+                copyReport(); // Copiamos al portapapeles automáticamente al ir
+                // Opcional: Podríamos intentar pasarlo por URL si el sistema de chat lo soporta
+            };
+        } else {
+            sendBtn.href = "#";
+            sendBtn.innerHTML = "<i class='fas fa-exclamation-circle'></i> Jimmy no disponible";
+            sendBtn.classList.add('bg-slate-400', 'cursor-not-allowed');
+        }
+
+        if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeAlertModal() {
+        document.getElementById('alertModal').classList.add('hidden');
+    }
+
+    function copyReport() {
+        const copyText = document.getElementById("reportText");
+        copyText.select();
+        navigator.clipboard.writeText(copyText.value);
+        alert("Informe copiado al portapapeles.");
+    }
+
+    // 5. UI UTILS
     function toggleModal(id) {
         const modal = document.getElementById(id);
+        const modalContent = document.getElementById('checkinModalContent');
         if (modal) {
-            if (modal.classList.contains('hidden')) modal.classList.remove('hidden');
-            else modal.classList.add('hidden');
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                setTimeout(() => { modal.style.opacity = '1'; if(modalContent) modalContent.classList.replace('scale-95', 'scale-100'); }, 10);
+                document.body.style.overflow = 'hidden';
+            } else {
+                modal.style.opacity = '0';
+                if(modalContent) modalContent.classList.replace('scale-100', 'scale-95');
+                setTimeout(() => { modal.classList.add('hidden'); document.body.style.overflow = ''; }, 300);
+            }
         }
     }
 
-    // Función faltante para el slider
     function updateMoodLabel(val) {
-        const labels = {1: 'Pésimo', 2: 'Mal', 3: 'Normal', 4: 'Bien', 5: 'Excelente'};
+        const labels = {1: 'Pésimo 😞', 2: 'Mal 😟', 3: 'Normal 😐', 4: 'Bien 🙂', 5: 'Excelente 🤩'};
         const el = document.getElementById('moodText');
-        if(el) el.innerText = labels[val] || 'Normal';
+        if(el) {
+            el.innerText = labels[val] || 'Normal';
+            if (val <= 2) el.className = "text-rose-600 font-bold text-lg transition-colors";
+            else if (val == 3) el.className = "text-amber-500 font-bold text-lg transition-colors";
+            else el.className = "text-emerald-600 font-bold text-lg transition-colors";
+        }
+    }
+
+    function showTestDetails(index) {
+        const test = testsData[index];
+        const modalContent = document.getElementById('testModalContent');
+        if(!test) return;
+
+        let html = `
+            <div class="mb-6 p-5 rounded-2xl ${ (test.severidad === 'Severa' || test.severidad === 'Grave') ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700' } text-center border border-transparent">
+                <p class="text-xs font-bold uppercase opacity-70 tracking-widest">Resultado del Análisis</p>
+                <p class="text-3xl font-black mt-1">${test.severidad}</p>
+                <p class="text-sm font-medium mt-1 opacity-90">Puntaje Total: ${test.puntaje_total}</p>
+            </div>
+            <div class="space-y-0">
+        `;
+
+        try {
+            let answers = test.respuestas_json;
+            if (typeof answers === 'string') answers = JSON.parse(answers);
+            
+            Object.keys(answers).forEach((key, i) => {
+                if ((key.startsWith('pregunta_') || !isNaN(key) || key.startsWith('P')) && answers[key]) {
+                    html += `
+                        <div class="flex justify-between items-center py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 px-2 rounded-lg transition-colors">
+                            <span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">P${i+1}</span>
+                            <span class="text-sm font-medium text-slate-700 text-right w-3/4">${answers[key]}</span>
+                        </div>
+                    `;
+                }
+            });
+        } catch (e) { html += '<p class="text-rose-500 text-sm text-center">Error interpretando datos.</p>'; }
+        
+        html += '</div>';
+        modalContent.innerHTML = html;
+        toggleModal('testDetailModal');
+    }
+
+    function downloadPDF() {
+        const element = document.getElementById('monitoring-content');
+        const btn = document.querySelector('button[onclick="downloadPDF()"]');
+        const originalContent = btn.innerHTML;
+        
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Procesando...';
+        btn.disabled = true;
+
+        const opt = {
+            margin:       0.4,
+            filename:     'MindCare_Report_<%= new Date().toISOString().slice(0,10) %>.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true, logging: false, letterRendering: true },
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+
+        html2pdf().set(opt).from(element).save().then(() => {
+            btn.innerHTML = originalContent;
+            btn.disabled = false;
+        });
     }
 </script>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    
+    @keyframes fade-in-down { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fade-in-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade-in-down { animation: fade-in-down 0.5s ease-out; }
+    .animate-fade-in-up { animation: fade-in-up 0.5s ease-out; }
+</style>
 
 <%- include('../partials/footer') %>
