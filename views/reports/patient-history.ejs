@@ -1,60 +1,40 @@
 <%- include('../partials/header', { title: 'Expediente Clínico' }) %>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
     @media print {
         .no-print { display: none !important; }
         .print-break { page-break-inside: avoid; }
         body { background: white; }
-        .shadow-sm, .shadow-lg { box-shadow: none !important; border: 1px solid #ccc; }
-        .modal { display: none !important; } /* Ocultar modales al imprimir la página */
+        .shadow-sm { border: 1px solid #ddd; }
     }
-    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .tab-active { border-bottom: 2px solid #4f46e5; color: #4f46e5; }
+    .tab-inactive { color: #64748b; }
 </style>
 
 <div class="min-h-screen bg-slate-50 py-8 font-sans">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <nav class="flex mb-6 text-sm font-medium text-slate-500 no-print" aria-label="Breadcrumb">
-            <ol class="inline-flex items-center space-x-2">
-                <li class="inline-flex items-center">
-                    <a href="/dashboard" class="hover:text-indigo-600 transition-colors">
-                        <i class="fas fa-home mr-2"></i>Inicio
-                    </a>
-                </li>
-                <li><i class="fas fa-chevron-right text-slate-300 text-xs"></i></li>
-                <li>
-                    <a href="/reports/history" class="hover:text-indigo-600 transition-colors">Historiales</a>
-                </li>
-                <li><i class="fas fa-chevron-right text-slate-300 text-xs"></i></li>
-                <li class="text-indigo-600 font-bold" aria-current="page">
-                    Expediente #<%= patient.id_paciente %>
-                </li>
-            </ol>
+        <nav class="flex mb-6 text-sm font-medium text-slate-500 no-print">
+            <a href="/dashboard" class="hover:text-indigo-600"><i class="fas fa-home mr-2"></i>Inicio</a>
+            <span class="mx-2">/</span>
+            <a href="/reports/history" class="hover:text-indigo-600">Historiales</a>
+            <span class="mx-2">/</span>
+            <span class="text-indigo-600 font-bold">#<%= patient.id_paciente %></span>
         </nav>
 
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 no-print">
             <div>
-                <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Expediente Clínico</h1>
-                <p class="text-slate-500 text-sm mt-1">Gestión integral del tratamiento y seguimiento.</p>
+                <h1 class="text-3xl font-extrabold text-slate-900">Expediente Clínico</h1>
+                <p class="text-slate-500 text-sm mt-1">Gestión integral y seguimiento.</p>
             </div>
-            
-            <div class="flex flex-wrap gap-3">
-                <a href="/reports/patient/<%= patient.id_paciente %>/create-report" 
-                   class="inline-flex items-center bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-0.5 transition-all">
-                    <i class="fas fa-plus-circle mr-2"></i> Nuevo Reporte
+            <div class="flex gap-3">
+                <a href="/reports/patient/<%= patient.id_paciente %>/create-report" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold shadow hover:bg-indigo-700 transition flex items-center gap-2">
+                    <i class="fas fa-plus-circle"></i> Nuevo Reporte
                 </a>
-                
-                <a href="/dashboard/communication?chat=<%= patient.id_usuario %>" 
-                   class="inline-flex items-center bg-white text-indigo-600 border border-indigo-100 px-5 py-2.5 rounded-xl font-bold hover:bg-indigo-50 transition-colors shadow-sm">
-                    <i class="fas fa-comment-medical mr-2"></i> Mensaje
-                </a>
-
-                <button onclick="window.print()" 
-                        class="inline-flex items-center bg-white text-slate-600 border border-slate-200 px-4 py-2.5 rounded-xl font-bold hover:bg-slate-50 hover:text-slate-800 transition-colors shadow-sm">
-                    <i class="fas fa-print"></i>
+                <button onclick="window.print()" class="bg-white text-slate-600 border border-slate-200 px-4 py-2 rounded-xl font-bold hover:bg-slate-50 transition shadow-sm">
+                    <i class="fas fa-print mr-2"></i> PDF
                 </button>
             </div>
         </div>
@@ -62,286 +42,240 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
             <div class="lg:col-span-1 space-y-6">
-                
-                <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100 relative group print-break">
-                    <div class="h-32 bg-gradient-to-r from-blue-600 to-indigo-600 relative">
-                        <div class="absolute opacity-20 top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-                    </div>
-                    
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden print-break">
+                    <div class="h-24 bg-gradient-to-r from-blue-600 to-indigo-600"></div>
                     <div class="px-6 pb-6 relative">
-                        <div class="flex flex-col sm:flex-row items-start -mt-12 mb-4 gap-4">
-                            <div class="relative">
-                                <% if (patient.foto_perfil) { %>
-                                    <img src="<%= patient.foto_perfil %>" class="h-24 w-24 rounded-2xl object-cover border-4 border-white shadow-md bg-white">
-                                <% } else { %>
-                                    <div class="h-24 w-24 rounded-2xl bg-white border-4 border-white shadow-md flex items-center justify-center text-3xl font-bold text-indigo-600 bg-indigo-50">
-                                        <%= patient.nombre.charAt(0) %><%= patient.apellido.charAt(0) %>
-                                    </div>
-                                <% } %>
-                                <span class="absolute bottom-0 right-0 w-5 h-5 bg-emerald-500 border-2 border-white rounded-full" title="Activo"></span>
-                            </div>
-
-                            <div class="mt-12 sm:mt-14">
-                                <h2 class="text-xl font-bold text-slate-900 leading-tight">
-                                    <%= patient.nombre %> <br> <%= patient.apellido %>
-                                </h2>
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wide mt-2
-                                    <%= patient.estado_tratamiento === 'activo' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600' %>">
+                        <div class="flex flex-col items-start -mt-10 mb-4">
+                            <% if (patient.foto_perfil) { %>
+                                <img src="<%= patient.foto_perfil %>" class="h-20 w-20 rounded-2xl border-4 border-white shadow-md bg-white object-cover">
+                            <% } else { %>
+                                <div class="h-20 w-20 rounded-2xl bg-white border-4 border-white shadow-md flex items-center justify-center text-2xl font-bold text-indigo-600 bg-indigo-50">
+                                    <%= patient.nombre.charAt(0) %><%= patient.apellido.charAt(0) %>
+                                </div>
+                            <% } %>
+                            
+                            <div class="mt-3">
+                                <h2 class="text-xl font-bold text-slate-900"><%= patient.nombre %> <%= patient.apellido %></h2>
+                                <span class="inline-block px-2 py-0.5 rounded text-xs font-bold uppercase mt-1 <%= patient.estado_tratamiento === 'activo' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600' %>">
                                     <%= patient.estado_tratamiento %>
                                 </span>
                             </div>
                         </div>
                         
-                        <div class="pt-4 border-t border-slate-100 space-y-3">
-                            <div class="flex items-center gap-3 text-sm text-slate-600">
-                                <div class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
-                                    <i class="fas fa-envelope"></i>
-                                </div>
-                                <span class="truncate"><%= patient.email %></span>
-                            </div>
-                            <div class="flex items-center gap-3 text-sm text-slate-600">
-                                <div class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
-                                    <i class="fas fa-phone"></i>
-                                </div>
-                                <span><%= patient.telefono || 'Sin teléfono' %></span>
-                            </div>
-                        </div>
-
-                        <div class="mt-6 pt-4 border-t border-slate-100">
-                            <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                <i class="fas fa-notes-medical text-indigo-500"></i> Datos Médicos
-                            </h4>
-                            <div class="bg-amber-50 rounded-xl p-4 border border-amber-100 text-sm text-amber-900 leading-relaxed">
-                                <p><strong>Antecedentes:</strong> <%= patient.antecedentes_medicos || 'Ninguno registrado.' %></p>
-                                <p class="mt-2"><strong>Medicamentos:</strong> <%= patient.medicamentos_actuales || 'Ninguno.' %></p>
-                            </div>
+                        <div class="mt-4 pt-4 border-t border-slate-100 space-y-2 text-sm text-slate-600">
+                            <p><i class="fas fa-envelope w-5 text-slate-400"></i> <%= patient.email %></p>
+                            <p><i class="fas fa-phone w-5 text-slate-400"></i> <%= patient.telefono || 'Sin teléfono' %></p>
                         </div>
                     </div>
                 </div>
 
                 <div class="bg-white rounded-2xl shadow-sm p-6 border border-slate-100 print-break">
-                    <h3 class="font-bold text-slate-900 mb-4 flex items-center justify-between">
-                        <span class="flex items-center gap-2">
-                            <i class="fas fa-folder-open text-indigo-500"></i> Reportes
-                        </span>
-                    </h3>
-                    
+                    <h3 class="font-bold text-slate-900 mb-4">Documentos</h3>
                     <% if (reports && reports.length > 0) { %>
-                        <div class="space-y-2 max-h-64 overflow-y-auto custom-scrollbar pr-1">
-                            <% reports.forEach(report => { %>
-                                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-indigo-50 transition-colors border border-transparent hover:border-indigo-100 group">
-                                    <div class="flex items-center gap-3">
-                                        <div class="text-slate-400 group-hover:text-indigo-500">
-                                            <i class="far fa-file-alt text-lg"></i>
-                                        </div>
-                                        <div>
-                                            <p class="text-sm font-bold text-slate-700">Reporte <%= report.tipo_reporte %></p>
-                                            <p class="text-[10px] text-slate-400 uppercase font-bold">
-                                                <%= new Date(report.fecha_generacion).toLocaleDateString() %>
-                                            </p>
-                                        </div>
+                        <div class="space-y-2 max-h-60 overflow-y-auto">
+                            <% reports.forEach(r => { %>
+                                <div class="flex justify-between items-center p-3 bg-slate-50 rounded-lg hover:bg-indigo-50 transition cursor-pointer" 
+                                     onclick="openReportModal('<%= r.tipo_reporte %>', '<%= new Date(r.fecha_generacion).toLocaleDateString() %>', `<%= r.resumen_evolucion %>`)">
+                                    <div>
+                                        <p class="text-sm font-bold text-slate-700"><%= r.tipo_reporte %></p>
+                                        <p class="text-xs text-slate-400"><%= new Date(r.fecha_generacion).toLocaleDateString() %></p>
                                     </div>
-                                    <button onclick="openReportModal('<%= report.tipo_reporte %>', '<%= new Date(report.fecha_generacion).toLocaleDateString() %>', `<%= report.resumen_evolucion %>`, `<%= report.recomendaciones %>`)" 
-                                            class="w-8 h-8 flex items-center justify-center rounded-lg bg-white text-slate-400 shadow-sm group-hover:text-indigo-600 hover:bg-indigo-100 transition-all" 
-                                            title="Ver Detalle">
-                                        <i class="fas fa-eye text-xs"></i>
-                                    </button>
+                                    <i class="fas fa-eye text-slate-400"></i>
                                 </div>
                             <% }) %>
                         </div>
                     <% } else { %>
-                        <div class="text-center py-8 border-2 border-dashed border-slate-100 rounded-xl bg-slate-50/50">
-                            <p class="text-xs text-slate-500 font-medium">Sin reportes.</p>
-                            <a href="/reports/patient/<%= patient.id_paciente %>/create-report" class="text-xs text-indigo-600 font-bold mt-2 hover:underline">Crear Nuevo</a>
-                        </div>
+                        <p class="text-xs text-slate-400 text-center">Sin reportes.</p>
                     <% } %>
                 </div>
             </div>
 
-            <div class="lg:col-span-2">
-                <div class="bg-white rounded-2xl shadow-sm p-8 min-h-[800px] border border-slate-100 relative">
-                    
-                    <div class="flex justify-between items-center mb-10 border-b border-slate-100 pb-4">
-                        <h3 class="text-xl font-bold text-slate-900 flex items-center gap-3">
-                            <span class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
-                                <i class="fas fa-stream"></i>
-                            </span>
-                            Línea de Tiempo
-                        </h3>
-                        <select id="timelineFilter" class="no-print text-xs border-slate-200 rounded-lg text-slate-500 font-semibold focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer bg-slate-50 py-2 px-3">
-                            <option value="all">Todas las sesiones</option>
-                            <option value="excellent">Solo Excelentes</option>
-                            <option value="notes">Con Notas Clínicas</option>
-                        </select>
-                    </div>
+            <div class="lg:col-span-2 space-y-6">
+                
+                <div class="border-b border-slate-200 flex gap-6 no-print">
+                    <button onclick="switchTab('timeline')" id="tab-timeline" class="tab-active pb-3 px-1 text-sm font-bold transition-colors">
+                        <i class="fas fa-stream mr-1"></i> Línea de Tiempo
+                    </button>
+                    <button onclick="switchTab('evolution')" id="tab-evolution" class="tab-inactive pb-3 px-1 text-sm font-bold transition-colors">
+                        <i class="fas fa-chart-line mr-1"></i> Gráficas de Evolución
+                    </button>
+                </div>
 
-                    <div class="relative border-l-2 border-slate-200 ml-4 space-y-12 pl-10 pb-8" id="timelineContainer">
-                        
+                <div id="view-timeline" class="space-y-8">
+                    <div class="relative border-l-2 border-slate-200 ml-4 space-y-8 pl-8 pb-4">
                         <% if (sessions && sessions.length > 0) { %>
-                            <% sessions.forEach((session, index) => { %>
-                                <div class="timeline-item relative group print-break" 
-                                     data-quality="<%= session.calidad_sesion %>" 
-                                     data-has-notes="<%= session.notas_terapeuta ? 'true' : 'false' %>">
+                            <% sessions.forEach(session => { %>
+                                <div class="relative print-break">
+                                    <span class="absolute -left-[41px] top-0 h-5 w-5 rounded-full border-4 border-white shadow-sm z-10 <%= session.calidad_sesion === 'excelente' ? 'bg-emerald-500' : 'bg-indigo-500' %>"></span>
                                     
-                                    <span class="absolute -left-[51px] top-0 h-6 w-6 rounded-full border-4 border-white shadow-sm z-10 transition-transform group-hover:scale-125 
-                                        <%= session.calidad_sesion === 'excelente' ? 'bg-emerald-500' : (session.calidad_sesion === 'mala' ? 'bg-rose-500' : 'bg-indigo-500') %>">
-                                    </span>
-                                    
-                                    <div class="flex items-center mb-3">
-                                        <span class="bg-slate-100 text-slate-600 text-xs font-bold px-3 py-1 rounded-full border border-slate-200 shadow-sm">
-                                            <%= new Date(session.fecha_hora_inicio).toLocaleDateString() %>
-                                        </span>
-                                        <span class="ml-3 text-xs text-slate-400 font-bold flex items-center">
-                                            <i class="far fa-clock mr-1.5"></i>
-                                            <%= new Date(session.fecha_hora_inicio).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) %>
-                                        </span>
+                                    <div class="flex items-center mb-2 gap-3">
+                                        <span class="text-xs font-bold text-slate-500"><%= new Date(session.fecha_hora_inicio).toLocaleDateString() %></span>
+                                        <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded"><%= session.tipo_consulta %></span>
                                     </div>
 
-                                    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all duration-200 relative">
-                                        <div class="absolute top-3 -left-2 w-4 h-4 bg-white border-t border-l border-slate-200 transform -rotate-45"></div>
-
-                                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 pb-4 border-b border-slate-50 gap-4">
-                                            <div>
-                                                <h4 class="font-bold text-slate-800 text-lg flex items-center gap-2">
-                                                    Sesión <%= session.tipo_consulta || 'de Terapia' %>
-                                                </h4>
-                                                <p class="text-sm text-slate-500 mt-0.5">Modalidad: <span class="font-medium"><%= session.modalidad || 'Presencial' %></span></p>
-                                            </div>
-                                            
-                                            <button onclick="openEditModal('<%= session.id_cita %>', `<%= session.notas_terapeuta %>`)" 
-                                                    class="text-slate-400 hover:text-indigo-600 transition-colors no-print p-2 rounded-full hover:bg-indigo-50" title="Editar Nota Clínica">
+                                    <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-all">
+                                        <div class="flex justify-between items-start mb-3">
+                                            <h4 class="font-bold text-slate-800">Nota Clínica</h4>
+                                            <button onclick="openSOAPModal('<%= session.id_cita %>', `<%= session.notas_terapeuta %>`)" class="text-slate-400 hover:text-indigo-600 no-print" title="Editar Nota SOAP">
                                                 <i class="fas fa-pencil-alt"></i>
                                             </button>
                                         </div>
                                         
-                                        <div class="space-y-5">
-                                            <% if (session.objetivos_trabajados) { %>
-                                                <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
-                                                    <p class="text-xs font-bold text-indigo-500 uppercase mb-1 tracking-wide flex items-center gap-2">
-                                                        <i class="fas fa-bullseye"></i> Objetivos
-                                                    </p>
-                                                    <p class="text-sm text-slate-700 font-medium"><%= session.objetivos_trabajados %></p>
-                                                </div>
-                                            <% } %>
-
+                                        <div class="space-y-3 text-sm text-slate-600 leading-relaxed">
                                             <% if (session.notas_terapeuta) { %>
-                                                <div>
-                                                    <p class="text-xs font-bold text-slate-400 uppercase mb-2 flex items-center gap-2">
-                                                        <i class="fas fa-align-left"></i> Notas Clínicas
-                                                    </p>
-                                                    <div class="text-sm text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100 whitespace-pre-line">
-                                                        <%= session.notas_terapeuta %>
-                                                    </div>
+                                                <div class="whitespace-pre-line bg-slate-50 p-3 rounded-lg border-l-4 border-indigo-200">
+                                                    <%= session.notas_terapeuta %>
                                                 </div>
+                                            <% } else { %>
+                                                <p class="italic text-slate-400">Sin nota registrada.</p>
                                             <% } %>
                                         </div>
                                     </div>
                                 </div>
                             <% }) %>
                         <% } else { %>
-                            <div class="text-center py-20">
-                                <div class="bg-slate-50 rounded-full h-20 w-20 flex items-center justify-center mx-auto mb-4 border border-slate-200">
-                                    <i class="fas fa-clipboard-list text-slate-300 text-3xl"></i>
-                                </div>
-                                <h4 class="text-slate-800 font-bold text-lg">Expediente Nuevo</h4>
-                                <p class="text-slate-500 text-sm mt-1">No hay sesiones registradas aún.</p>
-                            </div>
+                            <p class="text-slate-400 italic ml-2">No hay sesiones registradas.</p>
                         <% } %>
                     </div>
                 </div>
+
+                <div id="view-evolution" class="hidden space-y-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="font-bold text-slate-800 mb-4">Estado de Ánimo (Check-ins)</h3>
+                        <div class="h-64 w-full"><canvas id="chartEmociones"></canvas></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="font-bold text-slate-800 mb-4">Resultados Psicométricos</h3>
+                        <div class="h-64 w-full"><canvas id="chartTests"></canvas></div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
 </div>
 
-<div id="editNoteModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg transform transition-all scale-100">
-        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-            <h3 class="text-lg font-bold text-slate-800">Editar Nota Clínica</h3>
-            <button onclick="closeModal('editNoteModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+<div id="soapModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform transition-all">
+        <div class="px-6 py-4 bg-indigo-600 text-white flex justify-between items-center rounded-t-2xl">
+            <h3 class="font-bold">Nota SOAP</h3>
+            <button onclick="closeModal('soapModal')"><i class="fas fa-times"></i></button>
         </div>
-        <form action="/reports/session/update" method="POST" class="p-6">
-            <input type="hidden" name="sessionId" id="modalSessionId">
+        <form action="/reports/session/update" method="POST" class="p-6 space-y-4">
+            <input type="hidden" name="sessionId" id="soapSessionId">
             <input type="hidden" name="patientId" value="<%= patient.id_paciente %>">
             
-            <div class="mb-4">
-                <label class="block text-sm font-bold text-slate-700 mb-2">Observaciones de la Sesión</label>
-                <textarea name="notas" id="modalSessionNotes" rows="6" class="w-full rounded-xl border-slate-200 text-sm focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50 p-3"></textarea>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase">S - Subjetivo</label>
+                    <textarea id="soapS" rows="3" class="w-full rounded border-slate-200 text-sm bg-slate-50"></textarea>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase">O - Objetivo</label>
+                    <textarea id="soapO" rows="3" class="w-full rounded border-slate-200 text-sm bg-slate-50"></textarea>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase">A - Análisis</label>
+                    <textarea id="soapA" rows="3" class="w-full rounded border-slate-200 text-sm bg-slate-50"></textarea>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 uppercase">P - Plan</label>
+                    <textarea id="soapP" rows="3" class="w-full rounded border-slate-200 text-sm bg-slate-50"></textarea>
+                </div>
             </div>
-            
-            <div class="flex justify-end gap-3">
-                <button type="button" onclick="closeModal('editNoteModal')" class="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700">Cancelar</button>
-                <button type="submit" class="px-6 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 shadow-md">Guardar Cambios</button>
+            <input type="hidden" name="notas" id="finalNotes">
+            <div class="flex justify-end pt-2">
+                <button type="submit" onclick="combineSOAP()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-indigo-700">Guardar</button>
             </div>
         </form>
     </div>
 </div>
 
-<div id="viewReportModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div class="bg-indigo-600 px-8 py-6 text-white flex justify-between items-start">
-            <div>
-                <h3 class="text-2xl font-bold" id="reportModalTitle">Reporte</h3>
-                <p class="text-indigo-200 text-sm mt-1" id="reportModalDate">Fecha</p>
-            </div>
-            <button onclick="closeModal('viewReportModal')" class="text-white/70 hover:text-white bg-white/10 p-2 rounded-lg"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="p-8 space-y-6">
-            <div>
-                <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Resumen de Evolución</h4>
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-slate-700 text-sm leading-relaxed" id="reportModalContent"></div>
-            </div>
-            <div>
-                <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Recomendaciones</h4>
-                <div class="bg-amber-50 p-4 rounded-xl border border-amber-100 text-amber-900 text-sm leading-relaxed" id="reportModalRecs"></div>
-            </div>
-        </div>
-        <div class="px-8 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
-            <button onclick="window.print()" class="px-6 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-100 shadow-sm">
-                <i class="fas fa-print mr-2"></i> Imprimir
-            </button>
+<div id="reportModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl p-6">
+        <h3 class="text-xl font-bold text-slate-900 mb-1" id="repTitle">Reporte</h3>
+        <p class="text-sm text-slate-500 mb-4" id="repDate">Fecha</p>
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm text-slate-700 mb-6 max-h-60 overflow-y-auto" id="repContent"></div>
+        <div class="flex justify-end">
+            <button onclick="closeModal('reportModal')" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold">Cerrar</button>
         </div>
     </div>
 </div>
 
 <script>
-    // --- Lógica de Filtrado de Timeline ---
-    const filterSelect = document.getElementById('timelineFilter');
-    const items = document.querySelectorAll('.timeline-item');
+    // Tabs
+    function switchTab(tab) {
+        document.getElementById('view-timeline').classList.add('hidden');
+        document.getElementById('view-evolution').classList.add('hidden');
+        document.getElementById('tab-timeline').className = 'tab-inactive pb-3 px-1 text-sm font-bold transition-colors';
+        document.getElementById('tab-evolution').className = 'tab-inactive pb-3 px-1 text-sm font-bold transition-colors';
+        
+        document.getElementById('view-' + tab).classList.remove('hidden');
+        document.getElementById('tab-' + tab).className = 'tab-active pb-3 px-1 text-sm font-bold transition-colors';
+    }
 
-    if(filterSelect) {
-        filterSelect.addEventListener('change', (e) => {
-            const val = e.target.value;
-            items.forEach(item => {
-                if (val === 'all') {
-                    item.style.display = 'block';
-                } else if (val === 'excellent') {
-                    item.style.display = item.dataset.quality === 'excelente' ? 'block' : 'none';
-                } else if (val === 'notes') {
-                    item.style.display = item.dataset.hasNotes === 'true' ? 'block' : 'none';
-                }
+    // Modales
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    
+    function openReportModal(type, date, content) {
+        document.getElementById('repTitle').innerText = 'Reporte ' + type;
+        document.getElementById('repDate').innerText = date;
+        document.getElementById('repContent').innerText = content;
+        document.getElementById('reportModal').classList.remove('hidden');
+    }
+
+    function openSOAPModal(sid, notes) {
+        document.getElementById('soapSessionId').value = sid;
+        // Parsear notas simples
+        const sMatch = notes.match(/S:\s*(.*?)(?=\nO:|$)/s);
+        const oMatch = notes.match(/O:\s*(.*?)(?=\nA:|$)/s);
+        const aMatch = notes.match(/A:\s*(.*?)(?=\nP:|$)/s);
+        const pMatch = notes.match(/P:\s*(.*)/s);
+
+        document.getElementById('soapS').value = sMatch ? sMatch[1].trim() : (notes.includes('S:') ? '' : notes);
+        document.getElementById('soapO').value = oMatch ? oMatch[1].trim() : '';
+        document.getElementById('soapA').value = aMatch ? aMatch[1].trim() : '';
+        document.getElementById('soapP').value = pMatch ? pMatch[1].trim() : '';
+        document.getElementById('soapModal').classList.remove('hidden');
+    }
+
+    function combineSOAP() {
+        const s = document.getElementById('soapS').value;
+        const o = document.getElementById('soapO').value;
+        const a = document.getElementById('soapA').value;
+        const p = document.getElementById('soapP').value;
+        document.getElementById('finalNotes').value = `S: ${s}\nO: ${o}\nA: ${a}\nP: ${p}`;
+    }
+
+    // Gráficas
+    document.addEventListener('DOMContentLoaded', function() {
+        const rawCheckins = '<%- JSON.stringify(graphData.checkins || []) %>';
+        const rawTests = '<%- JSON.stringify(graphData.tests || []) %>';
+        const checkins = JSON.parse(rawCheckins);
+        const tests = JSON.parse(rawTests);
+
+        if (checkins.length > 0) {
+            new Chart(document.getElementById('chartEmociones'), {
+                type: 'line',
+                data: {
+                    labels: checkins.map(c => new Date(c.fecha_hora).toLocaleDateString()),
+                    datasets: [{ label: 'Nivel de Ánimo', data: checkins.map(c => c.valencia), borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', fill: true }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 1, max: 5 } } }
             });
-        });
-    }
+        }
 
-    // --- Lógica de Modales ---
-    function openEditModal(sessionId, currentNotes) {
-        document.getElementById('modalSessionId').value = sessionId;
-        document.getElementById('modalSessionNotes').value = currentNotes;
-        document.getElementById('editNoteModal').classList.remove('hidden');
-    }
-
-    function openReportModal(type, date, content, recs) {
-        document.getElementById('reportModalTitle').innerText = 'Reporte ' + type;
-        document.getElementById('reportModalDate').innerText = 'Generado el: ' + date;
-        document.getElementById('reportModalContent').innerText = content;
-        document.getElementById('reportModalRecs').innerText = recs || 'Sin recomendaciones específicas.';
-        document.getElementById('viewReportModal').classList.remove('hidden');
-    }
-
-    function closeModal(id) {
-        document.getElementById(id).classList.add('hidden');
-    }
+        if (tests.length > 0) {
+            new Chart(document.getElementById('chartTests'), {
+                type: 'bar',
+                data: {
+                    labels: tests.map(t => `${t.nombre_escala} (${new Date(t.fecha_completacion).toLocaleDateString()})`),
+                    datasets: [{ label: 'Puntaje', data: tests.map(t => t.puntuacion_total), backgroundColor: '#10b981' }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+    });
 </script>
 
 <%- include('../partials/footer') %>
