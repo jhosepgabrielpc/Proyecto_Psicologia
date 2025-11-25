@@ -1,0 +1,144 @@
+const db = require('../config/database');
+const bcrypt = require('bcryptjs');
+
+// ====================================================================
+// 1. DASHBOARD PRINCIPAL (Ya lo tenías)
+// ====================================================================
+const getTherapistDashboard = async (req, res) => {
+    const userId = req.session.user.id_usuario;
+    const role = req.session.user.nombre_rol;
+
+    try {
+        let patients = [];
+        let totalPatients = 0;
+        let criticalPatients = 0; 
+        let therapistId = null;
+
+        if (role === 'Terapeuta') {
+            const tRes = await db.query('SELECT id_terapeuta FROM Terapeutas WHERE id_usuario = $1', [userId]);
+            if (tRes.rows.length > 0) therapistId = tRes.rows[0].id_terapeuta;
+        }
+
+        let query = `
+            SELECT p.id_paciente, u.nombre, u.apellido, u.email, u.foto_perfil,
+                   (SELECT valencia FROM checkins_emocionales WHERE id_paciente = p.id_paciente ORDER BY fecha_hora DESC LIMIT 1) as ultima_valencia,
+                   (SELECT fecha_hora FROM checkins_emocionales WHERE id_paciente = p.id_paciente ORDER BY fecha_hora DESC LIMIT 1) as ultimo_checkin
+            FROM Pacientes p
+            JOIN Usuarios u ON p.id_usuario = u.id_usuario
+        `;
+        
+        let params = [];
+        if (therapistId) {
+            query += ` WHERE p.id_terapeuta = $1`;
+            params = [therapistId];
+        }
+        query += ` ORDER BY u.apellido ASC`;
+
+        const pRes = await db.query(query, params);
+        patients = pRes.rows;
+        totalPatients = patients.length;
+
+        patients.forEach(p => {
+            if (p.ultima_valencia && p.ultima_valencia <= 2) criticalPatients++;
+        });
+
+        res.render('dashboard/therapist', {
+            title: 'Panel del Terapeuta',
+            user: req.session.user,
+            patients: patients,
+            stats: {
+                total: totalPatients,
+                critical: criticalPatients,
+                active: totalPatients - criticalPatients
+            }
+        });
+
+    } catch (error) {
+        console.error('Error en Dashboard Terapeuta:', error);
+        res.status(500).render('error', { title: 'Error', message: 'Error interno', user: req.session.user, error });
+    }
+};
+
+// ====================================================================
+// 2. MOSTRAR FORMULARIO DE REGISTRO (GET)
+// ====================================================================
+const showRegisterPatientForm = (req, res) => {
+    res.render('dashboard/register-patient', {
+        title: 'Registrar Nuevo Paciente',
+        user: req.session.user,
+        error: null,
+        success: null
+    });
+};
+
+// ====================================================================
+// 3. PROCESAR REGISTRO DE PACIENTE (POST)
+// ====================================================================
+const registerPatient = async (req, res) => {
+    const { nombre, apellido, email, password, telefono } = req.body;
+    const therapistUserId = req.session.user.id_usuario;
+
+    try {
+        // 1. Obtener ID del Terapeuta actual
+        const tRes = await db.query('SELECT id_terapeuta FROM Terapeutas WHERE id_usuario = $1', [therapistUserId]);
+        if (tRes.rows.length === 0) throw new Error('No se encontró el perfil del terapeuta.');
+        const therapistId = tRes.rows[0].id_terapeuta;
+
+        // 2. Verificar si el email ya existe
+        const userCheck = await db.query('SELECT * FROM Usuarios WHERE email = $1', [email]);
+        if (userCheck.rows.length > 0) {
+            return res.render('dashboard/register-patient', {
+                title: 'Registrar Nuevo Paciente',
+                user: req.session.user,
+                error: 'El correo electrónico ya está registrado.',
+                success: null
+            });
+        }
+
+        // 3. Crear Usuario (Hash Password)
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        // Obtenemos el ID del rol 'Paciente'
+        const roleRes = await db.query("SELECT id_rol FROM Roles WHERE nombre_rol = 'Paciente'");
+        const roleId = roleRes.rows[0].id_rol;
+
+        // Insertar en Usuarios
+        const newUser = await db.query(`
+            INSERT INTO Usuarios (nombre, apellido, email, password_hash, id_rol, fecha_creacion, estado)
+            VALUES ($1, $2, $3, $4, $5, NOW(), true)
+            RETURNING id_usuario`,
+            [nombre, apellido, email, hashedPassword, roleId]
+        );
+        const newUserId = newUser.rows[0].id_usuario;
+
+        // 4. Insertar en Pacientes (Vinculado al Terapeuta)
+        await db.query(`
+            INSERT INTO Pacientes (id_usuario, fecha_nacimiento, telefono, direccion, id_terapeuta)
+            VALUES ($1, '2000-01-01', $2, 'Dirección pendiente', $3)`,
+            [newUserId, telefono || null, therapistId]
+        );
+
+        // 5. Éxito
+        res.render('dashboard/register-patient', {
+            title: 'Registrar Nuevo Paciente',
+            user: req.session.user,
+            error: null,
+            success: 'Paciente registrado y asignado correctamente.'
+        });
+
+    } catch (error) {
+        console.error('Error registrando paciente:', error);
+        res.render('dashboard/register-patient', {
+            title: 'Registrar Nuevo Paciente',
+            user: req.session.user,
+            error: 'Ocurrió un error al registrar al paciente.',
+            success: null
+        });
+    }
+};
+
+module.exports = {
+    getTherapistDashboard,
+    showRegisterPatientForm,
+    registerPatient
+};
