@@ -80,19 +80,23 @@ const authRoutes = require('./routes/authRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const communicationRoutes = require('./routes/communicationRoutes');
 const monitoringRoutes = require('./routes/monitoringRoutes'); // <--- NUEVO: Importar Monitoreo
+const reportRoutes = require('./routes/reportRoutes');
 const indexRoutes = require('./routes/index');
 
 // --- DEFINICIÓN DE ENDPOINTS ---
 
+// En server.js (Línea 85 aprox)
+
 // A. Rutas Principales
-app.use('/', indexRoutes);      // Landing Page (Home)
-app.use('/auth', authRoutes);   // Login/Registro
+app.use('/', indexRoutes);
+app.use('/auth', authRoutes);
 
-// B. Rutas Específicas (Deben ir ANTES de la general /dashboard)
-app.use('/dashboard/communication', communicationRoutes); 
-app.use('/dashboard/monitoring', monitoringRoutes); // <--- NUEVO: Activar Monitoreo
+// B. Rutas Específicas (IMPORTANTE: Estas van PRIMERO)
+app.use('/dashboard/communication', communicationRoutes);
+app.use('/dashboard/monitoring', monitoringRoutes); // <--- ¿Está esta línea aquí?
+app.use('/reports', reportRoutes);
 
-// C. Ruta General de Dashboard (El "Lobby")
+// C. Ruta General (Esta "se come" todo lo que empiece con /dashboard)
 app.use('/dashboard', dashboardRoutes);
 
 
