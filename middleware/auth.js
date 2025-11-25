@@ -75,7 +75,13 @@ const requireRole = (...allowedRoles) => {
 // WRAPPERS ESPECÍFICOS (Alias para facilitar uso)
 // ==================================================================
 
-const requireTherapist = requireRole('Terapeuta', 'Administrador');
+const requireTherapist = requireRole(
+    'Terapeuta', 
+    'Administrador', 
+    'GestorHistorial', 
+    'GestorComunicacion', 
+    'Monitorista'
+);
 const requirePatient = requireRole('Paciente', 'Administrador');
 const requireAdmin = requireRole('Administrador', 'Admin');
 
