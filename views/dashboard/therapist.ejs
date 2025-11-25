@@ -1,87 +1,158 @@
 <%- include('../partials/header', { title: 'Dashboard Terapeuta' }) %>
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">Hola, Dr./Dra. <%= user.nombre %> 👨‍⚕️</h1>
-        <p class="text-gray-600 mt-2">Panel de control para profesionales de la salud mental</p>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-slate-50 min-h-screen">
+    <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-800">Hola, Dr./Dra. <%= user.nombre %> 👨‍⚕️</h1>
+            <p class="text-slate-500 mt-1">Panel de control para profesionales de la salud mental</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="px-4 py-2 bg-white rounded-full shadow-sm text-sm font-medium text-emerald-600 border border-emerald-100 flex items-center">
+                <span class="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse"></span>
+                En línea
+            </span>
+        </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-rows-2 gap-6 mb-8">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
-                <div class="flex items-center">
-                    <div class="bg-blue-100 p-3 rounded-lg">
-                        <i class="fas fa-users text-blue-600 text-xl"></i>
-                    </div>
-                    <div class="ml-4">
-                        <h3 class="font-semibold text-gray-800">Pacientes Activos</h3>
-                        <p class="text-2xl font-bold text-gray-900">12</p>
-                    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-2xl shadow-sm p-6 border border-slate-100 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div class="bg-blue-50 p-3 rounded-xl">
+                    <i class="fas fa-users text-blue-600 text-xl"></i>
                 </div>
+                <span class="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Total</span>
             </div>
-
-            <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
-                <div class="flex items-center">
-                    <div class="bg-green-100 p-3 rounded-lg">
-                        <i class="fas fa-calendar-check text-green-600 text-xl"></i>
-                    </div>
-                    <div class="ml-4">
-                        <h3 class="font-semibold text-gray-800">Citas Hoy</h3>
-                        <p class="text-2xl font-bold text-gray-900">3</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-red-500">
-                <div class="flex items-center">
-                    <div class="bg-red-100 p-3 rounded-lg">
-                        <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
-                    </div>
-                    <div class="ml-4">
-                        <h3 class="font-semibold text-gray-800">Alertas</h3>
-                        <p class="text-2xl font-bold text-gray-900">2</p>
-                    </div>
-                </div>
+            <div class="mt-4">
+                <h3 class="text-sm font-medium text-slate-500 uppercase tracking-wider">Pacientes Activos</h3>
+                <p class="text-3xl font-extrabold text-slate-800 mt-1"><%= locals.stats ? stats.pacientes : '12' %></p>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div class="bg-white rounded-xl shadow-sm p-6">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4">Próximas Citas</h2>
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                        <div>
-                            <p class="font-medium">Juan Pérez</p>
-                            <p class="text-sm text-gray-600">15:00 - 16:00</p>
+        <div class="bg-white rounded-2xl shadow-sm p-6 border border-slate-100 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div class="bg-emerald-50 p-3 rounded-xl">
+                    <i class="fas fa-calendar-check text-emerald-600 text-xl"></i>
+                </div>
+                <span class="text-xs font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">Hoy</span>
+            </div>
+            <div class="mt-4">
+                <h3 class="text-sm font-medium text-slate-500 uppercase tracking-wider">Citas Programadas</h3>
+                <p class="text-3xl font-extrabold text-slate-800 mt-1"><%= locals.stats ? stats.citas_hoy : '3' %></p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm p-6 border border-slate-100 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div class="bg-rose-50 p-3 rounded-xl">
+                    <i class="fas fa-exclamation-triangle text-rose-600 text-xl"></i>
+                </div>
+                <span class="text-xs font-bold bg-rose-100 text-rose-700 px-2 py-1 rounded-full">Atención</span>
+            </div>
+            <div class="mt-4">
+                <h3 class="text-sm font-medium text-slate-500 uppercase tracking-wider">Alertas de Riesgo</h3>
+                <p class="text-3xl font-extrabold text-slate-800 mt-1"><%= locals.stats ? stats.alertas : '2' %></p>
+            </div>
+        </div>
+    </div>
+
+    <h2 class="text-lg font-bold text-slate-800 mb-4">Gestión Profesional</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        
+        <a href="/dashboard/appointments" class="group bg-white p-5 rounded-xl shadow-sm border border-slate-200 hover:border-blue-400 hover:ring-4 hover:ring-blue-50 transition-all cursor-pointer flex items-center gap-4">
+            <div class="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                <i class="fas fa-calendar-alt text-xl"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-slate-800 group-hover:text-blue-700">Mi Agenda</h3>
+                <p class="text-sm text-slate-500">Ver citas y horarios</p>
+            </div>
+            <i class="fas fa-chevron-right ml-auto text-slate-300 group-hover:text-blue-500"></i>
+        </a>
+
+        <a href="/reports/history" class="group bg-white p-5 rounded-xl shadow-sm border border-slate-200 hover:border-emerald-400 hover:ring-4 hover:ring-emerald-50 transition-all cursor-pointer flex items-center gap-4">
+            <div class="h-12 w-12 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                <i class="fas fa-folder-open text-xl"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-slate-800 group-hover:text-emerald-700">Historial Clínico</h3>
+                <p class="text-sm text-slate-500">Expedientes y reportes</p>
+            </div>
+            <i class="fas fa-chevron-right ml-auto text-slate-300 group-hover:text-emerald-500"></i>
+        </a>
+
+        <a href="/dashboard/communication" class="group bg-white p-5 rounded-xl shadow-sm border border-slate-200 hover:border-purple-400 hover:ring-4 hover:ring-purple-50 transition-all cursor-pointer flex items-center gap-4">
+            <div class="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                <i class="fas fa-comments text-xl"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-slate-800 group-hover:text-purple-700">Chat Pacientes</h3>
+                <p class="text-sm text-slate-500">Mensajes directos</p>
+            </div>
+            <i class="fas fa-chevron-right ml-auto text-slate-300 group-hover:text-purple-500"></i>
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <h2 class="font-bold text-slate-800">Agenda de Hoy</h2>
+                <a href="/dashboard/appointments" class="text-xs font-bold text-blue-600 hover:text-blue-800">Ver todo</a>
+            </div>
+            <div class="p-6 space-y-4">
+                <% if (locals.upcomingAppointments && upcomingAppointments.length > 0) { %>
+                    <% upcomingAppointments.forEach(cita => { %>
+                        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                            <div class="flex items-center gap-3">
+                                <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
+                                    <%= cita.nombre_paciente.charAt(0) %>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-sm text-slate-800"><%= cita.nombre_paciente %></p>
+                                    <p class="text-xs text-slate-500"><i class="far fa-clock mr-1"></i><%= cita.hora %></p>
+                                </div>
+                            </div>
+                            <span class="px-2 py-1 bg-white border border-slate-200 text-slate-600 text-xs rounded-lg font-medium">
+                                <%= cita.modalidad %>
+                            </span>
                         </div>
-                        <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">Virtual</span>
+                    <% }); %>
+                <% } else { %>
+                    <div class="flex items-center justify-between p-3 bg-blue-50 rounded-xl border border-blue-100">
+                        <div class="flex items-center gap-3">
+                            <div class="h-10 w-10 rounded-full bg-white flex items-center justify-center text-blue-600 font-bold text-sm shadow-sm">
+                                JP
+                            </div>
+                            <div>
+                                <p class="font-bold text-sm text-blue-900">Juan Pérez (Ejemplo)</p>
+                                <p class="text-xs text-blue-600"><i class="far fa-clock mr-1"></i>15:00 - 16:00</p>
+                            </div>
+                        </div>
+                        <span class="px-2 py-1 bg-white/60 text-blue-800 text-xs rounded-lg font-medium backdrop-blur-sm">Virtual</span>
                     </div>
-                    <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                        <div>
-                            <p class="font-medium">María González</p>
-                            <p class="text-sm text-gray-600">17:00 - 18:00</p>
-                        </div>
-                        <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">Presencial</span>
+                    <p class="text-xs text-center text-slate-400 mt-2">No hay más citas programadas para hoy.</p>
+                <% } %>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-rose-50/30">
+                <h2 class="font-bold text-slate-800">Alertas Prioritarias</h2>
+                <span class="text-xs font-bold bg-rose-100 text-rose-600 px-2 py-0.5 rounded">Acción Requerida</span>
+            </div>
+            <div class="p-6 space-y-3">
+                <div class="flex items-start p-3 bg-white rounded-xl border-l-4 border-rose-500 shadow-sm group hover:bg-rose-50 transition-colors cursor-pointer">
+                    <i class="fas fa-exclamation-circle text-rose-500 mt-1 mr-3 group-hover:scale-110 transition-transform"></i>
+                    <div>
+                        <p class="font-bold text-sm text-slate-800 group-hover:text-rose-800">PHQ-9 Crítico</p>
+                        <p class="text-xs text-slate-500 group-hover:text-rose-600">Ana López - Puntuación: 22 (Severo)</p>
                     </div>
                 </div>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-sm p-6">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4">Alertas Recientes</h2>
-                <div class="space-y-3">
-                    <div class="flex items-start p-3 bg-red-50 rounded-lg border-l-4 border-red-500">
-                        <i class="fas fa-exclamation-circle text-red-500 mt-1 mr-3"></i>
-                        <div>
-                            <p class="font-medium text-red-800">PHQ-9 Crítico</p>
-                            <p class="text-sm text-red-600">Ana López - Puntuación: 22</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start p-3 bg-orange-50 rounded-lg border-l-4 border-orange-500">
-                        <i class="fas fa-clock text-orange-500 mt-1 mr-3"></i>
-                        <div>
-                            <p class="font-medium text-orange-800">Check-in Incompleto</p>
-                            <p class="text-sm text-orange-600">Carlos Ruiz - 3 días sin registro</p>
-                        </div>
+                <div class="flex items-start p-3 bg-white rounded-xl border-l-4 border-orange-500 shadow-sm group hover:bg-orange-50 transition-colors cursor-pointer">
+                    <i class="fas fa-clock text-orange-500 mt-1 mr-3 group-hover:scale-110 transition-transform"></i>
+                    <div>
+                        <p class="font-bold text-sm text-slate-800 group-hover:text-orange-800">Check-in Incompleto</p>
+                        <p class="text-xs text-slate-500 group-hover:text-orange-600">Carlos Ruiz - 3 días sin registro</p>
                     </div>
                 </div>
             </div>

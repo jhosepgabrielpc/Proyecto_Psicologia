@@ -52,7 +52,7 @@
                         <p class="text-sm opacity-90 mt-0.5">
                             <% if (msg === 'admin_protected') { %> Por seguridad, no puedes bloquear al Administrador Principal.
                             <% } else if (msg === 'assigned') { %> El paciente ahora tiene acceso a su terapeuta.
-                            <% } else { %> La operación se completó correctamente en la base de datos. <% } %>
+                            <% } else { %> La operación se completó correctamente. <% } %>
                         </p>
                     </div>
                 </div>
@@ -96,20 +96,15 @@
                                         </div>
                                     </div>
                                 </div>
-                                
                                 <div class="mt-3 bg-rose-50 p-3 rounded-lg border border-rose-100">
                                     <p class="text-sm font-bold text-rose-800 mb-1"><%= alert.emocion_principal %></p>
                                     <p class="text-sm text-slate-600 italic">"<%= alert.notas %>"</p>
                                 </div>
                             </div>
-
                             <div class="mt-4 md:mt-0 md:ml-6 w-full md:w-auto flex md:flex-col gap-2">
                                 <a href="/dashboard/communication?chat=<%= alert.id_usuario %>" class="flex-1 text-center bg-rose-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-rose-700 transition shadow-sm hover:shadow-rose-200">
                                     <i class="fas fa-comments mr-2"></i> Contactar
                                 </a>
-                                <button class="flex-1 text-center bg-white text-slate-600 border border-slate-200 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition">
-                                    Archivar
-                                </button>
                             </div>
                         </div>
                     <% }); %>
@@ -117,7 +112,7 @@
             </div>
         <% } %>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
                 <div class="absolute right-0 top-0 w-24 h-24 bg-indigo-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
                 <div class="relative z-10">
@@ -179,6 +174,32 @@
             </div>
         </div>
 
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+            <a href="/reports/analytics" class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex items-center gap-6 relative overflow-hidden cursor-pointer">
+                <div class="absolute right-0 top-0 w-24 h-24 bg-indigo-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                <div class="relative z-10 p-4 rounded-xl bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                    <i class="fas fa-chart-pie text-2xl"></i>
+                </div>
+                <div class="relative z-10">
+                    <h3 class="text-xl font-bold text-slate-800">Reportes & Analítica</h3>
+                    <p class="text-sm text-slate-500 mt-1 group-hover:text-indigo-600 transition-colors">KPIs, gráficos y exportación de datos.</p>
+                </div>
+                <div class="ml-auto relative z-10 text-slate-300 group-hover:text-indigo-600 transition-colors">
+                    <i class="fas fa-arrow-right text-xl"></i>
+                </div>
+            </a>
+
+            <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200 flex items-center gap-6 opacity-70">
+                <div class="p-4 rounded-xl bg-white text-slate-400 shadow-sm">
+                    <i class="fas fa-cogs text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-slate-500">Configuración (Próximamente)</h3>
+                    <p class="text-sm text-slate-400 mt-1">Ajustes del sistema y logs.</p>
+                </div>
+            </div>
+        </div>
+
         <% if (locals.unassignedPatients && unassignedPatients.length > 0) { %>
         <div class="mb-10 bg-white rounded-2xl shadow-lg border border-orange-100 overflow-hidden">
             <div class="px-8 py-5 bg-gradient-to-r from-orange-500 to-orange-600 flex justify-between items-center">
@@ -204,7 +225,6 @@
                                 <div class="ml-3 overflow-hidden">
                                     <h4 class="text-sm font-bold text-slate-900 truncate"><%= p.nombre %> <%= p.apellido %></h4>
                                     <p class="text-xs text-slate-500 truncate"><%= p.email %></p>
-                                    <p class="text-[10px] text-orange-500 mt-0.5 font-medium">Registrado: <%= new Date(p.fecha_inicio_tratamiento).toLocaleDateString() %></p>
                                 </div>
                             </div>
                             
@@ -269,8 +289,8 @@
                     </thead>
                     <tbody class="bg-white divide-y divide-slate-100">
                         <% users.forEach(function(u) { %>
-                            <% if (u) { %> <tr class="group hover:bg-indigo-50/30 transition-colors duration-200 <%= !u.estado ? 'bg-slate-50/80' : '' %>">
-                                
+                            <% if (u) { %> 
+                            <tr class="group hover:bg-indigo-50/30 transition-colors duration-200 <%= !u.estado ? 'bg-slate-50/80' : '' %>">
                                 <td class="px-8 py-5 whitespace-nowrap <%= !u.estado ? 'opacity-60 grayscale' : '' %>">
                                     <div class="flex items-center">
                                         <div class="flex-shrink-0 h-10 w-10">
@@ -289,8 +309,7 @@
 
                                 <td class="px-6 py-5 whitespace-nowrap <%= !u.estado ? 'opacity-60 grayscale' : '' %>">
                                     <% 
-                                        // LÓGICA BLINDADA PARA EL ROL
-                                        let roleName = u.nombre_rol || 'Sin Rol'; // Si es undefined, pone 'Sin Rol'
+                                        let roleName = u.nombre_rol || 'Sin Rol';
                                         let roleStyle = 'bg-slate-100 text-slate-600 border-slate-200';
                                         let roleIcon = 'fa-user';
                                         
@@ -314,8 +333,8 @@
                                     <% if (u.estado) { %>
                                         <div class="flex items-center">
                                             <span class="relative flex h-2.5 w-2.5 mr-2">
-                                              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                                             </span>
                                             <span class="text-xs font-bold text-emerald-700">Activo</span>
                                         </div>
@@ -333,11 +352,7 @@
 
                                 <td class="px-8 py-5 whitespace-nowrap text-right text-sm font-medium">
                                     <div class="flex justify-end items-center space-x-2">
-                                        
-                                        <% 
-                                            // Variable segura para verificar admin
-                                            let isAdmin = (roleName.includes('Admin') || roleName === 'Administrador');
-                                        %>
+                                        <% let isAdmin = (roleName.includes('Admin') || roleName === 'Administrador'); %>
 
                                         <% if (isAdmin) { %>
                                             <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-50 text-slate-300 cursor-not-allowed border border-slate-100" title="Protegido">

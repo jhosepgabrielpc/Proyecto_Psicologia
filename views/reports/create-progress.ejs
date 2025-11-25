@@ -1,0 +1,87 @@
+<%- include('../partials/header', { title: 'Generar Reporte' }) %>
+
+<div class="min-h-screen bg-gray-50 py-12">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-8 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold">Generar Reporte de Progreso</h1>
+                        <p class="text-blue-100 mt-2 flex items-center">
+                            <i class="fas fa-user-circle mr-2"></i>
+                            Paciente: <span class="font-semibold ml-1"><%= patient.nombre %> <%= patient.apellido %></span>
+                        </p>
+                    </div>
+                    <i class="fas fa-file-signature text-4xl text-blue-400 opacity-50"></i>
+                </div>
+            </div>
+
+            <form action="/reports/progress" method="POST" class="p-8 space-y-8">
+                <input type="hidden" name="patientId" value="<%= patient.id_paciente %>">
+
+                <div class="bg-gray-50 p-6 rounded-xl border border-gray-100">
+                    <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Configuración del Periodo</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Reporte</label>
+                            <select name="tipo_reporte" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2.5">
+                                <option value="semanal">Semanal</option>
+                                <option value="mensual">Mensual</option>
+                                <option value="trimestral">Trimestral</option>
+                                <option value="final">Final de Tratamiento</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Desde</label>
+                                <input type="date" name="periodo_inicio" required class="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Hasta</label>
+                                <input type="date" name="periodo_fin" required class="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Evaluación Clínica</h3>
+                    
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Resumen de Evolución</label>
+                        <textarea name="resumen_evolucion" rows="6" required 
+                            class="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500" 
+                            placeholder="Describa detalladamente el progreso, retrocesos o cambios observados en el paciente durante este periodo..."></textarea>
+                        <p class="text-xs text-gray-500 mt-2 flex items-center">
+                            <i class="fas fa-info-circle mr-1"></i> Este resumen se incluirá en el expediente permanente.
+                        </p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Recomendaciones y Plan de Acción</label>
+                        <div class="relative">
+                            <div class="absolute top-3 left-3 text-gray-400">
+                                <i class="fas fa-clipboard-list"></i>
+                            </div>
+                            <textarea name="recomendaciones" rows="4" 
+                                class="w-full pl-10 border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500" 
+                                placeholder="Ajustes en el tratamiento, tareas para el hogar o sugerencias..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-6 border-t border-gray-100 flex items-center justify-end space-x-4">
+                    <a href="/reports/patient/<%= patient.id_paciente %>/view" class="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 font-medium shadow-lg transform hover:-translate-y-0.5 transition duration-200">
+                        <i class="fas fa-save mr-2"></i> Generar Reporte
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
