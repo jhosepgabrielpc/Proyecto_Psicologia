@@ -13,6 +13,7 @@
     const viewingPatient = locals.viewingPatient || null;
     const user = locals.user || {};
     const currentFilter = locals.currentFilter || 7; 
+    // KPIs calculados en el controlador
     const kpis = locals.kpis || { total: 0, criticos: 0, sueno_bajo: 0, estables: 0 };
     
     // View Modes
@@ -31,8 +32,11 @@
     let avgDisplay = "0.0";
     let widthPercent = 0;
     let message = "Esperando datos...";
+    
+    // Variables visuales (Valores por defecto para evitar errores)
     let trendIcon = "fa-minus";
-    let trendColor = "text-slate-400";
+    let trendColor = "text-slate-400"; // Definida por defecto
+    let statusColor = "bg-slate-100 text-slate-500";
 
     if (hasData) {
         const sum = checkins.reduce((acc, curr) => acc + Number(curr.valencia), 0);
@@ -41,9 +45,22 @@
         widthPercent = Math.round((avgValue / 5) * 100);
         
         // Diagnostic Logic
-        if (avgValue >= 4.2) { message = "Estado Óptimo 🌟"; trendIcon = "fa-arrow-up"; trendColor = "text-emerald-500"; }
-        else if (avgValue >= 3.0) { message = "Estado Estable ✨"; trendIcon = "fa-minus"; trendColor = "text-amber-500"; }
-        else { message = "Atención Requerida ⚠️"; trendIcon = "fa-arrow-down"; trendColor = "text-rose-500"; }
+        if (avgValue >= 4.2) { 
+            message = "Estado Óptimo 🌟"; 
+            trendIcon = "fa-arrow-up"; 
+            trendColor = "text-emerald-500";
+            statusColor = "bg-emerald-100 text-emerald-700";
+        } else if (avgValue >= 3.0) { 
+            message = "Estado Estable ✨"; 
+            trendIcon = "fa-minus"; 
+            trendColor = "text-amber-500";
+            statusColor = "bg-amber-100 text-amber-700";
+        } else { 
+            message = "Atención Requerida ⚠️"; 
+            trendIcon = "fa-arrow-down"; 
+            trendColor = "text-rose-500";
+            statusColor = "bg-rose-100 text-rose-700";
+        }
     }
 %>
 
@@ -53,10 +70,18 @@
         <% if (isSelectionMode) { %>
             
             <div class="mb-10 animate-fade-in-down">
-                <h1 class="text-2xl font-extrabold text-slate-800 mb-6 flex items-center gap-3">
-                    <i class="fas fa-network-wired text-indigo-600"></i> Panel de Control de Casos
-                </h1>
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+                    <h1 class="text-2xl font-extrabold text-slate-800 flex items-center gap-3">
+                        <i class="fas fa-network-wired text-indigo-600"></i> Panel de Control de Casos
+                    </h1>
+                    <div class="hidden md:flex gap-3">
+                         <span class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-full text-sm font-bold">
+                            <%= kpis.total %> Asignados
+                        </span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
                     <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:border-indigo-200 transition-all">
                         <div>
                             <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Pacientes</p>
@@ -89,115 +114,120 @@
                 </div>
             </div>
 
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-slide-up">
-                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                    <h3 class="font-bold text-slate-700 flex items-center gap-2"><i class="fas fa-folder-open text-indigo-400"></i> Expedientes Activos</h3>
-                    <div class="flex gap-2">
-                        <span class="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-500 shadow-sm"><i class="fas fa-filter mr-1"></i> Todos</span>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-slide-up">
+                <% patientsList.forEach(p => { %>
+                    <div class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-lg hover:-translate-y-1 transition-all relative overflow-hidden">
+                        <% if (p.ultima_valencia && p.ultima_valencia <= 2) { %>
+                            <div class="absolute top-0 left-0 w-1.5 h-full bg-rose-500"></div>
+                        <% } %>
+                        
+                        <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-slate-50 to-transparent rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+                        
+                        <a href="/dashboard/monitoring?patient=<%= p.id_paciente %>" class="block relative z-10">
+                            <div class="flex items-center mb-6">
+                                <% if (p.foto_perfil) { %>
+                                    <img src="<%= p.foto_perfil %>" class="h-14 w-14 rounded-full object-cover border-2 border-white shadow-sm">
+                                <% } else { %>
+                                    <div class="h-14 w-14 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xl border-2 border-white shadow-sm">
+                                        <%= p.nombre.charAt(0) %>
+                                    </div>
+                                <% } %>
+                                <div class="ml-4">
+                                    <h3 class="font-bold text-slate-800 text-lg group-hover:text-indigo-600 transition-colors"><%= p.nombre %> <%= p.apellido %></h3>
+                                    <p class="text-xs text-slate-500"><%= p.email %></p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-between items-end border-t border-slate-50 pt-4">
+                                <div>
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estado Actual</p>
+                                    <% if (p.ultima_valencia) { %>
+                                        <div class="flex items-center gap-2 mt-1">
+                                            <span class="text-2xl font-black <%= p.ultima_valencia < 3 ? 'text-rose-500' : 'text-emerald-500' %>">
+                                                <%= p.ultima_valencia %>
+                                            </span>
+                                            <span class="text-xs text-slate-400 font-medium">
+                                                / 5.0<br>
+                                                <span class="text-[10px] opacity-70"><%= new Date(p.ultimo_checkin).toLocaleDateString() %></span>
+                                            </span>
+                                        </div>
+                                    <% } else { %>
+                                        <span class="inline-block mt-1 px-2 py-1 bg-slate-100 text-slate-500 text-xs rounded-md font-medium">Sin datos</span>
+                                    <% } %>
+                                </div>
+                                
+                                <div class="flex flex-col items-end gap-2">
+                                    <% if (p.ultimo_sueno) { %>
+                                        <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">
+                                            <i class="fas fa-bed mr-1"></i> <%= p.ultimo_sueno %>h
+                                        </span>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </a>
+
+                        <div class="mt-4 pt-3 border-t border-slate-50 grid grid-cols-3 gap-2 relative z-20">
+                            <a href="/dashboard/communication?chat=<%= p.id_paciente %>" class="flex flex-col items-center justify-center py-2 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-indigo-600 text-xs font-bold transition-colors">
+                                <i class="far fa-comment-alt text-lg mb-1"></i> Chat
+                            </a>
+                            
+                            <a href="/reports/patient/<%= p.id_paciente %>/view" class="flex flex-col items-center justify-center py-2 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white text-xs font-bold transition-all shadow-sm" title="Ver Historial y SOAP">
+                                <i class="fas fa-folder-open text-lg mb-1"></i> Expediente
+                            </a>
+
+                            <% if (p.ultima_valencia && p.ultima_valencia <= 2) { %>
+                                <button onclick="generateAlert('<%= p.nombre %> <%= p.apellido %>', '<%= p.ultima_valencia %>', '<%= p.ultima_emocion %>', '<%= p.ultimas_notas ? p.ultimas_notas.replace(/'/g, "\\'") : '' %>', '<%= p.ultimo_sueno %>')" 
+                                    class="flex flex-col items-center justify-center py-2 rounded-lg text-rose-500 bg-rose-50 hover:bg-rose-100 text-xs font-bold transition-colors">
+                                    <i class="fas fa-bell text-lg mb-1"></i> Alerta
+                                </button>
+                            <% } else { %>
+                                <a href="/dashboard/monitoring?patient=<%= p.id_paciente %>" class="flex flex-col items-center justify-center py-2 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-indigo-600 text-xs font-bold transition-colors">
+                                    <i class="fas fa-chart-line text-lg mb-1"></i> Monitor
+                                </a>
+                            <% } %>
+                        </div>
                     </div>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-white text-slate-400 text-xs uppercase tracking-wider border-b border-slate-100">
-                                <th class="px-6 py-4 font-bold">Paciente</th>
-                                <th class="px-6 py-4 font-bold">Estado Clínico</th>
-                                <th class="px-6 py-4 font-bold">Último Registro</th>
-                                <th class="px-6 py-4 font-bold">Calidad de Sueño</th>
-                                <th class="px-6 py-4 font-bold text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-50">
-                            <% patientsList.forEach(p => { 
-                                const isCritical = p.ultima_valencia <= 2;
-                                const moodLabel = p.ultima_valencia ? (isCritical ? 'Riesgo Detectado' : (p.ultima_valencia == 3 ? 'Estable' : 'Óptimo')) : 'Sin Datos';
-                                const badgeColor = isCritical ? 'bg-rose-100 text-rose-700 border-rose-200' : (p.ultima_valencia ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200');
-                                const sleepVal = p.ultimo_sueno || 0;
-                                const sleepColor = sleepVal < 6 ? 'text-rose-500' : 'text-slate-600';
-                            %>
-                            <tr class="hover:bg-slate-50/80 transition-colors group">
-                                <td class="px-6 py-4">
-                                    <div class="flex items-center gap-3">
-                                        <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold border border-indigo-200 text-sm shadow-sm">
-                                            <%= p.nombre.charAt(0) %>
-                                        </div>
-                                        <div>
-                                            <p class="font-bold text-slate-800 text-sm"><%= p.nombre %> <%= p.apellido %></p>
-                                            <p class="text-xs text-slate-400"><%= p.email %></p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold border <%= badgeColor %>">
-                                        <span class="w-1.5 h-1.5 rounded-full <%= isCritical ? 'bg-rose-500 animate-pulse' : (p.ultima_valencia ? 'bg-emerald-500' : 'bg-slate-400') %>"></span>
-                                        <%= moodLabel %>
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <% if (p.ultimo_checkin) { %>
-                                        <p class="text-sm font-medium text-slate-700"><%= new Date(p.ultimo_checkin).toLocaleDateString() %></p>
-                                        <p class="text-xs text-slate-400"><%= new Date(p.ultimo_checkin).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) %></p>
-                                    <% } else { %> <span class="text-xs text-slate-400 italic">--</span> <% } %>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex items-center gap-2">
-                                        <i class="fas fa-bed <%= sleepColor %>"></i>
-                                        <div class="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                            <div class="h-full rounded-full <%= sleepVal < 6 ? 'bg-rose-400' : 'bg-indigo-400' %>" style="width: <%= (sleepVal/12)*100 %>%"></div>
-                                        </div>
-                                        <span class="text-xs font-bold <%= sleepColor %>"><%= sleepVal %>h</span>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 text-right">
-                                    <div class="flex justify-end gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
-                                        <% if (isCritical) { %>
-                                            <button onclick="generateAlert('<%= p.nombre %> <%= p.apellido %>', '<%= p.ultima_valencia %>', '<%= p.ultima_emocion %>', '<%= p.ultimas_notas ? p.ultimas_notas.replace(/'/g, "\\'") : '' %>', '<%= p.ultimo_sueno %>')" 
-                                                    class="bg-white text-rose-600 hover:bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-sm"
-                                                    title="Generar Informe de Alerta">
-                                                <i class="fas fa-bell"></i> Informe
-                                            </button>
-                                        <% } %>
-                                        <a href="/dashboard/monitoring?patient=<%= p.id_paciente %>" class="bg-indigo-600 text-white hover:bg-indigo-700 border border-transparent px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md flex items-center gap-1">
-                                            <i class="fas fa-chart-line"></i> Ver
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            <% }); %>
-                        </tbody>
-                    </table>
-                </div>
+                <% }); %>
             </div>
 
         <% } else if (isMonitoringMode) { %>
             
             <div class="flex flex-col xl:flex-row justify-between items-end mb-8 gap-6 animate-fade-in">
                 <div class="w-full xl:w-auto">
-                    <a href="/dashboard/monitoring" class="text-xs font-bold text-slate-400 hover:text-indigo-600 mb-3 inline-flex items-center gap-1 transition-colors <%= user.nombre_rol === 'Paciente' ? 'hidden' : '' %>">
-                        <i class="fas fa-arrow-left"></i> Volver a la lista
-                    </a>
+                    <% if (user.nombre_rol !== 'Paciente') { %>
+                        <a href="/dashboard/monitoring" class="text-xs font-bold text-slate-400 hover:text-indigo-600 mb-3 inline-flex items-center gap-1 transition-colors">
+                            <i class="fas fa-arrow-left"></i> Volver a la lista
+                        </a>
+                    <% } %>
                     
                     <h1 class="text-3xl font-extrabold text-slate-900 leading-tight">
                         <% if (viewingPatient) { %>
-                            Análisis Clínico: <span class="text-indigo-600"><%= viewingPatient.nombre %> <%= viewingPatient.apellido %></span>
+                             Análisis Clínico: <span class="text-indigo-600"><%= viewingPatient.nombre %> <%= viewingPatient.apellido %></span>
                         <% } else { %>
                             Tu Bienestar <span class="text-indigo-600">Emocional</span>
                         <% } %>
                     </h1>
-                    <p class="text-slate-500 text-sm mt-1">Correlación biométrica de sueño vs. estado anímico.</p>
+                    <div class="flex items-center gap-3 mt-2">
+                         <span class="px-2.5 py-0.5 rounded-full text-xs font-bold <%= statusColor %> border border-white/50 shadow-sm">
+                            <%= message %>
+                        </span>
+                        <p class="text-slate-500 text-sm">Correlación biométrica de sueño vs. estado anímico.</p>
+                    </div>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-3 w-full xl:w-auto">
                     <div class="bg-white p-1 rounded-xl border border-slate-200 flex shadow-sm">
-                        <a href="<%= link7Days %>" class="px-4 py-2 rounded-lg text-xs font-bold transition-all <%= currentFilter === 7 ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700' %>">
-                            7 Días
-                        </a>
-                        <a href="<%= link30Days %>" class="px-4 py-2 rounded-lg text-xs font-bold transition-all <%= currentFilter === 30 ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700' %>">
-                            30 Días
-                        </a>
+                        <a href="<%= link7Days %>" class="px-4 py-2 rounded-lg text-xs font-bold transition-all <%= currentFilter === 7 ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700' %>">7 Días</a>
+                        <a href="<%= link30Days %>" class="px-4 py-2 rounded-lg text-xs font-bold transition-all <%= currentFilter === 30 ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700' %>">30 Días</a>
                     </div>
 
                     <div class="h-8 w-[1px] bg-slate-200 hidden md:block"></div>
+
+                    <% if (user.nombre_rol !== 'Paciente' && viewingPatient) { %>
+                         <a href="/reports/patient/<%= viewingPatient.id_paciente %>/view" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition-all text-sm flex items-center gap-2">
+                            <i class="fas fa-folder-open"></i> <span>Expediente & SOAP</span>
+                        </a>
+                    <% } %>
 
                     <button onclick="downloadPDF()" class="bg-white text-slate-700 border border-slate-200 px-5 py-2.5 rounded-xl font-bold shadow-sm hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200 transition-all text-sm flex items-center gap-2">
                         <i class="fas fa-file-pdf text-rose-500"></i> <span>Exportar</span>
@@ -388,16 +418,13 @@
                     <p class="text-sm font-bold text-slate-800">Jimmy (Gestión de Comunicación)</p>
                 </div>
             </div>
-
             <p class="text-sm text-slate-500 mb-3">El sistema ha redactado este informe automático. Confirma el envío para escalar el caso.</p>
-            
             <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 relative group">
                 <textarea id="reportText" rows="8" class="w-full bg-transparent border-none text-slate-700 text-sm font-mono resize-none focus:ring-0" readonly></textarea>
                 <button onclick="copyReport()" class="absolute top-2 right-2 bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 px-2 py-1 rounded text-xs font-bold shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
                     <i class="fas fa-copy"></i>
                 </button>
             </div>
-
             <div class="flex gap-3 justify-end">
                 <button onclick="closeAlertModal()" class="px-4 py-2 text-slate-500 font-bold text-sm hover:bg-slate-50 rounded-lg">Cancelar</button>
                 <a href="#" id="sendToJimmyBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-lg flex items-center gap-2 transition-all">
@@ -417,7 +444,6 @@
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        
         <form action="/dashboard/monitoring/checkin" method="POST" class="p-6 space-y-6">
             <div class="space-y-3">
                 <div class="flex justify-between items-end">
@@ -428,12 +454,9 @@
                        class="w-full h-2 bg-slate-200 rounded-lg accent-indigo-600 cursor-pointer hover:accent-indigo-500 transition-all" 
                        oninput="updateMoodLabel(this.value)">
                 <div class="flex justify-between text-[10px] text-slate-400 font-bold uppercase tracking-widest px-1">
-                    <span>Mal</span>
-                    <span>Regular</span>
-                    <span>Excelente</span>
+                    <span>Mal</span><span>Regular</span><span>Excelente</span>
                 </div>
             </div>
-
             <div class="space-y-3 pt-2 border-t border-slate-100">
                 <div class="flex justify-between items-end">
                     <label class="text-sm font-bold text-slate-700 flex items-center gap-2">
@@ -445,12 +468,9 @@
                        class="w-full h-2 bg-slate-200 rounded-lg accent-indigo-400 cursor-pointer" 
                        oninput="document.getElementById('sleepText').innerText = this.value + 'h'">
                 <div class="flex justify-between text-[10px] text-slate-400 font-bold uppercase tracking-widest px-1">
-                    <span>0h</span>
-                    <span>6h</span>
-                    <span>12h+</span>
+                    <span>0h</span><span>6h</span><span>12h+</span>
                 </div>
             </div>
-            
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-3">¿Qué sientes hoy?</label>
                 <div class="grid grid-cols-3 gap-3">
@@ -466,12 +486,10 @@
                     <% }); %>
                 </div>
             </div>
-
             <div>
                 <label class="block text-sm font-bold text-slate-700 mb-2">Notas <span class="text-slate-400 font-normal text-xs">(Opcional)</span></label>
                 <textarea name="notas" rows="2" class="w-full rounded-xl border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none p-3 bg-slate-50 focus:bg-white transition-colors placeholder:text-slate-400" placeholder="Escribe aquí..."></textarea>
             </div>
-            
             <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl hover:bg-indigo-700 shadow-xl hover:shadow-indigo-500/30 transition-all transform active:scale-[0.98]">
                 Guardar Registro
             </button>
@@ -494,273 +512,60 @@
 </div>
 
 <script>
-    // =========================================================================
-    // JAVASCRIPT LOGIC - "THE BRAIN"
-    // =========================================================================
-
-    // 1. DATA INJECTION
     const rawData = '<%- JSON.stringify(checkins || []) %>'; 
     const checkinData = JSON.parse(rawData).reverse(); 
     const rawTests = '<%- JSON.stringify(tests || []) %>';
     const testsData = JSON.parse(rawTests);
+    const jimmyId = '<%= locals.jimmyId || "" %>'; 
 
-    // 2. RADAR CHART LOGIC
-    const emotionMap = { 'Feliz': 0, 'Calmado': 0, 'Cansado': 0, 'Triste': 0, 'Ansioso': 0, 'Enojado': 0 };
-    checkinData.forEach(c => {
-        if (c.emocion_principal && emotionMap.hasOwnProperty(c.emocion_principal)) {
-            emotionMap[c.emocion_principal]++;
-        }
-    });
-    const radarValues = Object.values(emotionMap);
-    const radarLabels = Object.keys(emotionMap);
-
-    // 3. CHART INITIALIZATION (COMBO & RADAR)
     document.addEventListener('DOMContentLoaded', function() {
-        
-        // A. COMBO CHART (Line + Bar)
         const ctxLine = document.getElementById('moodChart');
         if (ctxLine && checkinData.length > 0) {
             const labels = checkinData.map(c => new Date(c.fecha_hora).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' }));
             const moodData = checkinData.map(c => c.valencia);
-            const sleepData = checkinData.map(c => c.horas_sueno || 0); // Default 0
-
+            const sleepData = checkinData.map(c => c.horas_sueno || 0);
             new Chart(ctxLine, {
-                type: 'bar', // Chart type must be bar to support bars mixed with lines
+                type: 'bar', 
                 data: {
                     labels: labels,
                     datasets: [
-                        {
-                            type: 'line', // Mood Line
-                            label: 'Ánimo (1-5)',
-                            data: moodData,
-                            borderColor: '#6366f1', // Indigo 500
-                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                            borderWidth: 3,
-                            pointBackgroundColor: '#fff',
-                            pointBorderColor: '#6366f1',
-                            pointRadius: 5,
-                            pointHoverRadius: 7,
-                            tension: 0.4,
-                            yAxisID: 'y'
-                        },
-                        {
-                            type: 'bar', // Sleep Bars
-                            label: 'Sueño (Horas)',
-                            data: sleepData,
-                            backgroundColor: 'rgba(203, 213, 225, 0.5)', // Slate-300 Transparent
-                            borderRadius: 4,
-                            barThickness: 20,
-                            yAxisID: 'y1'
-                        }
+                        { type: 'line', label: 'Ánimo (1-5)', data: moodData, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', borderWidth: 3, pointBackgroundColor: '#fff', pointBorderColor: '#6366f1', pointRadius: 5, pointHoverRadius: 7, tension: 0.4, yAxisID: 'y' },
+                        { type: 'bar', label: 'Sueño (Horas)', data: sleepData, backgroundColor: 'rgba(203, 213, 225, 0.5)', borderRadius: 4, barThickness: 20, yAxisID: 'y1' }
                     ]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: true, position: 'bottom' }, tooltip: { backgroundColor: '#1e293b', padding: 12 } },
-                    scales: { 
-                        y: { 
-                            min: 0, max: 6, position: 'left', 
-                            grid: { borderDash: [4, 4], color: '#f1f5f9' }, 
-                            title: { display: true, text: 'Nivel de Ánimo' } 
-                        },
-                        y1: { 
-                            min: 0, max: 12, position: 'right', 
-                            grid: { display: false }, 
-                            title: { display: true, text: 'Horas de Sueño' } 
-                        },
-                        x: { grid: { display: false } } 
-                    }
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom' }, tooltip: { backgroundColor: '#1e293b', padding: 12 } }, scales: { y: { min: 0, max: 6, position: 'left', grid: { borderDash: [4, 4], color: '#f1f5f9' }, title: { display: true, text: 'Nivel de Ánimo' } }, y1: { min: 0, max: 12, position: 'right', grid: { display: false }, title: { display: true, text: 'Horas de Sueño' } }, x: { grid: { display: false } } } }
             });
         }
-
-        // B. RADAR CHART
         const ctxRadar = document.getElementById('radarChart');
         if (ctxRadar && checkinData.length > 0) {
-            new Chart(ctxRadar, {
-                type: 'radar',
-                data: {
-                    labels: radarLabels,
-                    datasets: [{
-                        label: 'Frecuencia',
-                        data: radarValues,
-                        backgroundColor: 'rgba(244, 63, 94, 0.2)', // Rose-500
-                        borderColor: '#f43f5e',
-                        pointBackgroundColor: '#f43f5e',
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        r: {
-                            angleLines: { color: '#e2e8f0' },
-                            grid: { color: '#f1f5f9' },
-                            pointLabels: { font: { size: 11, weight: 'bold' }, color: '#64748b' },
-                            ticks: { display: false, backdropColor: 'transparent' }
-                        }
-                    }
-                }
-            });
+            const emotionMap = { 'Feliz': 0, 'Calmado': 0, 'Cansado': 0, 'Triste': 0, 'Ansioso': 0, 'Enojado': 0 };
+            checkinData.forEach(c => { if (c.emocion_principal && emotionMap.hasOwnProperty(c.emocion_principal)) emotionMap[c.emocion_principal]++; });
+            new Chart(ctxRadar, { type: 'radar', data: { labels: Object.keys(emotionMap), datasets: [{ label: 'Frecuencia', data: Object.values(emotionMap), backgroundColor: 'rgba(244, 63, 94, 0.2)', borderColor: '#f43f5e', pointBackgroundColor: '#f43f5e', borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { r: { angleLines: { color: '#e2e8f0' }, grid: { color: '#f1f5f9' }, pointLabels: { font: { size: 11, weight: 'bold' }, color: '#64748b' }, ticks: { display: false, backdropColor: 'transparent' } } } } });
         }
     });
-
-    // 4. ALERT GENERATOR SYSTEM (NUEVA FUNCIÓN)
-    // --- ALERT GENERATOR SYSTEM (CONEXIÓN CON JIMMY) ---
-    // Recibimos el ID de Jimmy desde el servidor
-    const jimmyId = '<%= locals.jimmyId || "" %>'; 
 
     function generateAlert(name, valencia, emotion, notes, sleep) {
         const modal = document.getElementById('alertModal');
         const textArea = document.getElementById('reportText');
         const sendBtn = document.getElementById('sendToJimmyBtn');
-        
         const date = new Date();
-        const apptDate = new Date(date); 
-        apptDate.setDate(apptDate.getDate() + 1); // Sugerir cita mañana
-        const dateStr = apptDate.toLocaleDateString('es-ES', {weekday: 'long', day: 'numeric'});
-
-        // REDACCIÓN PROFESIONAL DEL INFORME
-        const report = `🚨 REPORTE DE INCIDENCIA CLÍNICA
-PARA: Gestión de Comunicación (Jimmy)
-DE: Centro de Monitoreo (Jhosep)
-FECHA: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}
-----------------------------------------
-
-PACIENTE: ${name}
-
-SITUACIÓN ACTUAL:
-El paciente presenta marcadores biométricos fuera del rango estable.
-
-DATOS REGISTRADOS:
-• Ánimo: ${valencia}/5 (${emotion ? emotion.toUpperCase() : 'N/A'})
-• Sueño: ${sleep || 0} Horas (Déficit Crítico)
-• Notas: "${notes || 'Sin observaciones adicionales'}"
-
-ACCIÓN REQUERIDA:
-Por favor, contactar al terapeuta asignado inmediatamente.
-Se recomienda agendar una intervención de crisis para el ${dateStr}.
-
-Esperando confirmación de enlace.`;
-
+        const report = `🚨 REPORTE DE INCIDENCIA CLÍNICA\nFECHA: ${date.toLocaleString()}\nPACIENTE: ${name}\n\nDATOS:\n• Ánimo: ${valencia}/5 (${emotion})\n• Sueño: ${sleep}h\n• Notas: "${notes}"\n\nACCIÓN: Contactar al terapeuta asignado.`;
         textArea.value = report;
-        
-        // Configurar el botón para ir al chat con Jimmy
         if (jimmyId) {
-            // Codificamos el mensaje para pasarlo por URL (opcional) o simplemente abrimos el chat
-            // Opción A: Abrir chat y que el usuario pegue (más seguro para textos largos)
             sendBtn.href = `/dashboard/communication?chat=${jimmyId}`;
-            sendBtn.onclick = () => {
-                copyReport(); // Copiamos al portapapeles automáticamente al ir
-                // Opcional: Podríamos intentar pasarlo por URL si el sistema de chat lo soporta
-            };
+            sendBtn.onclick = () => { navigator.clipboard.writeText(textArea.value); alert("Informe copiado al portapapeles."); };
         } else {
+            sendBtn.classList.add('opacity-50', 'cursor-not-allowed');
             sendBtn.href = "#";
-            sendBtn.innerHTML = "<i class='fas fa-exclamation-circle'></i> Jimmy no disponible";
-            sendBtn.classList.add('bg-slate-400', 'cursor-not-allowed');
         }
-
         if (modal) modal.classList.remove('hidden');
     }
-
-    function closeAlertModal() {
-        document.getElementById('alertModal').classList.add('hidden');
-    }
-
-    function copyReport() {
-        const copyText = document.getElementById("reportText");
-        copyText.select();
-        navigator.clipboard.writeText(copyText.value);
-        alert("Informe copiado al portapapeles.");
-    }
-
-    // 5. UI UTILS
-    function toggleModal(id) {
-        const modal = document.getElementById(id);
-        const modalContent = document.getElementById('checkinModalContent');
-        if (modal) {
-            if (modal.classList.contains('hidden')) {
-                modal.classList.remove('hidden');
-                setTimeout(() => { modal.style.opacity = '1'; if(modalContent) modalContent.classList.replace('scale-95', 'scale-100'); }, 10);
-                document.body.style.overflow = 'hidden';
-            } else {
-                modal.style.opacity = '0';
-                if(modalContent) modalContent.classList.replace('scale-100', 'scale-95');
-                setTimeout(() => { modal.classList.add('hidden'); document.body.style.overflow = ''; }, 300);
-            }
-        }
-    }
-
-    function updateMoodLabel(val) {
-        const labels = {1: 'Pésimo 😞', 2: 'Mal 😟', 3: 'Normal 😐', 4: 'Bien 🙂', 5: 'Excelente 🤩'};
-        const el = document.getElementById('moodText');
-        if(el) {
-            el.innerText = labels[val] || 'Normal';
-            if (val <= 2) el.className = "text-rose-600 font-bold text-lg transition-colors";
-            else if (val == 3) el.className = "text-amber-500 font-bold text-lg transition-colors";
-            else el.className = "text-emerald-600 font-bold text-lg transition-colors";
-        }
-    }
-
-    function showTestDetails(index) {
-        const test = testsData[index];
-        const modalContent = document.getElementById('testModalContent');
-        if(!test) return;
-
-        let html = `
-            <div class="mb-6 p-5 rounded-2xl ${ (test.severidad === 'Severa' || test.severidad === 'Grave') ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700' } text-center border border-transparent">
-                <p class="text-xs font-bold uppercase opacity-70 tracking-widest">Resultado del Análisis</p>
-                <p class="text-3xl font-black mt-1">${test.severidad}</p>
-                <p class="text-sm font-medium mt-1 opacity-90">Puntaje Total: ${test.puntaje_total}</p>
-            </div>
-            <div class="space-y-0">
-        `;
-
-        try {
-            let answers = test.respuestas_json;
-            if (typeof answers === 'string') answers = JSON.parse(answers);
-            
-            Object.keys(answers).forEach((key, i) => {
-                if ((key.startsWith('pregunta_') || !isNaN(key) || key.startsWith('P')) && answers[key]) {
-                    html += `
-                        <div class="flex justify-between items-center py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 px-2 rounded-lg transition-colors">
-                            <span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">P${i+1}</span>
-                            <span class="text-sm font-medium text-slate-700 text-right w-3/4">${answers[key]}</span>
-                        </div>
-                    `;
-                }
-            });
-        } catch (e) { html += '<p class="text-rose-500 text-sm text-center">Error interpretando datos.</p>'; }
-        
-        html += '</div>';
-        modalContent.innerHTML = html;
-        toggleModal('testDetailModal');
-    }
-
-    function downloadPDF() {
-        const element = document.getElementById('monitoring-content');
-        const btn = document.querySelector('button[onclick="downloadPDF()"]');
-        const originalContent = btn.innerHTML;
-        
-        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Procesando...';
-        btn.disabled = true;
-
-        const opt = {
-            margin:       0.4,
-            filename:     'MindCare_Report_<%= new Date().toISOString().slice(0,10) %>.pdf',
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, logging: false, letterRendering: true },
-            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-        };
-
-        html2pdf().set(opt).from(element).save().then(() => {
-            btn.innerHTML = originalContent;
-            btn.disabled = false;
-        });
-    }
+    function closeAlertModal() { document.getElementById('alertModal').classList.add('hidden'); }
+    function copyReport() { navigator.clipboard.writeText(document.getElementById("reportText").value); alert("Copiado"); }
+    function toggleModal(id) { const modal = document.getElementById(id); if (modal) { if (modal.classList.contains('hidden')) { modal.classList.remove('hidden'); document.body.style.overflow = 'hidden'; } else { modal.classList.add('hidden'); document.body.style.overflow = ''; } } }
+    function updateMoodLabel(val) { const labels = {1: 'Pésimo 😞', 2: 'Mal 😕', 3: 'Normal 😐', 4: 'Bien 🙂', 5: 'Excelente 🤩'}; const el = document.getElementById('moodText'); if(el) el.innerText = labels[val] || 'Normal'; }
+    function showTestDetails(index) { const test = testsData[index]; const modalContent = document.getElementById('testModalContent'); if(!test) return; let html = `<div class="mb-6 p-5 rounded-xl bg-indigo-50 text-center"><p class="text-xs font-bold uppercase opacity-70">Severidad</p><p class="text-2xl font-black text-indigo-900">${test.severidad}</p><p class="text-sm mt-1">Puntaje: ${test.puntaje_total}</p></div><div class="space-y-2">`; try { let answers = typeof test.respuestas_json === 'string' ? JSON.parse(test.respuestas_json) : test.respuestas_json; Object.keys(answers).forEach((key, i) => { if ((key.startsWith('pregunta_') || !isNaN(key) || key.startsWith('P')) && answers[key]) { html += `<div class="flex justify-between py-2 border-b border-slate-100 text-sm"><span class="font-bold text-slate-500">P${i+1}</span> <span class="text-slate-700">${answers[key]}</span></div>`; } }); } catch(e) { html += '<p class="text-red-500 text-xs">Error al leer respuestas.</p>'; } html += '</div>'; modalContent.innerHTML = html; toggleModal('testDetailModal'); }
+    function downloadPDF() { const element = document.getElementById('monitoring-content'); const opt = { margin: 0.5, filename: 'Reporte_Clinico.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }; html2pdf().set(opt).from(element).save(); }
 </script>
 
 <style>
@@ -768,7 +573,6 @@ Esperando confirmación de enlace.`;
     .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-    
     @keyframes fade-in-down { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes fade-in-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .animate-fade-in-down { animation: fade-in-down 0.5s ease-out; }
