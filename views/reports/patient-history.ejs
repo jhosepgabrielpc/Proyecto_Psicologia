@@ -249,8 +249,9 @@
 
     // Gráficas
     document.addEventListener('DOMContentLoaded', function() {
-        const rawCheckins = '<%- JSON.stringify(graphData.checkins || []) %>';
-        const rawTests = '<%- JSON.stringify(graphData.tests || []) %>';
+        // CORRECCIÓN AQUÍ: Usamos las variables directas, no graphData
+        const rawCheckins = '<%- JSON.stringify(checkins || []) %>';
+        const rawTests = '<%- JSON.stringify(tests || []) %>';
         const checkins = JSON.parse(rawCheckins);
         const tests = JSON.parse(rawTests);
 
