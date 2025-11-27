@@ -5,7 +5,7 @@ const { authenticateToken, requireAdmin } = require('../middleware/auth');
 // autenticación y autorización
 router.use(authenticateToken);
 router.use(requireAdmin);
-
+//configuracion de rutas para el administrador
 router.get('/pending-therapists', async (req, res) => {
   try {
     const result = await db.query(`
