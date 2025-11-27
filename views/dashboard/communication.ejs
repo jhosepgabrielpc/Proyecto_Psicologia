@@ -1,177 +1,275 @@
-<%- include('../partials/header', { title: 'Centro de Mensajes' }) %>
+<%- include('../partials/header', { title: 'Centro de Mensajería' }) %>
 
-<div class="h-[calc(100vh-4rem)] bg-slate-50 flex overflow-hidden font-sans">
+<div class="h-[calc(100vh-4rem)] bg-[#f0f2f5] flex overflow-hidden font-sans relative">
     
-    <div class="w-full md:w-96 bg-white border-r border-slate-200 flex flex-col <%= activeChat ? 'hidden md:flex' : 'flex' %> shadow-sm z-10">
+    <div class="w-full md:w-[420px] bg-white border-r border-slate-200 flex flex-col <%= activeChat ? 'hidden md:flex' : 'flex' %> z-20 relative">
         
-        <div class="p-4 border-b border-slate-100 bg-slate-50">
+        <div class="px-4 py-3 bg-slate-50/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-10">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-slate-800">Mensajes</h2>
-                <span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-lg text-xs font-bold">
-                    <%= contacts.length %> Chats
-                </span>
+                 <h2 class="text-2xl font-extrabold text-slate-800 tracking-tight">Chats</h2>
+                 <div class="flex gap-2">
+                     <button class="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-all" title="Nuevo Chat">
+                         <i class="far fa-edit text-lg"></i>
+                     </button>
+                     <button class="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-all" title="Menú">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </button>
+                 </div>
             </div>
-            <div class="relative group">
-                <input type="text" placeholder="Buscar conversación..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
-                <i class="fas fa-search absolute left-3 top-3 text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
+
+            <div class="relative group z-20">
+                <input type="text" id="global-search" placeholder="Buscar o iniciar nuevo chat..." 
+                    class="w-full pl-11 pr-4 py-2.5 bg-slate-100 border-transparent rounded-xl text-sm focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none placeholder-slate-400 font-medium">
+                <i class="fas fa-search absolute left-4 top-3.5 text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
+                <i class="fas fa-spinner fa-spin absolute right-4 top-3.5 text-indigo-500 hidden" id="search-spinner"></i>
             </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto custom-scrollbar">
-            <% if (contacts.length === 0) { %>
-                <div class="flex flex-col items-center justify-center h-64 text-slate-400 p-6 text-center">
-                    <div class="bg-slate-100 p-4 rounded-full mb-3">
-                        <i class="far fa-comments text-3xl text-slate-300"></i>
+        <div class="flex-1 overflow-y-auto custom-scrollbar bg-white relative">
+            
+            <div id="contacts-list" class="divide-y divide-slate-50">
+                <% if (contacts.length === 0) { %>
+                    <div class="flex flex-col items-center justify-center h-64 text-slate-400 p-6 text-center animate-fade-in">
+                        <div class="bg-indigo-50 p-6 rounded-full mb-4 shadow-sm">
+                            <i class="far fa-paper-plane text-4xl text-indigo-400"></i>
+                        </div>
+                        <p class="text-base font-bold text-slate-600">Tu bandeja está vacía</p>
+                        <p class="text-sm mt-2 text-slate-500">Usa el buscador de arriba para encontrar pacientes o colegas e iniciar una conversación.</p>
                     </div>
-                    <p class="text-sm font-medium text-slate-500">Tu lista de contactos está vacía.</p>
-                    <p class="text-xs mt-1">Los pacientes o terapeutas asignados aparecerán aquí automáticamente.</p>
-                </div>
-            <% } %>
+                <% } %>
 
-            <div class="divide-y divide-slate-50">
                 <% contacts.forEach(function(contact) { %>
                     <a href="/dashboard/communication?chat=<%= contact.id_usuario %>" 
-                       class="flex items-center p-4 hover:bg-indigo-50/50 transition-all cursor-pointer relative group
-                       <%= (activeChat && activeChat.id_usuario === contact.id_usuario) ? 'bg-indigo-50 border-l-4 border-indigo-600' : 'border-l-4 border-transparent' %>">
+                       class="flex items-center px-4 py-3 hover:bg-slate-50 transition-all cursor-pointer relative group z-10
+                       <%= (activeChat && activeChat.id_usuario === contact.id_usuario) ? 'bg-indigo-50/80 before:absolute before:left-0 before:top-0 before:h-full before:w-1 before:bg-indigo-600' : '' %>">
                         
                         <div class="relative flex-shrink-0">
-                            <div class="h-12 w-12 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-600 font-bold text-lg border border-slate-200 shadow-sm overflow-hidden">
+                            <div class="h-14 w-14 rounded-full bg-gradient-to-tr from-slate-200 to-slate-100 flex items-center justify-center text-slate-500 font-bold text-xl border-2 border-white shadow-sm overflow-hidden">
                                 <% if(contact.foto_perfil) { %>
-                                    <img src="<%= contact.foto_perfil %>" class="h-full w-full object-cover">
+                                    <img src="<%= contact.foto_perfil %>" class="h-full w-full object-cover transition-transform group-hover:scale-110">
                                 <% } else { %>
                                     <%= contact.nombre.charAt(0).toUpperCase() %>
                                 <% } %>
                             </div>
-                            <span class="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white"></span>
+                            <span class="absolute bottom-0.5 right-0.5 block h-3.5 w-3.5 rounded-full bg-emerald-500 ring-2 ring-white"></span>
+                        </div>
+
+                        <div class="ml-4 flex-1 min-w-0 py-1">
+                            <div class="flex justify-between items-baseline mb-1">
+                                <h3 class="text-base font-bold text-slate-900 truncate group-hover:text-indigo-700 transition-colors">
+                                    <%= contact.nombre %> <%= contact.apellido %>
+                                </h3>
+                                <% if (contact.fecha_envio) { %>
+                                    <span class="text-[11px] font-medium text-slate-400 whitespace-nowrap ml-2">
+                                        <%= new Date(contact.fecha_envio).toLocaleDateString() === new Date().toLocaleDateString() ? 
+                                            new Date(contact.fecha_envio).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 
+                                            new Date(contact.fecha_envio).toLocaleDateString([], {day: '2-digit', month:'2-digit'}) %>
+                                    </span>
+                                <% } %>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <p class="text-sm text-slate-500 truncate pr-2 flex-1 <%= contact.no_leidos > 0 ? 'font-bold text-slate-800' : '' %>">
+                                    <% if (contact.ultimo_mensaje) { %>
+                                        <%= contact.ultimo_mensaje %>
+                                    <% } else { %>
+                                        <span class="italic text-slate-400">Inicia la conversación...</span>
+                                    <% } %>
+                                </p>
+                                <% if (contact.no_leidos > 0) { %>
+                                    <div class="ml-2 bg-indigo-600 text-white text-[10px] font-bold h-5 min-w-[1.25rem] px-1.5 flex items-center justify-center rounded-full shadow-sm animate-pulse">
+                                        <%= contact.no_leidos %>
+                                    </div>
+                                <% } %>
+                            </div>
+                        </div>
+                    </a>
+                <% }); %>
+            </div>
+
+            <div id="search-results-list" class="hidden divide-y divide-slate-50 bg-slate-50/50 relative min-h-full">
+                <div class="px-4 py-2 text-xs font-bold uppercase text-slate-400 bg-slate-100/50 sticky top-0 backdrop-blur-sm">
+                    Resultados de búsqueda global
+                </div>
+                
+                <% allUsers.forEach(function(userResult) { %>
+                    <a href="/dashboard/communication?chat=<%= userResult.id_usuario %>" 
+                       class="search-item flex items-center px-4 py-3 hover:bg-indigo-50 transition-all cursor-pointer group border-l-4 border-transparent hover:border-indigo-300"
+                       data-search-term="<%= userResult.nombre.toLowerCase() %> <%= userResult.apellido.toLowerCase() %> <%= userResult.nombre_rol.toLowerCase() %>">
+                        
+                        <div class="relative flex-shrink-0">
+                            <div class="h-12 w-12 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-lg border-2 border-white shadow-sm overflow-hidden opacity-80 group-hover:opacity-100">
+                                <% if(userResult.foto_perfil) { %>
+                                    <img src="<%= userResult.foto_perfil %>" class="h-full w-full object-cover">
+                                <% } else { %>
+                                    <%= userResult.nombre.charAt(0).toUpperCase() %>
+                                <% } %>
+                            </div>
                         </div>
 
                         <div class="ml-4 flex-1 min-w-0">
-                            <div class="flex justify-between items-baseline">
-                                <h3 class="text-sm font-bold text-slate-900 truncate group-hover:text-indigo-700 transition-colors">
-                                    <%= contact.nombre %> <%= contact.apellido %>
-                                </h3>
-                                <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">
-                                    <%= contact.nombre_rol %>
-                                </span>
-                            </div>
-                            <p class="text-xs text-slate-500 truncate mt-0.5 flex items-center gap-1">
-                                <% if (contact.sin_leer > 0) { %>
-                                    <span class="font-bold text-indigo-600">Tienes mensajes nuevos</span>
-                                <% } else { %>
-                                    <i class="fas fa-reply text-[10px] opacity-50"></i> Haz clic para escribir...
-                                <% } %>
+                            <h3 class="text-sm font-bold text-slate-800 truncate">
+                                <i class="fas fa-search text-indigo-400 mr-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                                <%= userResult.nombre %> <%= userResult.apellido %>
+                            </h3>
+                            <p class="text-xs text-slate-500 truncate mt-0.5">
+                                <span class="px-1.5 py-0.5 bg-slate-100 rounded-md font-medium"><%= userResult.nombre_rol %></span>
+                                <span class="ml-1 opacity-70">Clic para chatear</span>
                             </p>
                         </div>
-
-                        <% if (contact.sin_leer > 0) { %>
-                            <div class="absolute top-4 right-4 bg-rose-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full shadow-sm animate-pulse">
-                                <%= contact.sin_leer %>
-                            </div>
-                        <% } %>
                     </a>
                 <% }); %>
+
+                <div id="no-results" class="hidden flex flex-col items-center justify-center h-40 text-slate-400 p-6 text-center">
+                    <i class="far fa-frown text-3xl mb-2 opacity-50"></i>
+                    <p class="text-sm font-medium">No se encontraron usuarios.</p>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="flex-1 flex flex-col bg-[#efe7dd] relative <%= !activeChat ? 'hidden md:flex' : 'flex' %>">
+
+    <div class="flex-1 flex flex-col bg-[#efe7dd] relative <%= !activeChat ? 'hidden md:flex' : 'flex' %> z-10">
         
-        <div class="absolute inset-0 opacity-[0.06] pointer-events-none" 
+        <div class="absolute inset-0 opacity-[0.04] pointer-events-none" 
              style="background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');">
         </div>
 
         <% if (activeChat) { %>
-            <div class="h-16 px-4 md:px-6 flex items-center justify-between bg-white border-b border-slate-200 shadow-sm z-20">
-                <div class="flex items-center">
-                    <a href="/dashboard/communication" class="md:hidden mr-3 p-2 -ml-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-full transition-all">
+            <div class="h-16 px-4 md:px-6 flex items-center justify-between bg-slate-50/90 backdrop-blur-md border-b border-slate-200 shadow-sm z-30 relative">
+                <div class="flex items-center cursor-pointer hover:bg-slate-100 py-1 pr-2 rounded-lg transition-colors">
+                    <a href="/dashboard/communication" class="md:hidden mr-2 p-2 -ml-1 text-slate-500 hover:text-indigo-600 rounded-full transition-all">
                         <i class="fas fa-arrow-left"></i>
                     </a>
                     
-                    <div class="h-10 w-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold border border-indigo-200 shadow-sm">
-                        <%= activeChat.nombre.charAt(0).toUpperCase() %>
+                    <div class="h-10 w-10 rounded-full bg-gradient-to-tr from-indigo-100 to-indigo-50 text-indigo-700 flex items-center justify-center font-bold border border-indigo-100 shadow-sm overflow-hidden relative flex-shrink-0">
+                        <% if(activeChat.foto_perfil) { %>
+                            <img src="<%= activeChat.foto_perfil %>" class="h-full w-full object-cover">
+                        <% } else { %>
+                            <%= activeChat.nombre.charAt(0).toUpperCase() %>
+                        <% } %>
                     </div>
-                    <div class="ml-3">
-                        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <div class="ml-3 overflow-hidden">
+                        <h3 class="text-base font-bold text-slate-900 flex items-center gap-1 truncate">
                             <%= activeChat.nombre %> <%= activeChat.apellido %>
-                            <i class="fas fa-check-circle text-indigo-500 text-xs" title="Verificado"></i>
+                            <i class="fas fa-check-circle text-indigo-500 text-[10px]" title="Verificado"></i>
                         </h3>
-                        <div class="flex items-center gap-1.5">
-                            <span class="relative flex h-2 w-2">
+                        <div class="flex items-center gap-1.5 text-xs text-slate-500 truncate">
+                            <span class="relative flex h-2 w-2 flex-shrink-0">
                               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                               <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                             </span>
-                            <span class="text-xs text-slate-500 font-medium">En línea</span>
+                            <span class="font-medium text-emerald-600">En línea</span>
+                            <span class="mx-1 opacity-50">•</span>
+                            <span class="opacity-70"><%= activeChat.nombre_rol %></span>
                         </div>
                     </div>
                 </div>
                 
-                <div class="flex items-center gap-1">
-                    <button class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-full transition-all" title="Videollamada">
+                <div class="flex items-center gap-1 text-slate-500">
+                    <button class="p-2.5 hover:text-indigo-600 hover:bg-slate-100 rounded-full transition-all hidden sm:block" title="Buscar en el chat">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button class="p-2.5 hover:text-indigo-600 hover:bg-slate-100 rounded-full transition-all hidden sm:block" title="Videollamada">
                         <i class="fas fa-video"></i>
                     </button>
-                    <button class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-full transition-all" title="Opciones">
+                    <button class="p-2.5 hover:text-indigo-600 hover:bg-slate-100 rounded-full transition-all" title="Más opciones">
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
                 </div>
             </div>
+            
+            <div id="chat-container" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-1 custom-scrollbar z-10 scroll-smooth relative">
+                <div class="absolute top-0 left-0 w-full h-4 bg-gradient-to-b from-black/5 to-transparent pointer-events-none z-20 opacity-0 transition-opacity duration-300" id="top-shadow"></div>
 
-            <div id="chat-container" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-2 custom-scrollbar z-10 scroll-smooth">
-                <div class="flex justify-center my-4">
-                    <span class="bg-slate-200/80 text-slate-600 text-[10px] font-bold px-3 py-1 rounded-full shadow-sm uppercase tracking-wide">Hoy</span>
+                <div class="flex justify-center my-6">
+                    <span class="bg-slate-50/80 backdrop-blur-sm border border-slate-100 text-slate-500 text-[11px] font-bold px-4 py-1.5 rounded-full shadow-sm uppercase tracking-wider">
+                        Inicio de la conversación
+                    </span>
                 </div>
 
-                <% messages.forEach(function(msg) { %>
-                    <% const isMe = msg.id_remitente == user.id_usuario; %>
-                    <div class="flex w-full <%= isMe ? 'justify-end' : 'justify-start' %> animate-fade-in">
-                        <div class="max-w-[85%] md:max-w-[65%] px-4 py-2 shadow-sm text-sm relative 
-                                    <%= isMe ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-sm' : 'bg-white text-slate-800 rounded-2xl rounded-tl-sm' %>">
-                            <p class="break-words leading-relaxed whitespace-pre-wrap"><%= msg.contenido %></p>
-                            <div class="flex items-center justify-end gap-1 mt-1 select-none">
-                                <span class="text-[10px] opacity-70 font-medium">
+                <% let lastDate = null; %>
+                <% activeChat.messages.forEach(function(msg, index) { %>
+                    <% 
+                        const isMe = msg.id_remitente == user.id_usuario; 
+                        const msgDate = new Date(msg.fecha_envio).toLocaleDateString();
+                        const showDateDivider = msgDate !== lastDate;
+                        lastDate = msgDate;
+                        // Lógica para agrupar mensajes seguidos del mismo usuario
+                        const nextMsg = activeChat.messages[index + 1];
+                        const isLastInGroup = !nextMsg || nextMsg.id_remitente !== msg.id_remitente;
+                    %>
+
+                    <% if (showDateDivider) { %>
+                        <div class="flex justify-center my-4">
+                            <span class="bg-slate-200/60 text-slate-600 text-[10px] font-bold px-3 py-0.5 rounded-full shadow-sm">
+                                <%= msgDate === new Date().toLocaleDateString() ? 'HOY' : msgDate %>
+                            </span>
+                        </div>
+                    <% } %>
+
+                    <div class="flex w-full <%= isMe ? 'justify-end' : 'justify-start' %> group <%= isLastInGroup ? 'mb-3' : 'mb-0.5' %> animate-fade-in-up">
+                        <div class="max-w-[80%] md:max-w-[60%] px-3 py-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.06)] text-[15px] relative transition-all
+                                    <%= isMe ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-sm hover:bg-indigo-700' : 'bg-white text-slate-900 rounded-2xl rounded-tl-sm hover:bg-slate-50' %>">
+                            
+                            <p class="break-words leading-snug whitespace-pre-wrap -mt-0.5"><%= msg.contenido %></p>
+                            
+                            <div class="flex items-center justify-end gap-1 mt-0.5 select-none absolute bottom-1 right-2">
+                                <span class="text-[10px] <%= isMe ? 'text-indigo-200' : 'text-slate-400' %> font-medium">
                                     <%= new Date(msg.fecha_envio).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) %>
                                 </span>
                                 <% if(isMe) { %>
-                                    <i class="fas fa-check-double text-[10px] <%= msg.leido ? 'text-blue-300' : 'opacity-50' %>"></i>
+                                    <i class="fas fa-check-double text-[10px] <%= msg.leido ? 'text-blue-300' : 'opacity-40' %>"></i>
                                 <% } %>
                             </div>
+                             <div class="h-3 w-12 inline-block"></div>
                         </div>
                     </div>
                 <% }); %>
             </div>
 
-            <div class="p-4 bg-white border-t border-slate-200 z-20">
-                <form id="chat-form" class="flex items-end gap-2 md:gap-3 max-w-4xl mx-auto">
-                    <input type="hidden" id="destinatario-id" value="<%= activeChat.id_usuario %>">
+            <div class="p-3 bg-slate-50 border-t border-slate-200 z-30 relative">
+                <form id="chat-form" class="flex items-end gap-2 max-w-4xl mx-auto relative z-20">
+                    <input type="hidden" id="receiver-id" value="<%= activeChat.id_usuario %>">
                     
-                    <button type="button" class="mb-2 p-2 text-slate-400 hover:text-indigo-600 transition-colors rounded-full hover:bg-slate-100">
-                        <i class="far fa-smile text-xl"></i>
-                    </button>
-                    <button type="button" class="mb-2 p-2 text-slate-400 hover:text-indigo-600 transition-colors rounded-full hover:bg-slate-100">
-                        <i class="fas fa-paperclip text-xl"></i>
-                    </button>
+                    <div class="flex gap-1 mb-1.5">
+                        <button type="button" class="p-2.5 text-slate-400 hover:text-indigo-600 transition-colors rounded-full hover:bg-slate-200/50 active:bg-slate-200">
+                            <i class="far fa-smile text-xl"></i>
+                        </button>
+                        <button type="button" class="p-2.5 text-slate-400 hover:text-indigo-600 transition-colors rounded-full hover:bg-slate-200/50 hidden sm:block active:bg-slate-200">
+                            <i class="fas fa-paperclip text-xl"></i>
+                        </button>
+                    </div>
                     
-                    <div class="flex-1 bg-slate-100 rounded-2xl border border-transparent focus-within:border-indigo-300 focus-within:ring-4 focus-within:ring-indigo-50 transition-all">
+                    <div class="flex-1 bg-white rounded-2xl border border-slate-200 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100 transition-all shadow-sm overflow-hidden">
                         <textarea id="msg-input" rows="1" 
-                            class="w-full bg-transparent border-0 px-4 py-3 focus:ring-0 text-slate-800 placeholder-slate-400 resize-none max-h-32" 
+                            class="w-full bg-transparent border-0 px-4 py-3 focus:ring-0 text-slate-800 placeholder-slate-400 resize-none max-h-40 custom-scrollbar leading-relaxed" 
                             placeholder="Escribe un mensaje..."
-                            oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea>
+                            oninput="this.style.height = ''; this.style.height = Math.min(this.scrollHeight, 160) + 'px'"></textarea>
                     </div>
 
-                    <button type="submit" class="mb-1 p-3 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 active:scale-95 transition-all shadow-md hover:shadow-lg flex-shrink-0">
-                        <i class="fas fa-paper-plane pl-0.5"></i>
+                    <button type="submit" id="send-btn" class="mb-1.5 p-3.5 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 active:scale-95 transition-all shadow-md hover:shadow-lg flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        <i class="fas fa-paper-plane text-lg pl-0.5"></i>
                     </button>
                 </form>
             </div>
 
         <% } else { %>
-            <div class="flex-1 flex flex-col items-center justify-center text-center p-8 z-10">
-                <div class="w-40 h-40 bg-indigo-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
-                    <i class="fas fa-comments text-5xl text-indigo-500"></i>
+            <div class="flex-1 flex flex-col items-center justify-center text-center p-8 z-20 animate-fade-in">
+                <div class="relative">
+                    <div class="w-48 h-48 bg-indigo-50/50 rounded-full flex items-center justify-center mb-8 shadow-xl animate-blob">
+                        <i class="fas fa-comments text-7xl text-indigo-400/80"></i>
+                    </div>
+                    <div class="absolute top-0 right-0 -mr-4 -mt-4 w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center shadow-md animate-bounce-slow">
+                        <i class="fas fa-bolt text-2xl text-emerald-400"></i>
+                    </div>
                 </div>
-                <h2 class="text-2xl font-extrabold text-slate-800 mb-2">Centro de Comunicaciones</h2>
-                <p class="text-slate-500 max-w-md leading-relaxed">
-                    Selecciona una conversación para comenzar. Aquí podrás mantener contacto seguro y privado.
+                <h2 class="text-3xl font-extrabold text-slate-800 mb-3 tracking-tight">Centro de Comunicaciones</h2>
+                <p class="text-slate-500 max-w-md leading-relaxed text-lg">
+                    Selecciona un contacto de la izquierda o usa el <b class="text-indigo-600">buscador global</b> para iniciar una nueva conversación segura.
                 </p>
+                <div class="mt-8 p-4 bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 shadow-sm text-sm text-slate-400 flex items-center gap-2">
+                    <i class="fas fa-lock text-indigo-300"></i> Tus mensajes están cifrados de extremo a extremo.
+                </div>
             </div>
         <% } %>
 
@@ -180,84 +278,217 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-    // CORRECCIÓN SINTAXIS: Usamos comillas para evitar errores del editor con EJS
     const myId = '<%= user.id_usuario %>';
-    const destId = document.getElementById('destinatario-id') ? document.getElementById('destinatario-id').value : null;
+    // Obtenemos el ID del receptor del input oculto (si existe chat activo)
+    const receiverIdField = document.getElementById('receiver-id');
+    const receiverId = receiverIdField ? receiverIdField.value : null;
     
     const socket = io();
     const chatContainer = document.getElementById('chat-container');
     const chatForm = document.getElementById('chat-form');
     const msgInput = document.getElementById('msg-input');
-    
-    if(chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
+    const sendBtn = document.getElementById('send-btn');
+    const topShadow = document.getElementById('top-shadow');
 
+    // =================================================================
+    // 1. LÓGICA DE UI DEL CHAT
+    // =================================================================
+    
+    // Scroll al fondo al cargar
+    function scrollToBottom(smooth = false) {
+        if(chatContainer) {
+            chatContainer.scrollTo({ 
+                top: chatContainer.scrollHeight, 
+                behavior: smooth ? 'smooth' : 'auto' 
+            });
+        }
+    }
+    scrollToBottom();
+
+    // Habilitar/Deshabilitar botón de enviar
+    if(msgInput && sendBtn) {
+        msgInput.addEventListener('input', function() {
+            sendBtn.disabled = this.value.trim().length === 0;
+        });
+    }
+
+    // Efecto de sombra en el header al hacer scroll
+    if(chatContainer && topShadow) {
+        chatContainer.addEventListener('scroll', () => {
+            topShadow.style.opacity = chatContainer.scrollTop > 10 ? '1' : '0';
+        });
+    }
+
+    // Conectarse a la sala personal de Socket.IO
     socket.emit('join-room', `user-${myId}`);
 
-    if(chatForm && msgInput) {
-        // Enviar con Enter
+    // =================================================================
+    // 2. ENVIAR MENSAJES
+    // =================================================================
+    if(chatForm && msgInput && receiverId) {
+        // Enviar con Enter (sin Shift)
         msgInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                chatForm.dispatchEvent(new Event('submit'));
+                if (!sendBtn.disabled) chatForm.dispatchEvent(new Event('submit'));
             }
         });
 
         chatForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const msg = msgInput.value.trim();
-            if(!msg) return;
+            const msgContent = msgInput.value.trim();
+            if(!msgContent) return;
 
-            // 1. UI Optimista
-            appendMessage(msg, true); 
+            // A. UI Optimista (Mostrar inmediatamente)
+            appendMessage(msgContent, true); 
+            
+            // Limpiar input
             msgInput.value = '';
-            msgInput.style.height = 'auto'; 
+            msgInput.style.height = 'auto';
+            sendBtn.disabled = true;
+            scrollToBottom(true);
 
-            // 2. Guardar en BD (Ruta Corregida: /dashboard/communication/save)
+            // B. Guardar en Servidor (Fetch API)
+            // NOTA: Usamos 'receiverId' y 'content' como espera el nuevo controlador
             fetch('/dashboard/communication/save', { 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id_destinatario: destId, contenido: msg })
+                body: JSON.stringify({ receiverId: receiverId, content: msgContent })
             })
-            .then(res => {
-                if (!res.ok) throw new Error('Error en la red');
-                return res.json();
-            })
+            .then(res => res.json())
             .then(data => {
                 if(data.success) {
+                    // C. Emitir evento de Socket si se guardó correctamente
                     socket.emit('send-message', {
-                        roomId: `user-${destId}`,
-                        content: msg,
+                        roomId: `user-${receiverId}`, // Enviar a la sala del destinatario
+                        content: msgContent,
                         senderId: myId
                     });
+                    // Aquí podríamos actualizar el doble check a "enviado" (gris)
+                } else {
+                    console.error('Error del servidor:', data.error);
+                    // Aquí podrías mostrar un error visual en el mensaje
                 }
             })
-            .catch(err => console.error("Error enviando mensaje:", err));
+            .catch(err => console.error("Error de red:", err));
         });
     }
 
+    // =================================================================
+    // 3. RECIBIR MENSAJES (SOCKET.IO)
+    // =================================================================
     socket.on('receive-message', (data) => {
-        if(destId && data.senderId == destId) {
+        // Solo mostrar si el mensaje viene del usuario del chat activo actual
+        if(receiverId && data.senderId == receiverId) {
             appendMessage(data.content, false);
+            scrollToBottom(true);
+            // Opcional: Sonido de notificación
+        } else {
+            // Si no es el chat activo, aquí deberíamos actualizar el contador de no leídos en el sidebar
+            // (Requiere lógica adicional de manipulación del DOM en la lista de contactos)
+            console.log('Mensaje recibido de otro usuario:', data.senderId);
         }
     });
 
+    // Función para añadir burbuja de mensaje al DOM
     function appendMessage(text, isMe) {
         if(!chatContainer) return;
-        const div = document.createElement('div');
-        div.className = `flex w-full ${isMe ? 'justify-end' : 'justify-start'} animate-fade-in mb-2`;
-        const bubbleClass = isMe ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-sm' : 'bg-white text-slate-800 rounded-2xl rounded-tl-sm';
-        const now = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         
+        const now = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const div = document.createElement('div');
+        // Lógica simple de espaciado (se puede mejorar detectando el mensaje anterior)
+        div.className = `flex w-full ${isMe ? 'justify-end' : 'justify-start'} group mb-3 animate-fade-in-up`;
+        
+        const bubbleClass = isMe 
+            ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-sm hover:bg-indigo-700' 
+            : 'bg-white text-slate-900 rounded-2xl rounded-tl-sm hover:bg-slate-50';
+        
+        const checkIcon = isMe ? '<i class="fas fa-check-double text-[10px] opacity-40"></i>' : ''; // Empieza como no leído
+
         div.innerHTML = `
-            <div class="max-w-[85%] md:max-w-[65%] px-4 py-2 shadow-sm text-sm relative ${bubbleClass}">
-                <p class="break-words leading-relaxed whitespace-pre-wrap">${text}</p>
-                <div class="flex items-center justify-end gap-1 mt-1 select-none">
-                    <span class="text-[10px] opacity-70 font-medium">${now}</span>
-                    ${isMe ? '<i class="fas fa-check ml-1 opacity-50"></i>' : ''}
+            <div class="max-w-[80%] md:max-w-[60%] px-3 py-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.06)] text-[15px] relative transition-all ${bubbleClass}">
+                <p class="break-words leading-snug whitespace-pre-wrap -mt-0.5">${text}</p>
+                <div class="flex items-center justify-end gap-1 mt-0.5 select-none absolute bottom-1 right-2">
+                    <span class="text-[10px] ${isMe ? 'text-indigo-200' : 'text-slate-400'} font-medium">${now}</span>
+                    ${checkIcon}
                 </div>
+                <div class="h-3 w-12 inline-block"></div>
             </div>
         `;
         chatContainer.appendChild(div);
-        requestAnimationFrame(() => chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' }));
+    }
+
+    // =================================================================
+    // 4. LÓGICA DEL BUSCADOR GLOBAL 🔍
+    // =================================================================
+    const searchInput = document.getElementById('global-search');
+    const contactsList = document.getElementById('contacts-list');
+    const searchResultsList = document.getElementById('search-results-list');
+    const noResultsMsg = document.getElementById('no-results');
+    const searchSpinner = document.getElementById('search-spinner');
+
+    if(searchInput) {
+        let debounceTimeout;
+
+        searchInput.addEventListener('input', function(e) {
+            clearTimeout(debounceTimeout);
+            const searchTerm = e.target.value.toLowerCase().trim();
+
+            // Mostrar spinner visualmente
+            searchSpinner.classList.remove('hidden');
+
+            // Debounce para no filtrar en cada tecla
+            debounceTimeout = setTimeout(() => {
+                if(searchTerm === '') {
+                    // Si está vacío, mostrar contactos y ocultar resultados
+                    contactsList.classList.remove('hidden');
+                    searchResultsList.classList.add('hidden');
+                } else {
+                    // Si hay texto, ocultar contactos y mostrar resultados filtrados
+                    contactsList.classList.add('hidden');
+                    searchResultsList.classList.remove('hidden');
+                    
+                    let hasResults = false;
+                    const searchItems = searchResultsList.querySelectorAll('.search-item');
+                    
+                    searchItems.forEach(item => {
+                        // Buscamos en el atributo data-search-term que contiene nombre, apellido y rol
+                        const searchData = item.getAttribute('data-search-term');
+                        if(searchData.includes(searchTerm)) {
+                            item.classList.remove('hidden');
+                            hasResults = true;
+                        } else {
+                            item.classList.add('hidden');
+                        }
+                    });
+
+                    // Mostrar/ocultar mensaje de "No hay resultados"
+                    if(hasResults) {
+                        noResultsMsg.classList.add('hidden');
+                    } else {
+                        noResultsMsg.classList.remove('hidden');
+                    }
+                }
+                // Ocultar spinner
+                searchSpinner.classList.add('hidden');
+            }, 200); // 200ms de espera
+        });
     }
 </script>
+
+<style>
+    /* Estilos adicionales para la vista de chat */
+    .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    
+    .animate-fade-in-up { animation: fadeInUp 0.3s ease-out forwards; }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .animate-blob { animation: blob 7s infinite; }
+    @keyframes blob { 0% { transform: translate(0px, 0px) scale(1); } 33% { transform: translate(5px, -10px) scale(1.05); } 66% { transform: translate(-10px, 5px) scale(0.95); } 100% { transform: translate(0px, 0px) scale(1); } }
+    
+    .animate-bounce-slow { animation: bounceSlow 3s infinite; }
+    @keyframes bounceSlow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+</style>

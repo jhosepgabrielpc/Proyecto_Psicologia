@@ -2,439 +2,243 @@ const db = require('../config/database');
 const { hashPassword } = require('../utils/helpers');
 
 // ==================================================================================
-// 1. DASHBOARD PRINCIPAL (LÓGICA DE CARGA PASO A PASO + AUTO-REPARACIÓN)
+// 1. DASHBOARD PACIENTE (EL AGREGADOR AUTÓNOMO) - ¡NUEVO! 🌟
 // ==================================================================================
-// Este controlador gestiona la vista principal del Administrador.
-// Carga 5 bloques de datos distintos de forma secuencial y segura.
-// ==================================================================================
-const getAdminDashboard = async (req, res) => {
-    console.log("========================================");
-    console.log("⚡ INICIANDO CARGA DEL DASHBOARD ADMIN");
-    console.log("========================================");
-
-    // 1. VERIFICACIÓN DE SEGURIDAD
-    // Si por alguna razón la sesión se perdió, redirigimos antes de intentar cargar nada.
-    if (!req.session || !req.session.user || !req.session.user.id_usuario) {
-        console.log("⚠️ Sesión no encontrada o usuario inválido. Redirigiendo al login.");
-        return res.redirect('/auth/login');
-    }
-
-    // 2. INICIALIZACIÓN DE VARIABLES
-    // Definimos valores por defecto para evitar errores 'undefined' en la vista EJS
-    // si alguna consulta a la base de datos falla.
-    let currentUser = req.session.user;
-    let statsData = { 
-        total_usuarios: 0, 
-        total_pacientes: 0, 
-        total_terapeutas: 0, 
-        citas_pendientes: 0 
-    };
-    let usersData = [];
-    let matchData = []; // Pacientes sin asignar
-    let therapistsData = [];
-    let alertsData = [];
+const getPatientDashboard = async (req, res) => {
+    const userId = req.session.user.id_usuario;
 
     try {
-        // ---------------------------------------------------------------
-        // PASO 0: REFRESCO DE USUARIO (AUTO-REPARACIÓN DE SESIÓN)
-        // ---------------------------------------------------------------
-        // Consultamos la BD para obtener los datos más frescos del usuario actual.
-        // Esto corrige el error "reading 'nombre_rol' of undefined" si la cookie es vieja.
+        // 1. IDENTIFICAR AL PACIENTE
+        const pRes = await db.query(`
+            SELECT p.id_paciente, p.id_terapeuta, p.estado_tratamiento,
+                   u.nombre as doc_nombre, u.apellido as doc_apellido, u.email as doc_email, u.foto_perfil as doc_foto
+            FROM Pacientes p
+            LEFT JOIN Terapeutas t ON p.id_terapeuta = t.id_terapeuta
+            LEFT JOIN Usuarios u ON t.id_usuario = u.id_usuario
+            WHERE p.id_usuario = $1
+        `, [userId]);
+
+        if (pRes.rows.length === 0) {
+            return res.render('error', { 
+                title: 'Perfil No Encontrado', 
+                message: 'No tienes un expediente de paciente activo.',
+                user: req.session.user 
+            });
+        }
+        const patientData = pRes.rows[0];
+
+        // 2. DATOS DE MONITOREO (Para la Gráfica) - Últimos 7 días
+        const checkinsRes = await db.query(`
+            SELECT valencia, emocion_principal, horas_sueno, notas, fecha_hora 
+            FROM checkins_emocionales 
+            WHERE id_paciente = $1 
+            ORDER BY fecha_hora DESC LIMIT 7
+        `, [patientData.id_paciente]);
+
+        // 3. PRÓXIMA CITA (Para el Widget de Agenda)
+        const appointmentRes = await db.query(`
+            SELECT fecha_hora_inicio, modalidad, enlace_reunion, estado
+            FROM Citas
+            WHERE id_paciente = $1 
+              AND fecha_hora_inicio >= NOW() 
+              AND estado = 'Programada'
+            ORDER BY fecha_hora_inicio ASC 
+            LIMIT 1
+        `, [patientData.id_paciente]);
+
+        // 4. HISTORIAL DE CITAS (Para referencia rápida)
+        const historyRes = await db.query(`
+            SELECT c.fecha_hora_inicio, c.estado, u.apellido as doc_apellido
+            FROM Citas c
+            LEFT JOIN Terapeutas t ON c.id_terapeuta = t.id_terapeuta
+            LEFT JOIN Usuarios u ON t.id_usuario = u.id_usuario
+            WHERE c.id_paciente = $1 AND c.fecha_hora_inicio < NOW()
+            ORDER BY c.fecha_hora_inicio DESC LIMIT 3
+        `, [patientData.id_paciente]);
+
+        // RENDERIZAR LA VISTA MAESTRA
+        res.render('dashboard/patient', {
+            title: 'Mi Espacio MindCare',
+            user: req.session.user,
+            therapist: patientData.id_terapeuta ? { 
+                nombre: patientData.doc_nombre, 
+                apellido: patientData.doc_apellido, 
+                foto: patientData.doc_foto 
+            } : null,
+            checkins: checkinsRes.rows, // Para Chart.js
+            nextAppointment: appointmentRes.rows.length > 0 ? appointmentRes.rows[0] : null,
+            pastAppointments: historyRes.rows,
+            msg: req.query.msg || null
+        });
+
+    } catch (error) {
+        console.error('Error Dashboard Paciente:', error);
+        res.status(500).render('error', { title: 'Error', message: 'Error cargando tu espacio.', error, user: req.session.user });
+    }
+};
+
+// ==================================================================================
+// 2. DASHBOARD ADMIN (TU CÓDIGO ORIGINAL MEJORADO)
+// ==================================================================================
+const getAdminDashboard = async (req, res) => {
+    console.log("=== CARGANDO ADMIN DASHBOARD ===");
+
+    if (!req.session || !req.session.user) return res.redirect('/auth/login');
+
+    let currentUser = req.session.user;
+    let statsData = { total_usuarios: 0, total_pacientes: 0, total_terapeutas: 0, citas_pendientes: 0 };
+    let usersData = [], matchData = [], therapistsData = [], alertsData = [];
+
+    try {
+        // AUTO-REPARACIÓN DE SESIÓN
         try {
-            const refreshUser = await db.query(`
-                SELECT u.*, COALESCE(r.nombre_rol, 'Usuario') as nombre_rol 
-                FROM Usuarios u 
-                LEFT JOIN Roles r ON u.id_rol = r.id_rol 
-                WHERE u.id_usuario = $1
-            `, [req.session.user.id_usuario]);
-            
+            const refreshUser = await db.query(`SELECT u.*, r.nombre_rol FROM Usuarios u LEFT JOIN Roles r ON u.id_rol = r.id_rol WHERE u.id_usuario = $1`, [req.session.user.id_usuario]);
             if (refreshUser.rows.length > 0) {
-                // Actualizamos la sesión en memoria con los datos frescos de la BD
                 req.session.user = refreshUser.rows[0]; 
                 currentUser = req.session.user;
-                console.log(`   ✓ Sesión refrescada para: ${currentUser.nombre} (${currentUser.nombre_rol})`);
             }
-        } catch (e) {
-            console.error("   ⚠️ No se pudo refrescar la sesión (usando datos en cache):", e.message);
-        }
+        } catch (e) { console.warn("⚠️ Error refresco sesión:", e.message); }
 
-        // ---------------------------------------------------------------
-        // PASO 1: OBTENER KPIs (Estadísticas Generales)
-        // ---------------------------------------------------------------
-        console.log("--> Paso 1: Cargando Estadísticas (KPIs)...");
-        try {
-            const statsQuery = await db.query(`
-                SELECT 
-                    (SELECT COUNT(*) FROM Usuarios)::int as total_usuarios,
-                    (SELECT COUNT(*) FROM Pacientes)::int as total_pacientes,
-                    (SELECT COUNT(*) FROM Terapeutas)::int as total_terapeutas,
-                    (SELECT COUNT(*) FROM Citas WHERE fecha_hora >= CURRENT_DATE)::int as citas_pendientes
-            `);
-            
-            if (statsQuery.rows.length > 0) {
-                statsData = statsQuery.rows[0];
-            }
-            console.log("   ✓ KPIs cargados correctamente.");
-        } catch (errorStats) {
-            console.error("   X ERROR EN KPIs:", errorStats.message);
-            // No detenemos la ejecución, seguimos con los siguientes datos
-        }
+        // KPIs
+        const statsQuery = await db.query(`
+            SELECT 
+                (SELECT COUNT(*) FROM Usuarios)::int as total_usuarios,
+                (SELECT COUNT(*) FROM Pacientes)::int as total_pacientes,
+                (SELECT COUNT(*) FROM Terapeutas)::int as total_terapeutas,
+                (SELECT COUNT(*) FROM Citas WHERE fecha_hora_inicio >= CURRENT_DATE AND estado = 'Programada')::int as citas_pendientes
+        `);
+        if (statsQuery.rows.length > 0) statsData = statsQuery.rows[0];
 
-        // ---------------------------------------------------------------
-        // PASO 2: OBTENER LISTA DE USUARIOS (Tabla Principal)
-        // ---------------------------------------------------------------
-        // Usamos LEFT JOIN y COALESCE para evitar nulos en 'nombre_rol'
-        console.log("--> Paso 2: Cargando Lista de Usuarios...");
-        try {
-            const usersQuery = await db.query(`
-                SELECT 
-                    u.id_usuario, 
-                    u.nombre, 
-                    u.apellido, 
-                    u.email, 
-                    u.estado, 
-                    COALESCE(r.nombre_rol, 'Usuario') as nombre_rol, 
-                    u.fecha_registro
-                FROM Usuarios u
-                LEFT JOIN Roles r ON u.id_rol = r.id_rol
-                ORDER BY u.fecha_registro DESC
-                LIMIT 20
-            `);
-            usersData = usersQuery.rows;
-            console.log(`   ✓ Usuarios cargados: ${usersData.length}`);
-        } catch (errorUsers) {
-            console.error("   X ERROR EN USUARIOS:", errorUsers.message);
-        }
+        // LISTAS DE GESTIÓN
+        const usersQuery = await db.query(`SELECT u.id_usuario, u.nombre, u.apellido, u.email, u.estado, u.fecha_registro, COALESCE(r.nombre_rol, 'Sin Rol') as nombre_rol FROM Usuarios u LEFT JOIN Roles r ON u.id_rol = r.id_rol ORDER BY u.fecha_registro DESC LIMIT 50`);
+        usersData = usersQuery.rows;
 
-        // ---------------------------------------------------------------
-        // PASO 3: MATCHMAKING (Pacientes sin Terapeuta)
-        // ---------------------------------------------------------------
-        console.log("--> Paso 3: Buscando pacientes sin asignar...");
-        try {
-            const unassignedQuery = await db.query(`
-                SELECT p.id_paciente, u.nombre, u.apellido, u.email, p.fecha_inicio_tratamiento
-                FROM Pacientes p
-                JOIN Usuarios u ON p.id_usuario = u.id_usuario
-                WHERE p.id_terapeuta IS NULL
-            `);
-            matchData = unassignedQuery.rows;
-            console.log(`   ✓ Pacientes pendientes: ${matchData.length}`);
-        } catch (errorMatch) {
-            console.error("   X ERROR EN MATCHMAKING:", errorMatch.message);
-        }
+        const unassignedQuery = await db.query(`SELECT p.id_paciente, u.nombre, u.apellido, u.email, p.fecha_inicio_tratamiento FROM Pacientes p JOIN Usuarios u ON p.id_usuario = u.id_usuario WHERE p.id_terapeuta IS NULL`);
+        matchData = unassignedQuery.rows;
 
-        // ---------------------------------------------------------------
-        // PASO 4: LISTA DE TERAPEUTAS (Para el Dropdown)
-        // ---------------------------------------------------------------
-        console.log("--> Paso 4: Cargando lista de terapeutas...");
-        try {
-            const therapistsQuery = await db.query(`
-                SELECT t.id_terapeuta, u.nombre, u.apellido, t.especialidad 
-                FROM Terapeutas t
-                JOIN Usuarios u ON t.id_usuario = u.id_usuario
-                WHERE u.estado = true
-            `);
-            therapistsData = therapistsQuery.rows;
-            console.log(`   ✓ Terapeutas disponibles: ${therapistsData.length}`);
-        } catch (errorTherapists) {
-            console.error("   X ERROR EN TERAPEUTAS:", errorTherapists.message);
-        }
+        const therapistsQuery = await db.query(`SELECT t.id_terapeuta, u.nombre, u.apellido, t.especialidad FROM Terapeutas t JOIN Usuarios u ON t.id_usuario = u.id_usuario WHERE u.estado = true`);
+        therapistsData = therapistsQuery.rows;
 
-        // ---------------------------------------------------------------
-        // PASO 5: MONITOR DE CRISIS (Torre de Control)
-        // ---------------------------------------------------------------
-        console.log("--> Paso 5: Escaneando alertas de crisis...");
+        // ALERTA DE RIESGO
         try {
             const riskQuery = await db.query(`
-                SELECT c.id_checkin, c.valencia, c.emocion_principal, c.notas, c.fecha_hora, 
-                       u.nombre, u.apellido, u.id_usuario
-                FROM Checkins_Emocionales c
+                SELECT c.id_checkin, c.valencia, c.emocion_principal, c.notas, c.fecha_hora, u.nombre, u.apellido
+                FROM checkins_emocionales c
                 JOIN Pacientes p ON c.id_paciente = p.id_paciente
                 JOIN Usuarios u ON p.id_usuario = u.id_usuario
-                WHERE c.requiere_atencion = true OR c.valencia <= 2
-                ORDER BY c.fecha_hora DESC
-                LIMIT 5
+                WHERE c.valencia <= 2
+                ORDER BY c.fecha_hora DESC LIMIT 5
             `);
             alertsData = riskQuery.rows;
-            console.log(`   ✓ Alertas detectadas: ${alertsData.length}`);
-        } catch (errorAlerts) {
-            // Es común que falle si la tabla no existe aún, así que lo manejamos suavemente
-            console.error("   X ERROR EN ALERTAS (Posiblemente tabla vacía o inexistente):", errorAlerts.message);
-            alertsData = []; // Aseguramos que sea un array vacío
-        }
+        } catch (e) { alertsData = []; }
 
-        // ---------------------------------------------------------------
-        // PASO 6: RENDERIZADO FINAL
-        // ---------------------------------------------------------------
-        console.log("--> Paso 6: Renderizando vista 'dashboard/admin'...");
-        
         res.render('dashboard/admin', {
-            title: 'Centro de Comando MindCare',
-            user: currentUser, // Usamos el usuario fresco
-            
-            // Datos Blindados (Nunca serán undefined)
+            title: 'Centro de Comando',
+            user: currentUser,
             stats: statsData,
             users: usersData,
             unassignedPatients: matchData,
             therapists: therapistsData,
             alerts: alertsData,
-            
-            msg: req.query.msg || null // Mensajes flash (created, updated, error)
+            msg: req.query.msg || null
         });
-        
-        console.log("✅ DASHBOARD CARGADO EXITOSAMENTE");
-        console.log("========================================");
 
-    } catch (errorGlobal) {
-        // CATCH FINAL: Si algo explota catastróficamente
-        console.error("🔥 ERROR FATAL EN DASHBOARD CONTROLLER:", errorGlobal);
-        
-        res.status(500).render('error', { 
-            title: 'Error Crítico del Sistema',
-            message: 'No se pudo cargar el Panel de Control debido a un error interno.', 
-            error: process.env.NODE_ENV === 'development' ? errorGlobal : {},
-            user: req.session.user 
-        });
+    } catch (error) {
+        console.error("🔥 ERROR ADMIN:", error);
+        res.status(500).render('error', { title: 'Error Crítico', message: 'Fallo interno admin.', error, user: req.session.user });
     }
 };
 
 // ==================================================================================
-// 2. FUNCIONALIDAD: ASIGNAR TERAPEUTA (MATCHMAKING)
+// 3. FUNCIONES CRUD & MATCHMAKING (MANTENIDAS)
 // ==================================================================================
+
 const assignTherapist = async (req, res) => {
-    console.log("--> Intentando asignar terapeuta...");
     const { id_paciente, id_terapeuta } = req.body;
-    
     try {
-        if (!id_paciente || !id_terapeuta) {
-            throw new Error("Faltan IDs para la asignación.");
-        }
-
-        await db.query(`
-            UPDATE Pacientes 
-            SET id_terapeuta = $1, estado_tratamiento = 'activo', fecha_inicio_tratamiento = NOW()
-            WHERE id_paciente = $2`, 
-            [id_terapeuta, id_paciente]
-        );
-        
-        console.log(`   ✓ Paciente ${id_paciente} asignado a Terapeuta ${id_terapeuta}`);
+        await db.query(`UPDATE Pacientes SET id_terapeuta = $1, estado_tratamiento = 'activo', fecha_inicio_tratamiento = NOW() WHERE id_paciente = $2`, [id_terapeuta, id_paciente]);
         res.redirect('/dashboard/admin?msg=assigned');
-
-    } catch (error) {
-        console.error("   X Error asignando terapeuta:", error.message);
-        res.redirect('/dashboard/admin?msg=error');
-    }
+    } catch (error) { res.redirect('/dashboard/admin?msg=error'); }
 };
 
-// ==================================================================================
-// 3. FUNCIONALIDAD: MOSTRAR FORMULARIO CREAR USUARIO
-// ==================================================================================
-const showCreateUserForm = async (req, res) => {
-    // Renderiza la vista pasando objetos vacíos necesarios
-    res.render('dashboard/create-user', {
-        title: 'Nuevo Usuario',
-        user: req.session.user,
-        error: null,
-        formData: {} 
-    });
+const showCreateUserForm = (req, res) => {
+    res.render('dashboard/create-user', { title: 'Nuevo Usuario', user: req.session.user, error: null, formData: {} });
 };
 
-// ==================================================================================
-// 4. FUNCIONALIDAD: LÓGICA DE CREAR USUARIO (TRANSACCIÓN)
-// ==================================================================================
 const createUser = async (req, res) => {
-    console.log("--> Iniciando creación de usuario...");
     const { nombre, apellido, email, password, rol, telefono } = req.body;
-    
-    const client = await db.pool.connect(); // Cliente para transacción
-
-    try {
-        await client.query('BEGIN'); // Inicio
-        
-        // 1. Validar email único
-        const existing = await client.query('SELECT email FROM Usuarios WHERE email = $1', [email]);
-        if (existing.rows.length > 0) {
-            await client.query('ROLLBACK');
-            return res.render('dashboard/create-user', {
-                title: 'Nuevo Usuario',
-                user: req.session.user,
-                error: 'El correo electrónico ya está registrado.',
-                formData: req.body
-            });
-        }
-
-        // 2. Hashear Password
-        const hashedPassword = await hashPassword(password);
-        
-        // 3. Obtener ID del Rol
-        const roleRes = await client.query('SELECT id_rol FROM Roles WHERE nombre_rol = $1', [rol]);
-        // Fallback: Si no encuentra el rol, asigna 'Paciente' (ID 6) por seguridad
-        const idRol = roleRes.rows.length > 0 ? roleRes.rows[0].id_rol : 6;
-        
-        // 4. Insertar Usuario
-        const userRes = await client.query(`
-            INSERT INTO Usuarios (id_rol, nombre, apellido, email, password_hash, telefono, estado, email_verificado, fecha_registro)
-            VALUES ($1, $2, $3, $4, $5, $6, true, true, NOW())
-            RETURNING id_usuario`,
-            [idRol, nombre, apellido, email, hashedPassword, telefono]
-        );
-
-        const newUserId = userRes.rows[0].id_usuario;
-
-        // 5. Insertar en tabla dependiente
-        if (rol === 'Paciente') {
-            await client.query('INSERT INTO Pacientes (id_usuario, estado_tratamiento, fecha_inicio_tratamiento) VALUES ($1, $2, CURRENT_DATE)', [newUserId, 'activo']);
-        } else if (rol === 'Terapeuta') {
-            await client.query('INSERT INTO Terapeutas (id_usuario, especialidad) VALUES ($1, $2)', [newUserId, 'General']);
-        }
-
-        await client.query('COMMIT'); // Éxito
-        console.log(`   ✓ Usuario creado: ${email}`);
-        res.redirect('/dashboard/admin?msg=created');
-
-    } catch (error) {
-        await client.query('ROLLBACK'); // Error
-        console.error("   X Error creando usuario:", error);
-        res.render('dashboard/create-user', {
-            title: 'Nuevo Usuario',
-            user: req.session.user,
-            error: 'Error del sistema: ' + error.message,
-            formData: req.body
-        });
-    } finally {
-        client.release();
-    }
-};
-
-// ==================================================================================
-// 5. FUNCIONALIDAD: MOSTRAR FORMULARIO DE EDICIÓN
-// ==================================================================================
-const showEditUserForm = async (req, res) => {
-    const { id } = req.params;
-    try {
-        const result = await db.query(`
-            SELECT u.*, r.nombre_rol 
-            FROM Usuarios u 
-            LEFT JOIN Roles r ON u.id_rol = r.id_rol 
-            WHERE u.id_usuario = $1`, [id]);
-
-        if (result.rows.length === 0) {
-            return res.redirect('/dashboard/admin');
-        }
-
-        res.render('dashboard/edit-user', {
-            title: 'Editar Usuario',
-            user: req.session.user,
-            editUser: result.rows[0],
-            error: null
-        });
-    } catch (error) {
-        console.error(error);
-        res.redirect('/dashboard/admin');
-    }
-};
-
-// ==================================================================================
-// 6. FUNCIONALIDAD: ACTUALIZAR USUARIO
-// ==================================================================================
-const updateUser = async (req, res) => {
-    const { id } = req.params;
-    const { nombre, apellido, email, telefono, password, rol, estado } = req.body; 
     const client = await db.pool.connect();
-
     try {
         await client.query('BEGIN');
-
-        // Protección: Verificar si es Admin
-        const checkUser = await client.query(`
-            SELECT r.nombre_rol 
-            FROM Usuarios u JOIN Roles r ON u.id_rol = r.id_rol 
-            WHERE u.id_usuario = $1`, [id]
-        );
-
-        let estadoBool = estado === 'true';
-
-        // Si intentan bloquear a un Admin, lo impedimos forzosamente
-        if (checkUser.rows.length > 0) {
-            const currentRole = checkUser.rows[0].nombre_rol;
-            if (currentRole === 'Administrador' || currentRole === 'Admin') {
-                estadoBool = true; 
-            }
+        const existing = await client.query('SELECT id_usuario FROM Usuarios WHERE email = $1', [email]);
+        if (existing.rows.length > 0) {
+            await client.query('ROLLBACK');
+            return res.render('dashboard/create-user', { title: 'Nuevo Usuario', user: req.session.user, error: 'Email ya existe.', formData: req.body });
         }
 
-        // Update Usuario
-        await client.query(`
-            UPDATE Usuarios 
-            SET nombre = $1, apellido = $2, email = $3, telefono = $4, estado = $5
-            WHERE id_usuario = $6`,
-            [nombre, apellido, email, telefono, estadoBool, id]
-        );
-
-        // Update Password (Opcional)
-        if (password && password.trim() !== '') {
-            const hashedPassword = await hashPassword(password);
-            await client.query('UPDATE Usuarios SET password_hash = $1 WHERE id_usuario = $2', [hashedPassword, id]);
-        }
-
-        // Update Rol
+        const hashedPassword = await hashPassword(password);
         const roleRes = await client.query('SELECT id_rol FROM Roles WHERE nombre_rol = $1', [rol]);
-        if (roleRes.rows.length > 0) {
-             await client.query('UPDATE Usuarios SET id_rol = $1 WHERE id_usuario = $2', [roleRes.rows[0].id_rol, id]);
+        const idRol = roleRes.rows.length > 0 ? roleRes.rows[0].id_rol : 6;
+
+        const userRes = await client.query(`INSERT INTO Usuarios (id_rol, nombre, apellido, email, password_hash, telefono, estado, email_verificado, fecha_registro) VALUES ($1, $2, $3, $4, $5, $6, true, true, NOW()) RETURNING id_usuario`, [idRol, nombre, apellido, email, hashedPassword, telefono]);
+        const newId = userRes.rows[0].id_usuario;
+
+        if (rol === 'Paciente') await client.query('INSERT INTO Pacientes (id_usuario, estado_tratamiento, fecha_inicio_tratamiento) VALUES ($1, $2, CURRENT_DATE)', [newId, 'activo']);
+        else if (rol === 'Terapeuta') await client.query('INSERT INTO Terapeutas (id_usuario, especialidad) VALUES ($1, $2)', [newId, 'General']);
+
+        await client.query('COMMIT');
+        res.redirect('/dashboard/admin?msg=created');
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error(error);
+        res.render('dashboard/create-user', { title: 'Nuevo Usuario', user: req.session.user, error: 'Error técnico.', formData: req.body });
+    } finally { client.release(); }
+};
+
+const showEditUserForm = async (req, res) => {
+    try {
+        const result = await db.query(`SELECT u.*, r.nombre_rol FROM Usuarios u LEFT JOIN Roles r ON u.id_rol = r.id_rol WHERE u.id_usuario = $1`, [req.params.id]);
+        if (result.rows.length === 0) return res.redirect('/dashboard/admin');
+        res.render('dashboard/edit-user', { title: 'Editar Usuario', user: req.session.user, editUser: result.rows[0], error: null });
+    } catch (e) { res.redirect('/dashboard/admin'); }
+};
+
+const updateUser = async (req, res) => {
+    const { id } = req.params;
+    const { nombre, apellido, email, telefono, password, rol, estado } = req.body;
+    const client = await db.pool.connect();
+    try {
+        await client.query('BEGIN');
+        let estadoBool = estado === 'true';
+        await client.query(`UPDATE Usuarios SET nombre=$1, apellido=$2, email=$3, telefono=$4, estado=$5 WHERE id_usuario=$6`, [nombre, apellido, email, telefono, estadoBool, id]);
+        
+        if (password && password.trim() !== '') {
+            const hashed = await hashPassword(password);
+            await client.query('UPDATE Usuarios SET password_hash = $1 WHERE id_usuario = $2', [hashed, id]);
         }
+        
+        const roleRes = await client.query('SELECT id_rol FROM Roles WHERE nombre_rol = $1', [rol]);
+        if (roleRes.rows.length > 0) await client.query('UPDATE Usuarios SET id_rol = $1 WHERE id_usuario = $2', [roleRes.rows[0].id_rol, id]);
 
         await client.query('COMMIT');
         res.redirect('/dashboard/admin?msg=updated');
-
     } catch (error) {
         await client.query('ROLLBACK');
-        console.error("Error actualizando:", error);
-        
-        const userReload = { ...req.body, id_usuario: id, nombre_rol: rol }; 
-        res.render('dashboard/edit-user', {
-            title: 'Editar Usuario',
-            user: req.session.user,
-            editUser: userReload,
-            error: 'Error actualizando: ' + error.message
-        });
-    } finally {
-        client.release();
-    }
+        res.render('dashboard/edit-user', { title: 'Editar', user: req.session.user, editUser: { ...req.body, id_usuario: id }, error: 'Error actualizar.' });
+    } finally { client.release(); }
 };
 
-// ==================================================================================
-// 7. FUNCIONALIDAD: BLOQUEO RÁPIDO (SOFT DELETE)
-// ==================================================================================
 const toggleUserStatus = async (req, res) => {
     const { id } = req.params;
-    const client = await db.pool.connect();
-
     try {
-        // Verificar si es Admin antes de bloquear
-        const checkQuery = await client.query(`
-            SELECT r.nombre_rol FROM Usuarios u JOIN Roles r ON u.id_rol = r.id_rol 
-            WHERE u.id_usuario = $1`, [id]
-        );
-
-        if (checkQuery.rows.length > 0) {
-            const roleName = checkQuery.rows[0].nombre_rol;
-            if (roleName === 'Administrador' || roleName === 'Admin') {
-                return res.redirect('/dashboard/admin?msg=admin_protected');
-            }
-        }
-
-        // Toggle Estado
-        await client.query('UPDATE Usuarios SET estado = NOT estado WHERE id_usuario = $1', [id]);
+        if (id == req.session.user.id_usuario) return res.redirect('/dashboard/admin?msg=admin_protected');
+        await db.query('UPDATE Usuarios SET estado = NOT estado WHERE id_usuario = $1', [id]);
         res.redirect('/dashboard/admin?msg=status_changed');
-
-    } catch (error) {
-        console.error(error);
-        res.redirect('/dashboard/admin?msg=error');
-    } finally {
-        client.release();
-    }
+    } catch (e) { res.redirect('/dashboard/admin?msg=error'); }
 };
 
 module.exports = {
+    getPatientDashboard, // <--- LA JOYA DE LA CORONA 👑
     getAdminDashboard,
     assignTherapist,
     showCreateUserForm,

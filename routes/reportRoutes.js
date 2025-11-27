@@ -1,39 +1,26 @@
 const express = require('express');
 const router = express.Router();
 const reportController = require('../controllers/reportController');
-const { authenticateToken, requireTherapist, requireAdmin } = require('../middleware/auth');
+const { isAuthenticated } = require('../middleware/auth');
 
-// Middleware global de protección
-router.use(authenticateToken);
+// ==================================================================
+// RUTAS DEL MÓDULO CLÍNICO (RENAN)
+// ==================================================================
 
-// --- VISTAS (Navegación) ---
+// 1. Analytics Global
+router.get('/analytics', isAuthenticated, reportController.getAnalytics);
 
-// 1. Analytics (Solo Admin)
-router.get('/analytics', requireAdmin, reportController.renderAnalyticsDashboard);
+// 2. Expediente del Paciente (Historia Clínica)
+router.get('/patient/:id/view', isAuthenticated, reportController.getPatientHistory);
 
-// 2. Dashboard de Historiales (Lista de Pacientes - Solo Terapeuta)
-router.get('/history', requireTherapist, reportController.renderHistoryDashboard);
+// 3. Crear Reporte de Progreso (Formulario)
+router.get('/patient/:id/create-report', isAuthenticated, reportController.getCreateReportForm);
 
-// 3. Ver Expediente Completo de un Paciente
-router.get('/patient/:patientId/view', requireTherapist, reportController.renderPatientHistoryView);
+// 4. Guardar Reporte (Acción)
+router.post('/progress', isAuthenticated, reportController.saveProgressReport);
 
-// 4. Formulario para Crear Reporte de Progreso
-router.get('/patient/:patientId/create-report', requireTherapist, reportController.renderCreateProgressView);
+// 5. Actualizar Nota de Sesión (Desde el Expediente)
+router.post('/session/update', isAuthenticated, reportController.updateSessionNote);
 
-// --- ACCIONES (Formularios) ---
-
-// Procesar creación de reporte
-router.post('/progress', requireTherapist, reportController.generateProgressReport);
-
-// --- API (JSON para gráficos o datos crudos) ---
-router.get('/api/analytics', requireAdmin, reportController.getPlatformAnalytics);
-router.get('/api/audit-log', requireAdmin, reportController.getAuditLog);
-
-
-// ... rutas existentes ...
-
-// Acción para editar nota de sesión
-router.post('/session/update', requireTherapist, reportController.updateSessionNote);
-
-
+// ¡ESTA LÍNEA ES LA QUE FALTABA! SI NO ESTÁ, EL SERVER EXPLOTA
 module.exports = router;

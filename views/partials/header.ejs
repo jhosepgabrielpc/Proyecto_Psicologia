@@ -125,33 +125,62 @@
                                     class="relative p-2 text-indigo-100 hover:text-white hover:bg-white/10 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-white/20">
                                 <span class="sr-only">Ver notificaciones</span>
                                 <i class="fas fa-bell text-lg"></i>
-                                <span class="absolute top-1.5 right-2 flex h-2.5 w-2.5">
-                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 border-2 border-indigo-600"></span>
-                                </span>
+                                
+                                <% if (locals.unreadCount > 0) { %>
+                                    <span class="absolute top-1.5 right-2 flex h-2.5 w-2.5">
+                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 border-2 border-indigo-600"></span>
+                                    </span>
+                                <% } %>
                             </button>
                             
                             <div id="dropdown-notif" class="hidden absolute right-0 mt-3 w-80 bg-white rounded-xl shadow-2xl ring-1 ring-black ring-opacity-5 transform origin-top-right z-50 overflow-hidden animate-slide-down">
                                 <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
                                     <p class="text-sm font-bold text-slate-800">Centro de Notificaciones</p>
-                                    <span class="text-xs font-medium text-indigo-600 hover:text-indigo-800 cursor-pointer">Marcar leídas</span>
+                                    <% if (locals.unreadCount > 0) { %>
+                                        <span class="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full"><%= unreadCount %> nuevas</span>
+                                    <% } %>
                                 </div>
                                 <div class="max-h-64 overflow-y-auto">
-                                    <a href="#" class="block px-4 py-3 hover:bg-indigo-50/50 border-b border-slate-100 transition-colors group">
-                                        <div class="flex items-start gap-3">
-                                            <div class="flex-shrink-0 bg-green-100 rounded-full p-1.5 text-green-600 mt-0.5">
-                                                <i class="fas fa-check text-xs"></i>
-                                            </div>
-                                            <div>
-                                                <p class="text-sm font-semibold text-slate-800 group-hover:text-indigo-700">Sistema Actualizado</p>
-                                                <p class="text-xs text-slate-500 mt-0.5">El dashboard está listo para usar.</p>
-                                                <p class="text-[10px] text-slate-400 mt-1">Hace 2 min</p>
-                                            </div>
+                                    
+                                    <% if (locals.notifications && notifications.length > 0) { %>
+                                        <% notifications.forEach(notif => { %>
+                                            <a href="<%= notif.enlace_accion || '#' %>" class="block px-4 py-3 hover:bg-indigo-50/50 border-b border-slate-100 transition-colors group <%= !notif.leido ? 'bg-indigo-50/20' : '' %>">
+                                                <div class="flex items-start gap-3">
+                                                    <div class="flex-shrink-0 mt-0.5">
+                                                        <% if (notif.tipo.includes('alerta') || notif.tipo.includes('cancelada')) { %>
+                                                            <div class="bg-rose-100 text-rose-600 rounded-full p-1.5">
+                                                                <i class="fas fa-exclamation-triangle text-xs"></i>
+                                                            </div>
+                                                        <% } else if (notif.tipo.includes('cita')) { %>
+                                                            <div class="bg-emerald-100 text-emerald-600 rounded-full p-1.5">
+                                                                <i class="fas fa-calendar-check text-xs"></i>
+                                                            </div>
+                                                        <% } else { %>
+                                                            <div class="bg-blue-100 text-blue-600 rounded-full p-1.5">
+                                                                <i class="fas fa-info text-xs"></i>
+                                                            </div>
+                                                        <% } %>
+                                                    </div>
+                                                    <div>
+                                                        <p class="text-sm font-semibold text-slate-800 group-hover:text-indigo-700 leading-snug"><%= notif.mensaje %></p>
+                                                        <p class="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+                                                            <i class="far fa-clock"></i> <%= new Date(notif.fecha_creacion).toLocaleString() %>
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        <% }); %>
+                                    <% } else { %>
+                                        <div class="p-8 text-center text-slate-400">
+                                            <i class="far fa-bell-slash text-2xl mb-2 opacity-50"></i>
+                                            <p class="text-sm">Sin notificaciones recientes.</p>
                                         </div>
-                                    </a>
+                                    <% } %>
+
                                 </div>
                                 <div class="bg-slate-50 px-4 py-2 text-center border-t border-slate-100">
-                                    <a href="/dashboard/communication" class="text-xs font-bold text-indigo-600 hover:text-indigo-800">Ver todo el historial</a>
+                                    <a href="/dashboard/communication" class="text-xs font-bold text-indigo-600 hover:text-indigo-800">Ver historial completo</a>
                                 </div>
                             </div>
                         </div>
