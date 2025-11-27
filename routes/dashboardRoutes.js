@@ -6,6 +6,7 @@ const { isAuthenticated } = require('../middleware/auth');
 const dashboardController = require('../controllers/dashboardController'); 
 const reportController = require('../controllers/reportController');
 const appointmentController = require('../controllers/appointmentController'); 
+const testController = require('../controllers/testController');
 
 // ==================================================================
 // DESPACHADOR CENTRAL (LOBBY PRINCIPAL)
@@ -92,5 +93,9 @@ router.get('/edit-user/:id', isAuthenticated, dashboardController.showEditUserFo
 router.post('/edit-user/:id', isAuthenticated, dashboardController.updateUser);
 router.post('/toggle-status/:id', isAuthenticated, dashboardController.toggleUserStatus);
 router.post('/assign-therapist', isAuthenticated, dashboardController.assignTherapist);
+
+// 7. SISTEMA DE TESTS PSICOLÓGICOS (NUEVO) ✅
+router.get('/test/:type', isAuthenticated, testController.showTest);
+router.post('/test/:type/save', isAuthenticated, testController.submitTest);
 
 module.exports = router;
