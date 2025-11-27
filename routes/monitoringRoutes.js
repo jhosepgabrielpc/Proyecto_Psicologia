@@ -4,21 +4,19 @@ const monitoringController = require('../controllers/monitoringController');
 const { isAuthenticated } = require('../middleware/auth');
 
 // ==================================================================
-// 1. DASHBOARD DE MONITOREO (Vista Principal)
+// RUTAS DE MONITOREO (JHOSEP)
 // ==================================================================
-// Ruta: GET /dashboard/monitoring
+
+// 1. Dashboard de Monitoreo
 router.get('/', isAuthenticated, monitoringController.getMonitoringDashboard);
 
-
-// ==================================================================
-// 2. PROCESAMIENTO DE DATOS (Check-in Diario)
-// ==================================================================
-// Ruta: POST /dashboard/monitoring/checkin
+// 2. Guardar Check-in Diario (Paciente)
 router.post('/checkin', isAuthenticated, monitoringController.saveCheckin);
 
+// 3. Enviar Alerta a Jimmy (Monitorista -> Gestor)
+router.post('/alert-jimmy', isAuthenticated, monitoringController.createIncident);
 
-// NOTA: Las rutas de los tests (PHQ-9/GAD-7) fueron movidas a 
-// 'dashboardRoutes.js' y usan 'testController.js'. 
-// Por eso las eliminamos de aquí para evitar el error "Undefined".
+// 4. Botón de Pánico
+router.post('/panic', isAuthenticated, monitoringController.triggerPanic);
 
 module.exports = router;

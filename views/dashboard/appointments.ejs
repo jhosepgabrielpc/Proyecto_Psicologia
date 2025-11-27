@@ -2,47 +2,80 @@
 
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
 
-<div class="min-h-screen bg-slate-100 py-8 font-sans">
+<style>
+    /* ESTILOS DE LOS RECUADROS (EVENTOS) */
+    .fc-event {
+        border: none !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+        padding: 4px 8px !important;
+        transition: all 0.2s ease-in-out !important;
+        cursor: pointer;
+    }
+    .fc-event:hover {
+        transform: scale(1.02) !important;
+        z-index: 50 !important;
+        filter: brightness(1.1);
+    }
+    .fc-event-title {
+        font-weight: 800 !important;
+        font-size: 0.9em !important;
+    }
+    .fc-event-time {
+        font-size: 0.8em !important;
+        opacity: 0.9;
+        margin-bottom: 2px;
+    }
     
+    /* Celdas y Grid */
+    .fc-timegrid-slot { height: 4em !important; } /* Celdas más altas para que quepa info */
+    .fc-col-header-cell { background-color: #f8fafc; padding: 10px 0 !important; }
+    .fc-theme-standard td, .fc-theme-standard th { border-color: #e2e8f0 !important; }
+    .fc-timegrid-now-indicator-line { border-color: #ef4444; border-width: 2px; }
+    .fc-timegrid-now-indicator-arrow { border-color: #ef4444; border-width: 6px; }
+
+    /* Botones FullCalendar */
+    .fc-button-primary { 
+        background-color: #4f46e5 !important; 
+        border-color: #4f46e5 !important; 
+        font-weight: 700 !important; 
+        text-transform: uppercase !important; 
+        font-size: 0.75rem !important;
+        letter-spacing: 0.05em !important; 
+        padding: 0.5rem 1rem !important;
+        border-radius: 0.5rem !important;
+    }
+    .fc-button-active { background-color: #4338ca !important; }
+    .fc-toolbar-title { font-size: 1.5rem !important; font-weight: 800 !important; color: #1e293b; }
+
+    /* Animaciones */
+    .animate-fade-in-down { animation: fade-in-down 0.5s ease-out; }
+    .animate-fade-in { animation: fade-in 0.5s ease-out; }
+    @keyframes fade-in-down { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+    
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+</style>
+
+<div class="min-h-screen bg-slate-100 py-8 font-sans">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
         
-        <% if (locals.pendingRequests && pendingRequests.length > 0) { %>
-            <div class="mb-8 space-y-3 animate-fade-in-down">
-                <div class="flex items-center gap-2 text-rose-600 font-bold uppercase text-xs tracking-widest mb-1">
-                    <i class="fas fa-bolt animate-pulse"></i> Solicitudes Prioritarias
-                </div>
-                <% pendingRequests.forEach(req => { %>
-                    <div class="bg-white border-l-4 border-rose-500 p-5 rounded-r-xl shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">
-                        <div class="absolute right-0 top-0 p-4 opacity-5"><i class="fas fa-exclamation-circle text-6xl"></i></div>
-                        <div class="flex gap-4 z-10">
-                            <div class="h-12 w-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center flex-shrink-0 font-bold">
-                                <i class="fas fa-notes-medical text-xl"></i>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-slate-800 text-sm">Requerimiento de Gestión</h4>
-                                <p class="text-sm text-slate-600 font-medium mt-1 whitespace-pre-line"><%= req.contenido %></p>
-                                <p class="text-xs text-slate-400 mt-1"><i class="far fa-clock"></i> Recibido: <%= new Date(req.fecha_envio).toLocaleString() %></p>
-                            </div>
-                        </div>
-                        <button onclick="openCreateModal()" class="z-10 bg-rose-600 hover:bg-rose-700 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-lg shadow-rose-500/30 transition-all flex items-center gap-2">
-                            <i class="fas fa-calendar-plus"></i> Atender Solicitud
-                        </button>
-                    </div>
-                <% }); %>
-            </div>
-        <% } %>
-
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div>
-                <h1 class="text-2xl font-extrabold text-slate-800 flex items-center gap-2">
-                    <i class="fas fa-calendar-check text-indigo-600"></i> Agenda Médica
-                </h1>
-                <p class="text-slate-500 text-sm">Programación de sesiones y teleterapia.</p>
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-500/30">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-extrabold text-slate-800">Agenda Médica</h1>
+                    <p class="text-sm text-slate-500">Gestión de sesiones presenciales y virtuales.</p>
+                </div>
             </div>
             
             <div class="flex gap-4 items-center">
                 <div class="hidden md:flex items-center gap-3 px-4 py-2 bg-indigo-50 rounded-xl border border-indigo-100">
-                    <div class="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"><%= stats.citas_futuras %></div>
+                    <div class="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"><%= stats ? stats.citas_futuras : 0 %></div>
                     <div class="text-xs text-indigo-900 font-bold uppercase">Citas<br>Activas</div>
                 </div>
                 
@@ -55,9 +88,9 @@
         <% if (locals.msg) { %>
             <div class="mt-4 p-4 rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm animate-fade-in 
                 <%= msg.includes('success') ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-rose-100 text-rose-700 border border-rose-200' %>">
-                <% if (msg === 'success_created') { %> <i class="fas fa-check-circle"></i> Cita agendada correctamente. Notificaciones enviadas. <% } %>
-                <% if (msg === 'success_cancelled') { %> <i class="fas fa-trash-alt"></i> La cita ha sido cancelada y eliminada de la agenda. <% } %>
-                <% if (msg === 'error_overlap') { %> <i class="fas fa-ban"></i> CONFLICTO DE HORARIO: El terapeuta ya tiene una cita en ese rango. <% } %>
+                <% if (msg === 'success_created') { %> <i class="fas fa-check-circle"></i> Cita guardada y agendada correctamente. <% } %>
+                <% if (msg === 'success_cancelled') { %> <i class="fas fa-trash-alt"></i> La cita ha sido eliminada de la agenda. <% } %>
+                <% if (msg === 'error_overlap') { %> <i class="fas fa-ban"></i> ERROR: El horario seleccionado ya está ocupado. <% } %>
             </div>
         <% } %>
     </div>
@@ -65,84 +98,82 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             
-            <div class="lg:col-span-3 bg-white rounded-2xl shadow-lg border border-slate-200 p-6 h-[850px] relative">
-                <div id='calendar' class="h-full font-sans text-sm"></div>
+            <div class="lg:col-span-3 bg-white rounded-2xl shadow-lg border border-slate-200 p-6 h-[800px] relative">
+                <div id='calendar' class="h-full font-sans"></div>
             </div>
 
             <div class="space-y-6">
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="bg-slate-800 px-6 py-4 flex justify-between items-center">
-                        <h3 class="text-white font-bold text-sm uppercase tracking-wider">Para Hoy</h3>
-                        <span class="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded font-mono"><%= new Date().toLocaleDateString() %></span>
+                <div class="bg-slate-900 rounded-2xl p-6 text-white shadow-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold uppercase tracking-wider text-xs text-slate-400">Agenda de Hoy</h3>
+                        <span class="bg-white/10 px-2 py-1 rounded text-xs font-mono"><%= new Date().toLocaleDateString() %></span>
                     </div>
                     
-                    <div class="divide-y divide-slate-100 max-h-[600px] overflow-y-auto custom-scrollbar">
-                        <% if (todayAppointments.length > 0) { %>
+                    <div class="space-y-3 custom-scrollbar max-h-[400px] overflow-y-auto">
+                        <% if (todayAppointments && todayAppointments.length > 0) { %>
                             <% todayAppointments.forEach(cita => { %>
-                                <div class="p-4 hover:bg-slate-50 transition-colors cursor-pointer group" onclick="openEventDetails('<%= JSON.stringify(cita) %>')">
-                                    <div class="flex justify-between items-start mb-2">
-                                        <span class="text-xs font-bold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200">
+                                <div class="bg-white/5 p-3 rounded-xl border border-white/10 hover:bg-white/10 transition cursor-pointer group">
+                                    <div class="flex justify-between items-start">
+                                        <span class="text-indigo-300 font-bold text-xs bg-indigo-500/20 px-2 py-0.5 rounded">
                                             <%= new Date(cita.fecha_hora_inicio).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) %>
                                         </span>
                                         <% if (cita.modalidad === 'Virtual') { %>
-                                            <i class="fas fa-video text-indigo-500" title="Virtual"></i>
+                                            <i class="fas fa-video text-xs text-emerald-400"></i>
                                         <% } else { %>
-                                            <i class="fas fa-hospital-user text-emerald-500" title="Presencial"></i>
+                                            <i class="fas fa-building text-xs text-amber-400"></i>
                                         <% } %>
                                     </div>
-                                    <h4 class="font-bold text-slate-800"><%= cita.pac_nombre %> <%= cita.pac_apellido %></h4>
-                                    <p class="text-xs text-slate-500 mb-2">Dr. <%= cita.doc_apellido %></p>
+                                    <p class="font-bold mt-2 text-sm text-white"><%= cita.pac_nombre %> <%= cita.pac_apellido %></p>
+                                    <p class="text-xs text-slate-400">Dr. <%= cita.doc_apellido %></p>
                                     
-                                    <% if (cita.modalidad === 'Virtual' && cita.enlace_reunion) { %>
-                                        <a href="<%= cita.enlace_reunion %>" target="_blank" onclick="event.stopPropagation()" class="block w-full text-center bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-300 text-xs font-bold py-2 rounded-lg transition-all">
-                                            Unirse a Sala
+                                    <% if (cita.enlace_reunion && cita.modalidad === 'Virtual') { %>
+                                        <a href="<%= cita.enlace_reunion %>" target="_blank" class="mt-3 block w-full text-center bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2 rounded-lg transition">
+                                            Unirse
                                         </a>
                                     <% } %>
                                 </div>
                             <% }) %>
                         <% } else { %>
-                            <div class="p-10 text-center text-slate-400">
-                                <div class="bg-slate-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3">
-                                    <i class="fas fa-calendar-day text-2xl"></i>
-                                </div>
-                                <p class="text-sm">Sin citas para hoy.</p>
+                            <div class="text-center py-8 text-slate-500 text-sm italic">
+                                Agenda libre hoy.
                             </div>
                         <% } %>
                     </div>
                 </div>
-                
+
                 <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 text-xs text-indigo-800">
-                    <p class="font-bold mb-1"><i class="fas fa-info-circle"></i> Tip Rápido</p>
-                    <p>Haz clic en cualquier cita del calendario para ver detalles o cancelarla.</p>
+                    <p class="font-bold mb-1"><i class="fas fa-mouse-pointer mr-1"></i> Interacción</p>
+                    <ul class="list-disc pl-4 space-y-1">
+                        <li>Clic en un espacio vacío para <b>crear</b>.</li>
+                        <li>Clic en una cita para <b>ver detalles o borrar</b>.</li>
+                    </ul>
                 </div>
             </div>
-
         </div>
     </div>
 </div>
 
 <div id="createModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in-up">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden transform transition-all">
         <div class="bg-indigo-600 px-6 py-4 flex justify-between items-center">
-            <h3 class="text-white font-bold flex items-center gap-2"><i class="far fa-calendar-plus"></i> Agendar Sesión</h3>
-            <button onclick="closeModal('createModal')" class="text-white/80 hover:text-white"><i class="fas fa-times"></i></button>
+            <h3 class="text-white font-bold text-lg flex items-center gap-2"><i class="far fa-calendar-plus"></i> Nueva Cita</h3>
+            <button onclick="closeModal('createModal')" class="text-white/80 hover:text-white"><i class="fas fa-times text-xl"></i></button>
         </div>
         
         <form action="/dashboard/appointments/create" method="POST" class="p-6 space-y-4">
-            
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Paciente</label>
-                    <select name="id_paciente" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors">
+                    <select name="id_paciente" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
                         <option value="">Seleccionar...</option>
-                        <% patients.forEach(p => { %> <option value="<%= p.id_paciente %>"><%= p.nombre %> <%= p.apellido %></option> <% }); %>
+                        <% if(locals.patients) { patients.forEach(p => { %> <option value="<%= p.id_paciente %>"><%= p.nombre %> <%= p.apellido %></option> <% }); } %>
                     </select>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Terapeuta</label>
-                    <select name="id_terapeuta" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors">
+                    <select name="id_terapeuta" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
                         <option value="">Seleccionar...</option>
-                        <% therapists.forEach(t => { %> <option value="<%= t.id_terapeuta %>">Dr. <%= t.apellido %> (<%= t.especialidad %>)</option> <% }); %>
+                        <% if(locals.therapists) { therapists.forEach(t => { %> <option value="<%= t.id_terapeuta %>">Dr. <%= t.apellido %> (<%= t.especialidad %>)</option> <% }); } %>
                     </select>
                 </div>
             </div>
@@ -150,47 +181,47 @@
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha</label>
-                    <input type="date" name="fecha" id="modalDate" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                    <input type="date" name="fecha" id="modalDate" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Hora Inicio</label>
-                    <input type="time" name="hora" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                    <input type="time" name="hora" id="modalTime" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Duración</label>
-                    <select name="duracion" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm">
-                        <option value="30">30 Minutos</option>
-                        <option value="45">45 Minutos</option>
-                        <option value="60" selected>60 Minutos</option>
-                        <option value="90">90 Minutos</option>
+                    <select name="duracion" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none">
+                        <option value="30">30 min</option>
+                        <option value="45">45 min</option>
+                        <option value="60" selected>60 min</option>
+                        <option value="90">90 min</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Modalidad</label>
                     <div class="flex gap-2">
-                        <label class="flex items-center gap-2 cursor-pointer bg-indigo-50 px-2 py-2 rounded-lg border border-indigo-100 w-full">
-                            <input type="radio" name="modalidad" value="Virtual" checked class="text-indigo-600">
-                            <span class="text-xs font-bold text-indigo-700"><i class="fas fa-video"></i> Virtual</span>
+                        <label class="flex items-center justify-center gap-2 cursor-pointer bg-indigo-50 px-2 py-2 rounded-lg border border-indigo-100 w-full hover:bg-indigo-100 transition">
+                            <input type="radio" name="modalidad" value="Virtual" checked class="accent-indigo-600">
+                            <span class="text-xs font-bold text-indigo-700">Virtual</span>
                         </label>
-                        <label class="flex items-center gap-2 cursor-pointer bg-slate-50 px-2 py-2 rounded-lg border border-slate-200 w-full">
-                            <input type="radio" name="modalidad" value="Presencial" class="text-slate-600">
-                            <span class="text-xs font-bold text-slate-700"><i class="fas fa-building"></i> Local</span>
+                        <label class="flex items-center justify-center gap-2 cursor-pointer bg-emerald-50 px-2 py-2 rounded-lg border border-emerald-100 w-full hover:bg-emerald-100 transition">
+                            <input type="radio" name="modalidad" value="Presencial" class="accent-emerald-600">
+                            <span class="text-xs font-bold text-emerald-700">Local</span>
                         </label>
                     </div>
                 </div>
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Notas Administrativas</label>
-                <textarea name="notas" rows="2" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm resize-none focus:bg-white" placeholder="Detalles importantes..."></textarea>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Notas</label>
+                <textarea name="notas" rows="2" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm resize-none focus:bg-white outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Motivo de consulta..."></textarea>
             </div>
 
             <div class="pt-2">
                 <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg transition-all flex justify-center items-center gap-2">
-                    <i class="fas fa-save"></i> Confirmar y Notificar
+                    <i class="fas fa-save"></i> Guardar Cita
                 </button>
             </div>
         </form>
@@ -198,44 +229,53 @@
 </div>
 
 <div id="eventModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
         <div class="bg-slate-800 px-6 py-4 flex justify-between items-center text-white">
-            <h3 class="font-bold">Detalles de la Cita</h3>
-            <button onclick="closeModal('eventModal')" class="text-white/70 hover:text-white"><i class="fas fa-times"></i></button>
+            <h3 class="font-bold text-lg">Detalles de la Cita</h3>
+            <button onclick="closeModal('eventModal')" class="text-white/70 hover:text-white"><i class="fas fa-times text-xl"></i></button>
         </div>
         
-        <div class="p-6 space-y-4">
-            <div class="flex items-center gap-4 mb-4">
-                <div class="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center text-2xl border border-slate-200" id="evtIcon">
-                    </div>
+        <div class="p-6 space-y-5">
+            <div class="flex items-center gap-4">
+                <div class="h-14 w-14 rounded-full bg-slate-100 flex items-center justify-center text-2xl border border-slate-200 shadow-sm text-slate-500" id="evtIcon"></div>
                 <div>
-                    <h4 class="text-lg font-bold text-slate-800" id="evtPatient">Paciente</h4>
-                    <p class="text-sm text-slate-500" id="evtDoctor">Doctor</p>
+                    <h4 class="text-xl font-black text-slate-800 leading-tight" id="evtTitle">Paciente</h4>
+                    <p class="text-sm font-medium text-indigo-600" id="evtSubtitle">Doctor</p>
                 </div>
             </div>
             
-            <div class="space-y-2 text-sm text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <p class="flex justify-between"><span class="font-bold text-slate-400">Horario:</span> <span id="evtTime" class="font-mono font-bold">--:--</span></p>
-                <p class="flex justify-between"><span class="font-bold text-slate-400">Modalidad:</span> <span id="evtMode">--</span></p>
-                <p class="flex justify-between"><span class="font-bold text-slate-400">Estado:</span> <span id="evtStatus" class="px-2 rounded bg-emerald-100 text-emerald-700 text-xs font-bold">--</span></p>
-                <div id="evtLinkContainer" class="hidden mt-2 pt-2 border-t border-slate-200">
-                    <a href="#" id="evtLink" target="_blank" class="block text-center bg-indigo-600 text-white py-2 rounded-lg font-bold text-xs hover:bg-indigo-700">Unirse a Teleterapia</a>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Horario</p>
+                    <p class="font-bold text-slate-700 font-mono" id="evtTime">--:--</p>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Estado</p>
+                    <span id="evtStatus" class="text-xs font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-600">--</span>
                 </div>
             </div>
 
-            <form action="/dashboard/appointments/cancel" method="POST" class="pt-4 border-t border-slate-100">
+            <div id="evtLinkContainer" class="hidden">
+                <a href="#" id="evtLink" target="_blank" class="block w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold py-3 rounded-xl text-center shadow-lg shadow-indigo-200 transition-all transform hover:-translate-y-0.5">
+                    <i class="fas fa-video mr-2"></i> Iniciar Videollamada
+                </a>
+            </div>
+
+            <hr class="border-slate-100">
+
+            <form action="/dashboard/appointments/cancel" method="POST">
                 <input type="hidden" name="id_cita" id="cancelId">
                 
-                <div id="cancelSection" class="hidden space-y-3">
-                    <label class="block text-xs font-bold text-rose-500 uppercase">Motivo de Cancelación</label>
-                    <textarea name="motivo" required class="w-full p-2 border border-rose-200 bg-rose-50 rounded-lg text-sm text-rose-900 resize-none focus:ring-rose-500" placeholder="Ej: Emergencia del paciente..."></textarea>
-                    <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 rounded-lg text-sm shadow-md transition-all">
-                        Confirmar Cancelación Definitiva
+                <div id="cancelSection" class="hidden space-y-3 bg-rose-50 p-4 rounded-xl border border-rose-100">
+                    <label class="block text-xs font-bold text-rose-600 uppercase">Motivo de eliminación</label>
+                    <textarea name="motivo" required class="w-full p-2 border border-rose-200 bg-white rounded-lg text-sm text-slate-700 resize-none focus:ring-2 focus:ring-rose-500 outline-none" rows="2" placeholder="Ej: Cancelación del paciente..."></textarea>
+                    <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-lg shadow-md transition-all">
+                        Confirmar Eliminación
                     </button>
                 </div>
 
-                <button type="button" id="btnShowCancel" onclick="showCancelForm()" class="w-full text-rose-500 font-bold text-sm hover:bg-rose-50 py-2 rounded-lg transition-colors border border-transparent hover:border-rose-200">
-                    <i class="fas fa-trash-alt mr-1"></i> Cancelar Cita
+                <button type="button" id="btnShowCancel" onclick="showCancelForm()" class="w-full text-rose-500 hover:bg-rose-50 font-bold text-sm py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+                    <i class="far fa-trash-alt"></i> Cancelar o Eliminar Cita
                 </button>
             </form>
         </div>
@@ -248,6 +288,7 @@
         var calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'timeGridWeek',
             locale: 'es',
+            firstDay: 1, // Lunes
             headerToolbar: {
                 left: 'prev,next today',
                 center: 'title',
@@ -255,107 +296,109 @@
             },
             buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana', day: 'Día' },
             slotMinTime: '07:00:00',
-            slotMaxTime: '22:00:00',
+            slotMaxTime: '21:00:00',
             allDaySlot: false,
             height: '100%',
             expandRows: true,
-            events: '/dashboard/appointments/api/events', // Carga desde el Controller
+            navLinks: true,
+            nowIndicator: true,
             
-            // EVENTO: CLIC EN UNA CITA (ABRIR DETALLE)
+            // API: RUTA CORREGIDA
+            events: '/dashboard/appointments/events', 
+
+            // CLIC EN EVENTO (DETALLES Y BORRAR)
             eventClick: function(info) {
                 const props = info.event.extendedProps;
                 const start = info.event.start;
                 const end = info.event.end;
                 
-                // Llenar Modal
-                document.getElementById('evtPatient').innerText = props.patient || 'Paciente';
-                document.getElementById('evtDoctor').innerText = props.doctor;
-                document.getElementById('evtTime').innerText = `${start.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} - ${end.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
-                document.getElementById('evtMode').innerText = props.modality;
-                document.getElementById('evtStatus').innerText = props.status;
+                // Llenar datos del modal
+                document.getElementById('evtTitle').innerText = info.event.title; // Nombre paciente/doc
+                document.getElementById('evtSubtitle').innerText = (props.patient && props.patient !== info.event.title) ? props.patient : props.doctor;
+                
+                const timeStr = `${start.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} - ${end.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+                document.getElementById('evtTime').innerText = timeStr;
+                
+                // Estado y Color
+                const statusBadge = document.getElementById('evtStatus');
+                statusBadge.innerText = props.status;
+                if(props.status === 'Programada') statusBadge.className = "text-xs font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 uppercase";
+                else statusBadge.className = "text-xs font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-500 uppercase";
+
                 document.getElementById('cancelId').value = info.event.id;
 
-                // Icono según modalidad
+                // Icono y Link
                 const iconContainer = document.getElementById('evtIcon');
+                const linkContainer = document.getElementById('evtLinkContainer');
+                const linkBtn = document.getElementById('evtLink');
+
                 if (props.modality === 'Virtual') {
                     iconContainer.innerHTML = '<i class="fas fa-video text-indigo-500"></i>';
-                    document.getElementById('evtLinkContainer').classList.remove('hidden');
-                    document.getElementById('evtLink').href = props.link;
+                    if(props.link && props.status !== 'Cancelada') {
+                        linkContainer.classList.remove('hidden');
+                        linkBtn.href = props.link;
+                    } else {
+                        linkContainer.classList.add('hidden');
+                    }
                 } else {
                     iconContainer.innerHTML = '<i class="fas fa-hospital-user text-emerald-500"></i>';
-                    document.getElementById('evtLinkContainer').classList.add('hidden');
+                    linkContainer.classList.add('hidden');
                 }
 
-                // Resetear estado de cancelación
+                // Resetear form borrar
                 document.getElementById('cancelSection').classList.add('hidden');
                 document.getElementById('btnShowCancel').classList.remove('hidden');
 
-                document.getElementById('eventModal').classList.remove('hidden');
+                openModal('eventModal');
             },
 
-            // EVENTO: CLIC EN HUECO VACÍO (CREAR)
+            // CLIC EN HUECO (CREAR)
             dateClick: function(info) {
                 document.getElementById('modalDate').value = info.dateStr.split('T')[0];
-                // Intentar setear la hora aproximada
                 if(info.dateStr.includes('T')) {
-                   const timePart = info.dateStr.split('T')[1].substring(0,5);
-                   document.querySelector('input[name="hora"]').value = timePart;
+                    const timePart = info.dateStr.split('T')[1].substring(0,5);
+                    document.getElementById('modalTime').value = timePart;
                 }
-                openCreateModal();
+                openModal('createModal');
             },
 
+            // RENDERIZADO PERSONALIZADO DE CAJITAS
             eventContent: function(arg) {
                 let timeText = document.createElement('div');
-                timeText.className = 'fc-time font-mono text-xs opacity-75';
+                timeText.className = 'fc-event-time';
                 timeText.innerHTML = arg.timeText;
 
                 let titleText = document.createElement('div');
-                titleText.className = 'fc-title font-bold truncate';
+                titleText.className = 'fc-event-title';
                 titleText.innerHTML = arg.event.title;
+                
+                let modalityIcon = document.createElement('i');
+                modalityIcon.className = arg.event.extendedProps.modality === 'Virtual' ? 'fas fa-video ml-1 opacity-50' : 'fas fa-building ml-1 opacity-50';
 
-                return { domNodes: [ timeText, titleText ] }
+                let container = document.createElement('div');
+                container.appendChild(timeText);
+                container.appendChild(titleText);
+                titleText.appendChild(modalityIcon);
+
+                return { domNodes: [ container ] }
             }
         });
         calendar.render();
     });
 
-    function openCreateModal() { document.getElementById('createModal').classList.remove('hidden'); }
-    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-    
+    function openModal(id) {
+        document.getElementById(id).classList.remove('hidden');
+    }
+    function closeModal(id) {
+        document.getElementById(id).classList.add('hidden');
+    }
+    function openCreateModal() {
+        document.getElementById('createModal').classList.remove('hidden');
+    }
     function showCancelForm() {
         document.getElementById('cancelSection').classList.remove('hidden');
         document.getElementById('btnShowCancel').classList.add('hidden');
     }
-
-    function dismissRequest(id) {
-        // En producción, esto debería llamar a una API para marcar como leído
-        alert('Marcado como leído. (Implementar AJAX)');
-        location.reload();
-    }
-
-    // Abrir detalle desde la lista lateral (Data attribute)
-    function openEventDetails(citaJson) {
-        // Lógica similar al eventClick pero con datos crudos
-        // Por simplicidad en este ejemplo, mejor usar el calendario
-        alert('Usa el calendario para ver los detalles y cancelar.'); 
-    }
 </script>
-
-<style>
-    .fc-event { border: none !important; border-radius: 6px !important; padding: 2px 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.1s; }
-    .fc-event:hover { transform: scale(1.02); z-index: 50; }
-    .fc-toolbar-title { font-size: 1.2em !important; font-weight: 800 !important; color: #1e293b; text-transform: uppercase; letter-spacing: 0.05em; }
-    .fc-button-primary { background-color: #4f46e5 !important; border-color: #4f46e5 !important; font-weight: 700 !important; text-transform: uppercase !important; letter-spacing: 0.05em !important; }
-    .fc-button-active { background-color: #4338ca !important; }
-    .fc-timegrid-slot { height: 3.5em !important; } /* Celdas más altas */
-    
-    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-    .animate-fade-in-down { animation: fade-in-down 0.5s ease-out; }
-    .animate-fade-in { animation: fade-in 0.5s ease-out; }
-    @keyframes fade-in-down { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-</style>
 
 <%- include('../partials/footer') %>

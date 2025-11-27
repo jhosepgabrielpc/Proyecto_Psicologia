@@ -1,195 +1,154 @@
 const db = require('../config/database');
 
 // ====================================================================
-// 1. INTERFAZ PRINCIPAL DEL CHAT (VISTA)
-// ====================================================================
-// Carga la lista de contactos (todos los usuarios) y el historial.
+// 1. VISTA PRINCIPAL DEL CHAT
 // ====================================================================
 const getChatInterface = async (req, res) => {
-    // Verificar sesión
-    if (!req.session || !req.session.user) {
-        return res.redirect('/auth/login');
-    }
-
-    const userId = req.session.user.id_usuario;
-    const selectedChatId = req.query.chat || null; // ID del usuario con quien chateamos
-
     try {
-        let contacts = [];
+        const userId = req.session.user.id_usuario;
+        const role = req.session.user.nombre_rol;
 
-        // -------------------------------------------------------
-        // A. OBTENER TODOS LOS CONTACTOS (CHAT ABIERTO)
-        // -------------------------------------------------------
-        // Traemos a TODOS los usuarios del sistema excepto a uno mismo.
-        // Ordenamos primero a los que tienen mensajes no leídos.
-        const contactsResult = await db.query(`
-            SELECT 
-                u.id_usuario, 
-                u.nombre, 
-                u.apellido, 
-                u.foto_perfil, 
-                COALESCE(r.nombre_rol, 'Usuario') as nombre_rol,
-                (SELECT COUNT(*) FROM Mensajes_Seguros 
-                 WHERE id_remitente = u.id_usuario 
-                 AND id_destinatario = $1 
-                 AND leido = false) as sin_leer
-            FROM Usuarios u
-            LEFT JOIN Roles r ON u.id_rol = r.id_rol
-            WHERE u.id_usuario != $1 -- Excluirse a sí mismo
-            ORDER BY sin_leer DESC, u.nombre ASC
-        `, [userId]);
-        
-        contacts = contactsResult.rows;
+        // Obtener lista de contactos (Usuarios con los que puede hablar)
+        // Si es Paciente -> Ve a su Terapeuta y a Jimmy
+        // Si es Terapeuta -> Ve a sus Pacientes y a Jimmy
+        // Si es Jimmy -> Ve a Todos
+        let contactsQuery = ``;
+        let params = [];
 
-        // -------------------------------------------------------
-        // B. OBTENER HISTORIAL DE CHAT (SI HAY UNO SELECCIONADO)
-        // -------------------------------------------------------
-        let chatHistory = [];
-        let activeContact = null;
-
-        if (selectedChatId) {
-            // 1. Marcar mensajes como leídos
-            await db.query(`
-                UPDATE Mensajes_Seguros 
-                SET leido = true 
-                WHERE id_remitente = $1 AND id_destinatario = $2 AND leido = false
-            `, [selectedChatId, userId]);
-
-            // 2. Obtener datos del contacto activo (Header del chat)
-            const contactRes = await db.query(`
-                SELECT u.id_usuario, u.nombre, u.apellido, u.foto_perfil, COALESCE(r.nombre_rol, 'Usuario') as nombre_rol 
-                FROM Usuarios u
-                LEFT JOIN Roles r ON u.id_rol = r.id_rol 
-                WHERE u.id_usuario = $1
-            `, [selectedChatId]);
-            
-            if (contactRes.rows.length > 0) {
-                activeContact = contactRes.rows[0];
-            }
-
-            // 3. Obtener los mensajes (Ida y Vuelta)
-            const historyRes = await db.query(`
-                SELECT m.*, u.nombre as remitente_nombre 
-                FROM Mensajes_Seguros m
-                JOIN Usuarios u ON m.id_remitente = u.id_usuario
-                WHERE (m.id_remitente = $1 AND m.id_destinatario = $2) 
-                   OR (m.id_remitente = $2 AND m.id_destinatario = $1)
-                ORDER BY m.fecha_envio ASC
-            `, [userId, selectedChatId]);
-            
-            chatHistory = historyRes.rows;
+        if (role === 'Paciente') {
+            contactsQuery = `
+                SELECT u.id_usuario, u.nombre, u.apellido, u.foto_perfil, r.nombre_rol 
+                FROM Usuarios u 
+                JOIN Roles r ON u.id_rol = r.id_rol
+                WHERE u.id_usuario IN (
+                    SELECT id_usuario FROM Terapeutas WHERE id_terapeuta = (SELECT id_terapeuta FROM Pacientes WHERE id_usuario = $1)
+                ) OR r.nombre_rol = 'GestorComunicacion'
+            `;
+            params = [userId];
+        } else if (role === 'Terapeuta') {
+            contactsQuery = `
+                SELECT u.id_usuario, u.nombre, u.apellido, u.foto_perfil, 'Paciente' as nombre_rol
+                FROM Usuarios u 
+                JOIN Pacientes p ON u.id_usuario = p.id_usuario
+                WHERE p.id_terapeuta = (SELECT id_terapeuta FROM Terapeutas WHERE id_usuario = $1)
+                UNION
+                SELECT u.id_usuario, u.nombre, u.apellido, u.foto_perfil, r.nombre_rol 
+                FROM Usuarios u JOIN Roles r ON u.id_rol = r.id_rol WHERE r.nombre_rol = 'GestorComunicacion'
+            `;
+            params = [userId];
+        } else {
+            // Jimmy / Admin ven a todos
+            contactsQuery = `
+                SELECT u.id_usuario, u.nombre, u.apellido, u.foto_perfil, r.nombre_rol
+                FROM Usuarios u 
+                JOIN Roles r ON u.id_rol = r.id_rol
+                WHERE u.id_usuario != $1 AND u.estado = true
+                ORDER BY u.nombre ASC
+            `;
+            params = [userId];
         }
 
-        // -------------------------------------------------------
-        // C. RENDERIZAR VISTA
-        // -------------------------------------------------------
+        const contacts = await db.query(contactsQuery, params);
+        
+        // Si hay un chat seleccionado en la URL (?chat=ID), cargamos mensajes
+        let selectedChat = null;
+        let messages = [];
+        if (req.query.chat) {
+            const chatPartnerId = req.query.chat;
+            
+            // Info del contacto
+            const contactRes = await db.query('SELECT id_usuario, nombre, apellido, foto_perfil FROM Usuarios WHERE id_usuario = $1', [chatPartnerId]);
+            if (contactRes.rows.length > 0) selectedChat = contactRes.rows[0];
+
+            // Mensajes
+            const msgsRes = await db.query(`
+                SELECT * FROM Mensajes_Seguros 
+                WHERE (id_remitente = $1 AND id_destinatario = $2) 
+                   OR (id_remitente = $2 AND id_destinatario = $1)
+                ORDER BY fecha_envio ASC
+            `, [userId, chatPartnerId]);
+            messages = msgsRes.rows;
+        }
+
         res.render('dashboard/communication', {
-            title: 'Centro de Mensajes',
+            title: 'Centro de Comunicación',
             user: req.session.user,
-            contacts: contacts,
-            activeChat: activeContact,
-            messages: chatHistory
+            contacts: contacts.rows,
+            selectedChat: selectedChat,
+            messages: messages
         });
 
     } catch (error) {
-        console.error('Error cargando chat:', error);
-        res.status(500).render('error', {
-            title: 'Error de Comunicación',
-            message: 'No se pudo cargar el sistema de mensajería.',
-            error: error,
-            user: req.session.user
-        });
+        console.error('Error chat:', error);
+        res.redirect('/dashboard');
     }
 };
 
 // ====================================================================
-// 2. ENVIAR MENSAJE (API AJAX)
+// 2. ENVIAR MENSAJE (API)
 // ====================================================================
 const sendMessage = async (req, res) => {
+    const { recipientId, content } = req.body;
+    const senderId = req.session.user.id_usuario;
+
     try {
-        const { id_destinatario, contenido, tipo_mensaje } = req.body;
-        const id_remitente = req.session.user.id_usuario;
-
-        // Validación simple
-        if (!id_destinatario || !contenido) {
-            return res.status(400).json({ success: false, error: 'Faltan datos' });
-        }
-
-        // 1. Insertar Mensaje en BD
-        const result = await db.query(`
-            INSERT INTO Mensajes_Seguros (id_remitente, id_destinatario, contenido, tipo_mensaje, fecha_envio)
-            VALUES ($1, $2, $3, $4, NOW())
+        const newMsg = await db.query(`
+            INSERT INTO Mensajes_Seguros (id_remitente, id_destinatario, contenido, leido, fecha_envio)
+            VALUES ($1, $2, $3, false, NOW())
             RETURNING *
-        `, [id_remitente, id_destinatario, contenido, tipo_mensaje || 'texto']);
+        `, [senderId, recipientId, content]);
 
-        const nuevoMensaje = result.rows[0];
+        const messageData = newMsg.rows[0];
 
-        // 2. Crear Notificación Interna para el destinatario
-        // Usamos subconsulta segura para obtener el nombre del remitente
-        await db.query(`
-            INSERT INTO Notificaciones (id_usuario, tipo, mensaje, enlace_accion, fecha_creacion)
-            VALUES ($1, 'mensaje', 'Nuevo mensaje de ' || (SELECT nombre FROM Usuarios WHERE id_usuario = $2), $3, NOW())
-        `, [id_destinatario, id_remitente, `/dashboard/communication?chat=${id_remitente}`]);
-
-        // 3. Emitir evento Socket.IO (Tiempo Real)
+        // SOCKET.IO: Usamos global.io para evitar importar server.js
         if (global.io) {
-            // Enviar a la sala del destinatario
-            global.io.to(`user-${id_destinatario}`).emit('receive-message', {
-                senderId: id_remitente,
-                content: contenido,
-                timestamp: new Date()
+            global.io.emit('receive-message', {
+                senderId: senderId,
+                recipientId: recipientId,
+                content: content,
+                timestamp: messageData.fecha_envio
+            });
+            
+            // Notificación tiempo real
+            global.io.emit('new-notification', {
+                userId: recipientId,
+                message: `Nuevo mensaje de ${req.session.user.nombre}`
             });
         }
 
-        res.status(201).json({ success: true, message: nuevoMensaje });
+        res.json({ success: true, message: messageData });
 
     } catch (error) {
         console.error('Error enviando mensaje:', error);
-        res.status(500).json({ success: false, error: 'Error al enviar mensaje' });
+        res.status(500).json({ success: false });
     }
 };
 
 // ====================================================================
-// 3. OBTENER NOTIFICACIONES (API)
+// 3. OBTENER NOTIFICACIONES (API JSON)
 // ====================================================================
 const getNotifications = async (req, res) => {
     try {
-        const userId = req.session.user.id_usuario;
-
         const result = await db.query(`
-            SELECT * FROM Notificaciones
-            WHERE id_usuario = $1
-            ORDER BY fecha_creacion DESC
-            LIMIT 20
-        `, [userId]);
-
-        res.json({ notifications: result.rows });
-
+            SELECT * FROM Notificaciones 
+            WHERE id_usuario = $1 
+            ORDER BY fecha_creacion DESC LIMIT 10
+        `, [req.session.user.id_usuario]);
+        res.json(result.rows);
     } catch (error) {
-        console.error('Error obteniendo notificaciones:', error);
-        res.status(500).json({ error: 'Error al cargar notificaciones' });
+        res.status(500).json([]);
     }
 };
 
 // ====================================================================
-// 4. MARCAR NOTIFICACIÓN COMO LEÍDA (API)
+// 4. MARCAR LEÍDA
 // ====================================================================
 const markNotificationAsRead = async (req, res) => {
     try {
-        const { id } = req.params; // ID de la notificación
-        const userId = req.session.user.id_usuario;
-
-        await db.query(`
-            UPDATE Notificaciones 
-            SET leida = true 
-            WHERE id_notificacion = $1 AND id_usuario = $2
-        `, [id, userId]);
-
-        res.json({ success: true, message: 'Notificación marcada' });
-
+        await db.query('UPDATE Notificaciones SET leido = true WHERE id_notificacion = $1', [req.params.id]);
+        res.json({ success: true });
     } catch (error) {
-        console.error('Error marcando notificación:', error);
-        res.status(500).json({ error: 'Error interno' });
+        res.status(500).json({ success: false });
     }
 };
 

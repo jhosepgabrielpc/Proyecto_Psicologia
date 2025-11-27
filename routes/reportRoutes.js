@@ -22,4 +22,5 @@ router.post('/progress', isAuthenticated, reportController.saveProgressReport);
 // 5. Actualizar Nota de Sesión (Desde el Expediente)
 router.post('/session/update', isAuthenticated, reportController.updateSessionNote);
 
+// ¡ESTA LÍNEA ES LA QUE FALTABA! SI NO ESTÁ, EL SERVER EXPLOTA
 module.exports = router;

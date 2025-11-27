@@ -2,33 +2,25 @@ const db = require('../config/database');
 const crypto = require('crypto');
 
 // ====================================================================
-// 1. DASHBOARD DE GESTIÓN (VISTA PRINCIPAL DE ALAN)
+// 1. VISTA PRINCIPAL (DASHBOARD)
 // ====================================================================
 const getAppointmentsDashboard = async (req, res) => {
     const userId = req.session.user.id_usuario;
 
     try {
-        // A. Listas para Selectores
+        // A. Listas para el Modal (Pacientes y Terapeutas Activos)
         const patientsRes = await db.query("SELECT id_paciente, u.nombre, u.apellido FROM Pacientes p JOIN Usuarios u ON p.id_usuario = u.id_usuario WHERE u.estado = true ORDER BY u.apellido");
         const therapistsRes = await db.query("SELECT id_terapeuta, u.nombre, u.apellido, t.especialidad FROM Terapeutas t JOIN Usuarios u ON t.id_usuario = u.id_usuario WHERE u.estado = true ORDER BY u.apellido");
 
-        // B. KPIs (CORREGIDO: Usamos ::date para incluir todas las citas de hoy sin importar la hora)
+        // B. KPIs Rápidos
         const statsRes = await db.query(`
             SELECT 
-                (SELECT COUNT(*) FROM Citas 
-                 WHERE estado = 'Programada' 
-                 AND fecha_hora_inicio::date >= CURRENT_DATE) as citas_futuras,
-                 
-                (SELECT COUNT(*) FROM Citas 
-                 WHERE estado = 'Completada' 
-                 AND fecha_hora_inicio >= DATE_TRUNC('month', NOW())) as completadas_mes,
-                 
-                (SELECT COUNT(*) FROM Citas 
-                 WHERE estado = 'Cancelada' 
-                 AND fecha_hora_inicio >= DATE_TRUNC('month', NOW())) as canceladas_mes
+                (SELECT COUNT(*) FROM Citas WHERE estado = 'Programada' AND fecha_hora_inicio >= NOW()) as citas_futuras,
+                (SELECT COUNT(*) FROM Citas WHERE estado = 'Completada' AND fecha_hora_inicio >= DATE_TRUNC('month', NOW())) as completadas_mes,
+                (SELECT COUNT(*) FROM Citas WHERE estado = 'Cancelada' AND fecha_hora_inicio >= DATE_TRUNC('month', NOW())) as canceladas_mes
         `);
 
-        // C. Citas de Hoy (Agenda del Día)
+        // C. Agenda Lateral (Solo citas de HOY)
         const todayRes = await db.query(`
             SELECT c.*, 
                    up.nombre as pac_nombre, up.apellido as pac_apellido,
@@ -39,11 +31,11 @@ const getAppointmentsDashboard = async (req, res) => {
             JOIN Terapeutas t ON c.id_terapeuta = t.id_terapeuta
             JOIN Usuarios ut ON t.id_usuario = ut.id_usuario
             WHERE c.fecha_hora_inicio::date = CURRENT_DATE 
-            AND c.estado != 'Cancelada'
+            AND c.estado = 'Programada'
             ORDER BY c.fecha_hora_inicio ASC
         `);
 
-        // D. Solicitudes de Jimmy
+        // D. Solicitudes Pendientes (Mensajería)
         const requestsRes = await db.query(`
             SELECT m.id_mensaje, m.contenido, m.fecha_envio, u.nombre as remitente
             FROM Mensajes_Seguros m
@@ -59,24 +51,27 @@ const getAppointmentsDashboard = async (req, res) => {
             user: req.session.user,
             patients: patientsRes.rows,
             therapists: therapistsRes.rows,
-            stats: statsRes.rows[0],
+            stats: statsRes.rows[0] || { citas_futuras: 0, completadas_mes: 0, canceladas_mes: 0 },
             todayAppointments: todayRes.rows,
             pendingRequests: requestsRes.rows
         });
 
     } catch (error) {
         console.error('Error dashboard citas:', error);
-        res.status(500).render('error', { title: 'Error', message: 'Error de sistema', error, user: req.session.user });
+        res.status(500).render('error', { title: 'Error', message: 'Fallo en sistema de citas', error, user: req.session.user });
     }
 };
 
 // ====================================================================
-// 2. API CALENDARIO
+// 2. API CALENDARIO (DIBUJA LOS RECUADROS) 🎨
 // ====================================================================
 const getCalendarEvents = async (req, res) => {
-    const { start, end } = req.query;
+    const userId = req.session.user.id_usuario;
+    const role = req.session.user.nombre_rol;
+
     try {
-        const result = await db.query(`
+        // Base de la consulta
+        let query = `
             SELECT c.id_cita, c.fecha_hora_inicio, c.fecha_hora_fin, c.estado, c.modalidad,
                    up.nombre || ' ' || up.apellido as paciente_nombre,
                    ut.nombre || ' ' || ut.apellido as terapeuta_nombre,
@@ -87,14 +82,30 @@ const getCalendarEvents = async (req, res) => {
             JOIN Terapeutas t ON c.id_terapeuta = t.id_terapeuta
             JOIN Usuarios ut ON t.id_usuario = ut.id_usuario
             WHERE c.estado != 'Cancelada'
-        `);
+        `;
+        
+        let params = [];
 
+        // Filtrado por Rol (Seguridad)
+        if (role === 'Terapeuta') {
+            query += ` AND t.id_usuario = $1`;
+            params.push(userId);
+        } else if (role === 'Paciente') {
+            query += ` AND p.id_usuario = $1`;
+            params.push(userId);
+        }
+        // Gestores ven todo
+
+        const result = await db.query(query, params);
+
+        // Mapeo para FullCalendar
         const events = result.rows.map(cita => ({
             id: cita.id_cita,
-            title: `${cita.paciente_nombre} (${cita.terapeuta_nombre})`,
+            title: role === 'Paciente' ? `Dr. ${cita.terapeuta_nombre}` : `${cita.paciente_nombre}`,
             start: cita.fecha_hora_inicio, 
             end: cita.fecha_hora_fin,
-            backgroundColor: cita.modalidad === 'Virtual' ? '#6366f1' : '#10b981',
+            // Lógica de colores: Virtual (Indigo), Presencial (Verde), Completada (Gris)
+            backgroundColor: cita.estado === 'Completada' ? '#94a3b8' : (cita.modalidad === 'Virtual' ? '#6366f1' : '#10b981'),
             borderColor: 'transparent',
             extendedProps: {
                 doctor: cita.terapeuta_nombre,
@@ -108,13 +119,13 @@ const getCalendarEvents = async (req, res) => {
 
         res.json(events);
     } catch (error) {
-        console.error('Error API:', error);
+        console.error('Error API Calendario:', error);
         res.status(500).json([]);
     }
 };
 
 // ====================================================================
-// 3. CREAR CITA
+// 3. CREAR CITA (LÓGICA CORREGIDA Y BLINDADA) ✅
 // ====================================================================
 const createAppointment = async (req, res) => {
     const { id_paciente, id_terapeuta, fecha, hora, duracion, modalidad, notas } = req.body;
@@ -122,58 +133,60 @@ const createAppointment = async (req, res) => {
     try {
         await db.query('BEGIN');
 
-        // Construimos timestamp explícito
-        const startString = `${fecha} ${hora}:00`;
+        // 1. CÁLCULO DE FECHAS EN JS (Más seguro que SQL directo)
+        // Formato fecha: YYYY-MM-DD, hora: HH:MM
+        const startDateTime = new Date(`${fecha}T${hora}:00`); 
+        const durationMinutes = parseInt(duracion);
+        const endDateTime = new Date(startDateTime.getTime() + durationMinutes * 60000);
 
-        // Validación de Superposición
+        // 2. VALIDACIÓN DE SUPERPOSICIÓN (Overlap)
+        // Usamos tsrange de PostgreSQL para verificar choques de horario exactos
         const overlapCheck = await db.query(`
             SELECT id_cita FROM Citas 
             WHERE id_terapeuta = $1 
             AND estado = 'Programada'
-            AND tsrange(fecha_hora_inicio, fecha_hora_fin) && tsrange(
-                TO_TIMESTAMP($2 || ' ' || $3, 'YYYY-MM-DD HH24:MI'), 
-                (TO_TIMESTAMP($2 || ' ' || $3, 'YYYY-MM-DD HH24:MI') + ($4 || ' minutes')::interval)
-            )
-        `, [id_terapeuta, fecha, hora, duracion]);
+            AND tsrange(fecha_hora_inicio, fecha_hora_fin) && tsrange($2, $3)
+        `, [id_terapeuta, startDateTime, endDateTime]);
 
         if (overlapCheck.rows.length > 0) {
             await db.query('ROLLBACK');
             return res.redirect('/dashboard/appointments?msg=error_overlap');
         }
 
-        // Link Jitsi
+        // 3. GENERAR ENLACE VIRTUAL (Si aplica)
         let meetingLink = null;
         if (modalidad === 'Virtual') {
             const code = crypto.randomBytes(4).toString('hex');
             meetingLink = `https://meet.jit.si/MindCare-${code}`;
         }
 
-        // Insertar
+        // 4. INSERTAR CITA
         const insertQuery = `
             INSERT INTO Citas (
                 id_paciente, id_terapeuta, 
-                fecha_hora_inicio, 
-                fecha_hora_fin, 
-                modalidad, enlace_reunion, notas_admin, estado, fecha_creacion
+                fecha_hora_inicio, fecha_hora_fin, 
+                modalidad, estado, enlace_reunion, notas_admin, fecha_creacion
             )
-            VALUES (
-                $1, $2, 
-                TO_TIMESTAMP($3 || ' ' || $4, 'YYYY-MM-DD HH24:MI'), 
-                (TO_TIMESTAMP($3 || ' ' || $4, 'YYYY-MM-DD HH24:MI') + ($5 || ' minutes')::interval), 
-                $6, $7, $8, 'Programada', NOW()
-            )
+            VALUES ($1, $2, $3, $4, $5, 'Programada', $6, $7, NOW())
             RETURNING id_cita
         `;
 
-        const insertRes = await db.query(insertQuery, [id_paciente, id_terapeuta, fecha, hora, duracion, modalidad, meetingLink, notas]);
-        const newCitaId = insertRes.rows[0].id_cita;
+        const insertRes = await db.query(insertQuery, [
+            id_paciente, 
+            id_terapeuta, 
+            startDateTime, 
+            endDateTime, 
+            modalidad, 
+            meetingLink, 
+            notas
+        ]);
 
-        // Notificaciones
+        // 5. NOTIFICACIONES AUTOMÁTICAS
         const tInfo = await db.query('SELECT id_usuario FROM Terapeutas WHERE id_terapeuta = $1', [id_terapeuta]);
         const pInfo = await db.query('SELECT id_usuario FROM Pacientes WHERE id_paciente = $1', [id_paciente]);
 
         if(tInfo.rows.length > 0) {
-             await db.query(`INSERT INTO Notificaciones (id_usuario, tipo, mensaje, enlace_accion, fecha_creacion, leido) VALUES ($1, 'cita_nueva', '📅 Nueva Cita Agendada', '/dashboard/therapist', NOW(), false)`, [tInfo.rows[0].id_usuario]);
+             await db.query(`INSERT INTO Notificaciones (id_usuario, tipo, mensaje, enlace_accion, fecha_creacion, leido) VALUES ($1, 'cita_nueva', '📅 Nueva Cita Agendada', '/dashboard/clinical', NOW(), false)`, [tInfo.rows[0].id_usuario]);
         }
         if(pInfo.rows.length > 0) {
              await db.query(`INSERT INTO Notificaciones (id_usuario, tipo, mensaje, enlace_accion, fecha_creacion, leido) VALUES ($1, 'cita_confirmada', '✅ Cita Confirmada', '/dashboard/patient', NOW(), false)`, [pInfo.rows[0].id_usuario]);
@@ -190,14 +203,14 @@ const createAppointment = async (req, res) => {
 };
 
 // ====================================================================
-// 4. CANCELAR CITA
+// 4. CANCELAR CITA (ELIMINAR DEL CALENDARIO)
 // ====================================================================
 const cancelAppointment = async (req, res) => {
     const { id_cita, motivo } = req.body;
     try {
         await db.query('BEGIN');
 
-        // Obtener datos para notificar
+        // Obtener datos para notificar antes de cancelar
         const citaRes = await db.query(`
             SELECT c.*, t.id_usuario as t_user, p.id_usuario as p_user 
             FROM Citas c
@@ -209,10 +222,15 @@ const cancelAppointment = async (req, res) => {
         if(citaRes.rows.length > 0) {
             const cita = citaRes.rows[0];
             
-            // Actualizar estado
-            await db.query(`UPDATE Citas SET estado = 'Cancelada', notas_admin = notas_admin || ' [Cancelada: ' || $2 || ']' WHERE id_cita = $1`, [id_cita, motivo]);
+            // Actualizar estado a Cancelada (desaparece de la vista por defecto)
+            await db.query(`
+                UPDATE Citas 
+                SET estado = 'Cancelada', 
+                    notas_admin = CONCAT(notas_admin, ' [Cancelada: ', $1::text, ']') 
+                WHERE id_cita = $2
+            `, [motivo, id_cita]);
 
-            // Notificar
+            // Notificar a ambos
             await db.query(`INSERT INTO Notificaciones (id_usuario, tipo, mensaje, enlace_accion, fecha_creacion) VALUES ($1, 'cita_cancelada', '⛔ Cita Cancelada: ' || $2, '#', NOW())`, [cita.t_user, motivo]);
             await db.query(`INSERT INTO Notificaciones (id_usuario, tipo, mensaje, enlace_accion, fecha_creacion) VALUES ($1, 'cita_cancelada', '⛔ Cita Cancelada: ' || $2, '#', NOW())`, [cita.p_user, motivo]);
         }
