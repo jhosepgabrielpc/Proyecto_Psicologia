@@ -60,6 +60,62 @@
             </div>
         </div>
 
+        <% if (locals.upcomingAppointments || locals.alerts) { %>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                        <h2 class="font-bold text-slate-800">Agenda de Hoy</h2>
+                        <a href="/dashboard/appointments" class="text-xs font-bold text-blue-600 hover:text-blue-800">Ver todo</a>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <% if (locals.upcomingAppointments && upcomingAppointments.length > 0) { %>
+                            <% upcomingAppointments.forEach(cita => { %>
+                                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div class="flex items-center gap-3">
+                                        <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
+                                            <%= cita.nombre_paciente.charAt(0) %>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-sm text-slate-800"><%= cita.nombre_paciente %></p>
+                                            <p class="text-xs text-slate-500"><i class="far fa-clock mr-1"></i><%= cita.hora %></p>
+                                        </div>
+                                    </div>
+                                    <span class="px-2 py-1 bg-white border border-slate-200 text-slate-600 text-xs rounded-lg font-medium">
+                                        <%= cita.modalidad %>
+                                    </span>
+                                </div>
+                            <% }); %>
+                        <% } else { %>
+                            <div class="text-center text-slate-400 py-4">
+                                <i class="far fa-calendar-check mb-2 text-2xl"></i>
+                                <p class="text-xs">No hay más citas hoy.</p>
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-rose-50/30">
+                        <h2 class="font-bold text-slate-800">Alertas Prioritarias</h2>
+                        <span class="text-xs font-bold bg-rose-100 text-rose-600 px-2 py-0.5 rounded">Acción Requerida</span>
+                    </div>
+                    <div class="p-6 space-y-3">
+                         <% if (stats.critical > 0) { %>
+                             <div class="flex items-start p-3 bg-white rounded-xl border-l-4 border-rose-500 shadow-sm group hover:bg-rose-50 transition-colors cursor-pointer">
+                                <i class="fas fa-exclamation-circle text-rose-500 mt-1 mr-3 group-hover:scale-110 transition-transform"></i>
+                                <div>
+                                    <p class="font-bold text-sm text-slate-800 group-hover:text-rose-800">Pacientes Críticos</p>
+                                    <p class="text-xs text-slate-500 group-hover:text-rose-600"><%= stats.critical %> pacientes necesitan revisión.</p>
+                                </div>
+                            </div>
+                        <% } else { %>
+                             <p class="text-xs text-slate-400 text-center">Sin alertas activas.</p>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        <% } %>
+
         <h2 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
             <i class="fas fa-folder-open text-indigo-500"></i> Expedientes Activos
         </h2>

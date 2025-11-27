@@ -1,4 +1,4 @@
-<%- include('../partials/header', { title: 'Evaluación PHQ-9' }) %>
+<%- include('../partials/header', { title: `Evaluación ${testType.toUpperCase()}` }) %>
 
 <div class="min-h-screen bg-slate-50 py-10 font-sans">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -9,7 +9,9 @@
                     <i class="fas fa-clipboard-list text-4xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-3xl font-extrabold text-slate-900">Cuestionario de Salud del Paciente (PHQ-9)</h1>
+                    <h1 class="text-3xl font-extrabold text-slate-900">
+                        <%= testType === 'phq9' ? 'Cuestionario de Salud (PHQ-9)' : 'Escala de Ansiedad (GAD-7)' %>
+                    </h1>
                     <p class="text-slate-500 mt-2 text-lg leading-relaxed">
                         Durante las <strong>últimas 2 semanas</strong>, ¿con qué frecuencia le han molestado los siguientes problemas?
                     </p>
@@ -21,20 +23,35 @@
             </div>
         </div>
 
-        <form id="phq9Form" class="space-y-6">
+        <form id="testForm" class="space-y-6">
             
             <% 
-                const questions = [
-                    "Tener poco interés o placer en hacer las cosas.",
-                    "Sentirse desanimado/a, deprimido/a o sin esperanza.",
-                    "Tener problemas para dormir o mantenerse dormido/a, o dormir demasiado.",
-                    "Sentirse cansado/a o tener poca energía.",
-                    "Tener poco apetito o comer en exceso.",
-                    "Sentirse mal con usted mismo/a (sentirse fracasado/a o que se ha fallado a sí mismo/a o a su familia).",
-                    "Tener dificultad para concentrarse en ciertas cosas, tales como leer el periódico o ver la televisión.",
-                    "Moverse o hablar tan lentamente que otras personas podrían haberlo notado. O lo contrario: estar tan inquieto/a o agitado/a que se ha estado moviendo mucho más de lo habitual.",
-                    "Pensamientos de que sería mejor estar muerto/a o de lastimarse de alguna manera."
-                ];
+                // LÓGICA PARA SELECCIONAR PREGUNTAS SEGÚN EL TIPO DE TEST
+                let questions = [];
+                
+                if (testType === 'phq9') {
+                    questions = [
+                        "Tener poco interés o placer en hacer las cosas.",
+                        "Sentirse desanimado/a, deprimido/a o sin esperanza.",
+                        "Tener problemas para dormir o mantenerse dormido/a, o dormir demasiado.",
+                        "Sentirse cansado/a o tener poca energía.",
+                        "Tener poco apetito o comer en exceso.",
+                        "Sentirse mal con usted mismo/a (sentirse fracasado/a o que se ha fallado a sí mismo/a o a su familia).",
+                        "Tener dificultad para concentrarse en ciertas cosas, tales como leer el periódico o ver la televisión.",
+                        "Moverse o hablar tan lentamente que otras personas podrían haberlo notado. O lo contrario: estar tan inquieto/a o agitado/a que se ha estado moviendo mucho más de lo habitual.",
+                        "Pensamientos de que sería mejor estar muerto/a o de lastimarse de alguna manera."
+                    ];
+                } else if (testType === 'gad7') {
+                    questions = [
+                        "Sentirse nervioso/a, ansioso/a o con los nervios de punta.",
+                        "No poder dejar de preocuparse o no poder controlar la preocupación.",
+                        "Preocuparse demasiado por diferentes cosas.",
+                        "Dificultad para relajarse.",
+                        "Estar tan inquieto/a que es difícil permanecer sentado/a.",
+                        "Molestarse o irritarse fácilmente.",
+                        "Sentir miedo como si algo terrible fuera a pasar."
+                    ];
+                }
                 
                 const options = [
                     { val: 0, text: "Para nada" },
@@ -98,11 +115,12 @@
             <i class="fas fa-check"></i>
         </div>
         <h2 class="text-2xl font-extrabold text-slate-900 mb-2">¡Evaluación Completada!</h2>
-        <p class="text-slate-500 mb-8">Tus respuestas han sido guardadas en tu historial clínico. Tu terapeuta podrá revisarlas para darte un mejor seguimiento.</p>
+        <p class="text-slate-500 mb-8">Tus respuestas han sido guardadas. Tu terapeuta recibirá una notificación si es necesario.</p>
         
         <div class="bg-slate-50 rounded-xl p-4 mb-8 border border-slate-100">
             <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Resultado Preliminar</p>
             <h3 class="text-xl font-bold text-indigo-600" id="resultSeverity">Calculando...</h3>
+            <p class="text-sm text-slate-500 mt-1">Puntaje: <span id="resultScore">0</span></p>
         </div>
 
         <a href="/dashboard/monitoring" class="block w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition shadow-lg">
@@ -112,19 +130,24 @@
 </div>
 
 <script>
-    const form = document.getElementById('phq9Form');
+    const form = document.getElementById('testForm');
     const modal = document.getElementById('successModal');
     const modalCard = document.getElementById('modalCard');
     const resultText = document.getElementById('resultSeverity');
+    const resultScore = document.getElementById('resultScore');
+    
+    // Variable inyectada desde el backend
+    const testType = "<%= testType %>".toUpperCase(); 
+    const totalQuestions = <%= questions.length %>;
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // 1. Recopilar respuestas
         const formData = new FormData(form);
         const answers = [];
-        // Iteramos 9 veces (0 a 8)
-        for (let i = 0; i < 9; i++) {
+        
+        // Recopilar respuestas dinámicamente según la cantidad de preguntas
+        for (let i = 0; i < totalQuestions; i++) {
             const val = formData.get(`q${i}`);
             if (val === null) {
                 alert('Por favor responde todas las preguntas.');
@@ -133,13 +156,12 @@
             answers.push(parseInt(val));
         }
 
-        // 2. Enviar al Backend
         try {
             const response = await fetch('/dashboard/test/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    tipo_test: 'PHQ-9',
+                    tipo_test: testType === 'PHQ9' ? 'PHQ-9' : 'GAD-7', // Normalizar nombre para la BD
                     respuestas: answers
                 })
             });
@@ -147,16 +169,14 @@
             const data = await response.json();
 
             if (data.success) {
-                // 3. Mostrar Modal de Éxito
-                resultText.innerText = data.severidad; // Ej: "Depresión Moderada"
+                resultText.innerText = data.severidad;
+                resultScore.innerText = data.puntaje + (testType === 'PHQ9' ? '/27' : '/21');
                 
                 modal.classList.remove('hidden');
-                // Animación de entrada
                 setTimeout(() => {
                     modalCard.classList.remove('scale-95');
                     modalCard.classList.add('scale-100');
                 }, 10);
-                
             } else {
                 alert('Error al guardar: ' + (data.error || 'Intente nuevamente'));
             }

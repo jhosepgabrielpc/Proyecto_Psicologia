@@ -14,11 +14,10 @@ const getMonitoringDashboard = async (req, res) => {
         let patientsList = [];
         let jimmyId = null; 
         
-        // KPIs iniciales
+        // KPIs iniciales (Esto es crucial para el Dashboard)
         let kpis = { total: 0, criticos: 0, sueno_bajo: 0, estables: 0 };
 
-        // 1. BUSCAR A JIMMY (GESTOR DE COMUNICACIÓN)
-        // Intentamos buscar por Rol primero
+        // 1. BUSCAR A JIMMY (GESTOR DE COMUNICACIÓN) - Para el sistema de alertas
         const jimmyRes = await db.query(`
             SELECT u.id_usuario FROM Usuarios u 
             JOIN Roles r ON u.id_rol = r.id_rol 
@@ -28,7 +27,6 @@ const getMonitoringDashboard = async (req, res) => {
         if (jimmyRes.rows.length > 0) {
             jimmyId = jimmyRes.rows[0].id_usuario;
         } else {
-            // Fallback: Buscar por nombre si no hay rol definido
             const jimmyFallback = await db.query("SELECT id_usuario FROM Usuarios WHERE nombre ILIKE '%Jimmy%' LIMIT 1");
             if(jimmyFallback.rows.length > 0) jimmyId = jimmyFallback.rows[0].id_usuario;
         }
@@ -42,8 +40,7 @@ const getMonitoringDashboard = async (req, res) => {
             // ES PROFESIONAL (Terapeuta, Monitorista, Admin)
             if (targetPatientId) patientIdToFetch = targetPatientId;
 
-            // Construir la lista de pacientes (Datagrid)
-            // NOTA: Se eliminó p.telefono para evitar errores si la columna no existe
+            // Construir la lista de pacientes (Datagrid) con subconsultas para tiempo real
             let queryBase = `
                 SELECT p.id_paciente, u.nombre, u.apellido, u.email, u.foto_perfil,
                        (SELECT valencia FROM checkins_emocionales WHERE id_paciente = p.id_paciente ORDER BY fecha_hora DESC LIMIT 1) as ultima_valencia,
@@ -57,7 +54,6 @@ const getMonitoringDashboard = async (req, res) => {
             
             let params = [];
 
-            // Si es un Terapeuta específico, filtramos. Si es Monitorista, ve TODO.
             if (role === 'Terapeuta') {
                 const tRes = await db.query('SELECT id_terapeuta FROM Terapeutas WHERE id_usuario = $1', [userId]);
                 if (tRes.rows.length > 0) {
@@ -71,41 +67,35 @@ const getMonitoringDashboard = async (req, res) => {
             const listRes = await db.query(queryBase, params);
             patientsList = listRes.rows;
 
-            // 3. CÁLCULO DE KPIs (Ahora con los datos ya cargados)
+            // 3. CÁLCULO DE KPIs (Vital para el nuevo dashboard)
             kpis.total = patientsList.length;
             
             patientsList.forEach(p => {
-                // Críticos: Valencia 1 o 2
                 if (p.ultima_valencia && p.ultima_valencia <= 2) kpis.criticos++;
-                // Estables: Valencia 3, 4 o 5
                 else if (p.ultima_valencia >= 3) kpis.estables++;
                 
-                // Sueño Bajo: Menos de 6 horas
                 if (p.ultimo_sueno && p.ultimo_sueno < 6) kpis.sueno_bajo++;
             });
         }
 
-        // 4. DETALLES DEL PACIENTE SELECCIONADO (Si aplica)
+        // 4. DETALLES DEL PACIENTE SELECCIONADO
         let checkins = [];
         let testResults = [];
         let patientData = null;
 
         if (patientIdToFetch) {
-            // Historial
-            const checkinsRes = await db.query(`SELECT * FROM checkins_emocionales WHERE id_paciente = $1 ORDER BY fecha_hora DESC LIMIT $2`, [patientIdToFetch, daysFilter]);
+            const checkinsRes = await db.query(`SELECT * FROM checkins_emocionales WHERE id_paciente = $1 ORDER BY fecha_hora DESC LIMIT $2`, [patientIdToFetch, daysFilter * 2]);
             checkins = checkinsRes.rows;
 
-            // Tests (Con JOINs correctos y nombre_escala)
             const testsRes = await db.query(`
                 SELECT r.id_resultado, r.puntuacion_total as puntaje_total, r.interpretacion_automatica as severidad, 
                        r.respuestas as respuestas_json, r.fecha_completacion as fecha_realizacion, t.nombre_escala as tipo_test
                 FROM resultados_escalas r
                 JOIN escalas_asignadas a ON r.id_asignacion = a.id_asignacion
                 JOIN tipos_escala t ON a.id_tipo_escala = t.id_tipo_escala
-                WHERE a.id_paciente = $1 ORDER BY r.fecha_completacion DESC LIMIT 10`, [patientIdToFetch]);
+                WHERE a.id_paciente = $1 ORDER BY r.fecha_completacion DESC LIMIT 5`, [patientIdToFetch]);
             testResults = testsRes.rows;
 
-            // Datos Paciente
             const patientInfo = await db.query(`SELECT u.nombre, u.apellido, u.foto_perfil, u.email, u.id_usuario, p.id_paciente FROM Pacientes p JOIN Usuarios u ON p.id_usuario = u.id_usuario WHERE p.id_paciente = $1`, [patientIdToFetch]);
             if(patientInfo.rows.length > 0) patientData = patientInfo.rows[0];
         }
