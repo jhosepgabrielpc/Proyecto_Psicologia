@@ -23,7 +23,7 @@ const getMonitoringDashboard = async (req, res) => {
         if (jimmyRes.rows.length > 0) jimmyId = jimmyRes.rows[0].id_usuario;
 
         // =========================================================
-        // 2. LÓGICA DE SEGURIDAD AUTOMÁTICA
+        // 2. LÓGICA DE SEGURIDAD AUTOMÁTICA Y ROLES
         // =========================================================
         if (role === 'Paciente') {
             // A. El paciente SIEMPRE ve sus propios datos. Ignoramos la URL.
@@ -79,21 +79,23 @@ const getMonitoringDashboard = async (req, res) => {
         let patientData = null;
 
         if (patientIdToFetch) {
-            // Historial (Limitado por días)
+            // A. Historial de Check-ins (Limitado por días)
             const checkinsRes = await db.query(`SELECT * FROM checkins_emocionales WHERE id_paciente = $1 ORDER BY fecha_hora DESC LIMIT $2`, [patientIdToFetch, daysFilter]);
             checkins = checkinsRes.rows;
 
-            // Últimos Tests
+            // B. Últimos Tests (CORRECCIÓN: Usamos Resultados_Tests)
+            // Hacemos alias (AS) para que la vista siga funcionando sin cambios
             const testsRes = await db.query(`
-                SELECT r.id_resultado, r.puntuacion_total, r.interpretacion_automatica, 
-                       r.fecha_completacion, t.nombre_escala
-                FROM resultados_escalas r
-                JOIN escalas_asignadas a ON r.id_asignacion = a.id_asignacion
-                JOIN tipos_escala t ON a.id_tipo_escala = t.id_tipo_escala
-                WHERE a.id_paciente = $1 ORDER BY r.fecha_completacion DESC LIMIT 5`, [patientIdToFetch]);
+                SELECT id_resultado, puntaje_total, nivel_severidad as interpretacion_automatica, 
+                       fecha_realizacion as fecha_completacion, tipo_test as nombre_escala
+                FROM Resultados_Tests 
+                WHERE id_paciente = $1 
+                ORDER BY fecha_realizacion DESC LIMIT 5`, 
+                [patientIdToFetch]
+            );
             testResults = testsRes.rows;
 
-            // Datos Personales
+            // C. Datos Personales
             const infoRes = await db.query(`SELECT u.nombre, u.apellido, u.foto_perfil, u.email, p.id_paciente FROM Pacientes p JOIN Usuarios u ON p.id_usuario = u.id_usuario WHERE p.id_paciente = $1`, [patientIdToFetch]);
             if(infoRes.rows.length > 0) patientData = infoRes.rows[0];
         }
@@ -154,7 +156,6 @@ const saveCheckin = async (req, res) => {
             console.log(`🚨 CRISIS DETECTADA: ${nombre_completo} (Valencia: ${v})`);
 
             // A. Crear Incidencia Clínica (Estado: AUTOMATICA)
-            // Ya no requiere que Monitor lo apruebe. Va directo al sistema.
             const reporteAuto = `🚨 ALERTA AUTOMÁTICA\nMotivo: Baja Valencia Emocional (${v}/5) - ${emocion}\nSueño: ${sleepVal}h\nNota del Paciente: "${notas}"\n\nAcción del Sistema: Notificación inmediata enviada a Terapeuta y Gestión de Citas.`;
 
             await db.query(`

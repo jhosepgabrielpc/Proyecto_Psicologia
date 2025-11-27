@@ -262,51 +262,37 @@
 </div>
 
 <script>
-    // --- GESTIÓN DE PESTAÑAS ---
-    function switchTab(tab) {
-        // Ocultar Vistas
+    // --- 1. Lógica de Pestañas ---
+    function switchTab(tabName) {
+        // Ocultar todo
         document.getElementById('view-timeline').classList.add('hidden');
         document.getElementById('view-evolution').classList.add('hidden');
         
-        // Resetear Botones
-        document.getElementById('tab-timeline').className = 'flex-1 py-4 text-sm font-bold transition-all tab-inactive hover:bg-slate-50 text-slate-500 border-b-2 border-transparent';
-        document.getElementById('tab-evolution').className = 'flex-1 py-4 text-sm font-bold transition-all tab-inactive hover:bg-slate-50 text-slate-500 border-b-2 border-transparent';
+        // Desactivar estilos tabs
+        document.getElementById('tab-timeline').className = 'tab-inactive pb-3 px-1 text-sm transition-colors cursor-pointer';
+        document.getElementById('tab-evolution').className = 'tab-inactive pb-3 px-1 text-sm transition-colors cursor-pointer';
+
+        // Activar seleccionado
+        document.getElementById('view-' + tabName).classList.remove('hidden');
+        document.getElementById('tab-' + tabName).className = 'tab-active pb-3 px-1 text-sm transition-colors cursor-pointer border-b-2 border-indigo-600 text-indigo-600 font-bold';
+    }
+
+    // --- 2. Lógica SOAP ---
+    function openSOAPModal(sessionId, currentNotes) {
+        document.getElementById('soapSessionId').value = sessionId;
         
-        // Activar Selección
-        document.getElementById('view-' + tab).classList.remove('hidden');
-        const activeBtn = document.getElementById('tab-' + tab);
-        activeBtn.className = 'flex-1 py-4 text-sm font-bold transition-all tab-active bg-indigo-50/50';
-    }
+        // Intentar parsear notas existentes
+        const sMatch = currentNotes.match(/S:\s*(.*?)(?=\nO:|$)/s);
+        const oMatch = currentNotes.match(/O:\s*(.*?)(?=\nA:|$)/s);
+        const aMatch = currentNotes.match(/A:\s*(.*?)(?=\nP:|$)/s);
+        const pMatch = currentNotes.match(/P:\s*(.*)/s);
 
-    // --- GESTIÓN DE MODALES ---
-    function closeModal(id) { 
-        document.getElementById(id).classList.add('hidden'); 
-    }
-    
-    function openReportModal(type, date, content) {
-        document.getElementById('repTitle').innerText = type;
-        document.getElementById('repDate').innerText = date;
-        document.getElementById('repContent').innerText = content || 'Sin contenido detallado.';
-        document.getElementById('reportModal').classList.remove('hidden');
-    }
-
-    function openSOAPModal(sid, notes) {
-        document.getElementById('soapSessionId').value = sid;
-        
-        // Regex seguro para parsing
-        const sMatch = notes ? notes.match(/S:\s*(.*?)(?=\nO:|$)/s) : null;
-        const oMatch = notes ? notes.match(/O:\s*(.*?)(?=\nA:|$)/s) : null;
-        const aMatch = notes ? notes.match(/A:\s*(.*?)(?=\nP:|$)/s) : null;
-        const pMatch = notes ? notes.match(/P:\s*(.*)/s) : null;
-
-        document.getElementById('soapS').value = sMatch ? sMatch[1].trim() : (notes && !notes.startsWith('S:') ? notes : '');
+        document.getElementById('soapS').value = sMatch ? sMatch[1].trim() : (currentNotes.includes('S:') ? '' : currentNotes);
         document.getElementById('soapO').value = oMatch ? oMatch[1].trim() : '';
         document.getElementById('soapA').value = aMatch ? aMatch[1].trim() : '';
         document.getElementById('soapP').value = pMatch ? pMatch[1].trim() : '';
-        
+
         document.getElementById('soapModal').classList.remove('hidden');
-        // Animación de entrada
-        setTimeout(() => { document.getElementById('soapModalContent').classList.remove('scale-95'); document.getElementById('soapModalContent').classList.add('scale-100'); }, 10);
     }
 
     function combineSOAP() {
@@ -314,85 +300,68 @@
         const o = document.getElementById('soapO').value;
         const a = document.getElementById('soapA').value;
         const p = document.getElementById('soapP').value;
-        document.getElementById('finalNotes').value = `S: ${s}\nO: ${o}\nA: ${a}\nP: ${p}`;
+        
+        const final = `S: ${s}\nO: ${o}\nA: ${a}\nP: ${p}`;
+        document.getElementById('finalNotes').value = final;
     }
 
-    // --- INICIALIZACIÓN DE GRÁFICAS (CHART.JS) ---
+    // --- 3. Modales Genéricos ---
+    function openReportModal(type, date, content) {
+        document.getElementById('repTitle').innerText = 'Reporte ' + type;
+        document.getElementById('repDate').innerText = 'Generado el: ' + date;
+        document.getElementById('repContent').innerText = content;
+        document.getElementById('reportModal').classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.add('hidden');
+    }
+
+    // --- 4. Gráficas con Chart.js ---
     document.addEventListener('DOMContentLoaded', function() {
-        try {
-            // Inyección segura de datos desde el servidor
-            const rawCheckins = '<%- JSON.stringify(checkins || []) %>';
-            const rawTests = '<%- JSON.stringify(tests || []) %>';
-            
-            // Parseo y preparación (Invertimos checkins para orden cronológico)
-            const checkins = JSON.parse(rawCheckins).reverse();
-            const tests = JSON.parse(rawTests);
+        // Datos inyectados desde el backend (graphData)
+        const rawCheckins = '<%- JSON.stringify(graphData?.checkins || []) %>';
+        const rawTests = '<%- JSON.stringify(graphData?.tests || []) %>';
+        
+        const checkins = JSON.parse(rawCheckins);
+        const tests = JSON.parse(rawTests);
 
-            // 1. GRÁFICA DE ÁNIMO (LÍNEA SUAVE)
-            const ctxEmo = document.getElementById('chartEmociones');
-            if (ctxEmo && checkins.length > 0) {
-                new Chart(ctxEmo, {
-                    type: 'line',
-                    data: {
-                        labels: checkins.map(c => new Date(c.fecha_hora).toLocaleDateString('es-ES', {day:'2-digit', month:'short'})),
-                        datasets: [{ 
-                            label: 'Nivel de Ánimo (1-5)', 
-                            data: checkins.map(c => c.valencia), 
-                            borderColor: '#4f46e5', 
-                            backgroundColor: (context) => {
-                                const ctx = context.chart.ctx;
-                                const gradient = ctx.createLinearGradient(0, 0, 0, 200);
-                                gradient.addColorStop(0, 'rgba(79, 70, 229, 0.2)');
-                                gradient.addColorStop(1, 'rgba(79, 70, 229, 0)');
-                                return gradient;
-                            },
-                            fill: true,
-                            tension: 0.4,
-                            pointBackgroundColor: '#fff',
-                            pointBorderColor: '#4f46e5',
-                            pointRadius: 4,
-                            pointHoverRadius: 6
-                        }]
-                    },
-                    options: { 
-                        responsive: true, 
-                        maintainAspectRatio: false, 
-                        plugins: { legend: { display: false } },
-                        scales: { 
-                            y: { min: 1, max: 5, grid: { borderDash: [4, 4] }, ticks: { stepSize: 1 } },
-                            x: { grid: { display: false } }
-                        } 
-                    }
-                });
-            }
+        // Gráfico 1: Emociones
+        const ctxEmo = document.getElementById('chartEmociones');
+        if (ctxEmo && checkins.length > 0) {
+            new Chart(ctxEmo, {
+                type: 'line',
+                data: {
+                    labels: checkins.map(c => new Date(c.fecha_hora).toLocaleDateString()),
+                    datasets: [{
+                        label: 'Nivel de Ánimo (1-5)',
+                        data: checkins.map(c => c.valencia),
+                        borderColor: '#4f46e5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 1, max: 5 } } }
+            });
+        }
 
-            // 2. GRÁFICA DE TESTS (BARRAS)
-            const ctxTests = document.getElementById('chartTests');
-            if (ctxTests && tests.length > 0) {
-                new Chart(ctxTests, {
-                    type: 'bar',
-                    data: {
-                        labels: tests.map(t => `${t.nombre_escala} (${new Date(t.fecha_completacion).toLocaleDateString()})`),
-                        datasets: [{ 
-                            label: 'Puntuación', 
-                            data: tests.map(t => t.puntuacion_total), 
-                            backgroundColor: '#10b981',
-                            borderRadius: 6
-                        }]
-                    },
-                    options: { 
-                        responsive: true, 
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: { 
-                            y: { beginAtZero: true, grid: { display: false } },
-                            x: { grid: { display: false } }
-                        }
-                    }
-                });
-            }
-        } catch (e) {
-            console.error("Error inicializando gráficas:", e);
+        // Gráfico 2: Tests
+        const ctxTests = document.getElementById('chartTests');
+        if (ctxTests && tests.length > 0) {
+            new Chart(ctxTests, {
+                type: 'bar',
+                data: {
+                    labels: tests.map(t => `${t.tipo_test} (${new Date(t.fecha_realizacion).toLocaleDateString()})`),
+                    datasets: [{
+                        label: 'Puntaje',
+                        data: tests.map(t => t.puntaje_total),
+                        backgroundColor: '#10b981',
+                        borderRadius: 6
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
         }
     });
 </script>
