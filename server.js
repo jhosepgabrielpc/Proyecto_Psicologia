@@ -9,6 +9,9 @@ const morgan = require('morgan');
 const http = require('http');
 const socketIO = require('socket.io');
 
+// IMPORTAR BASE DE DATOS (NECESARIO PARA NOTIFICACIONES)
+const db = require('./config/database'); 
+
 // Cargar variables de entorno
 dotenv.config();
 
@@ -22,7 +25,7 @@ const PORT = process.env.PORT || 3000;
 // 1. CONFIGURACIÓN DE SEGURIDAD Y MIDDLEWARE
 // ==========================================
 app.use(helmet({
-  contentSecurityPolicy: false, // Permitir scripts inline (necesario para Tailwind/Socket/Chart.js)
+  contentSecurityPolicy: false, // Permitir scripts inline (Chart.js, FullCalendar, etc.)
   crossOriginEmbedderPolicy: false
 }));
 
@@ -36,7 +39,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Configuración de Sesión (CRÍTICO para el login)
+// Configuración de Sesión
 app.use(session({
   secret: process.env.SESSION_SECRET || 'mindcare_secret_key_super_segura',
   resave: false,
@@ -48,16 +51,49 @@ app.use(session({
   }
 }));
 
-// --- 🛡️ EL SALVAVIDAS GLOBAL ---
-// Inyecta variables comunes en todas las vistas para evitar errores
-app.use((req, res, next) => {
+// --- 🛡️ EL SALVAVIDAS GLOBAL (CON NOTIFICACIONES) ---
+// Este middleware se ejecuta antes de cada vista para inyectar datos del usuario y alertas
+app.use(async (req, res, next) => {
   res.locals.title = 'MindCare'; 
-  res.locals.user = req.session.user || null; // Usuario disponible en todos los EJS
+  res.locals.user = req.session.user || null; 
   res.locals.appName = 'MindCare';
-  res.locals.url = req.originalUrl; // Para resaltar items activos en el menú
+  res.locals.url = req.originalUrl; 
   
-  // Variables globales vacías para evitar errores en vistas compartidas
+  // Variables globales vacías para evitar errores "undefined"
   if (!res.locals.msg) res.locals.msg = null;
+  if (!res.locals.errors) res.locals.errors = [];
+  if (!res.locals.formData) res.locals.formData = {};
+  
+  // Inicializar notificaciones vacías
+  res.locals.notifications = [];
+  res.locals.unreadCount = 0;
+
+  // LÓGICA DE LA CAMPANITA: Si hay usuario, buscamos sus alertas
+  if (req.session.user) {
+    try {
+      // 1. Obtener las últimas 5 notificaciones
+      const notifRes = await db.query(`
+        SELECT id_notificacion, mensaje, enlace_accion, fecha_creacion, tipo, leido
+        FROM Notificaciones
+        WHERE id_usuario = $1
+        ORDER BY fecha_creacion DESC
+        LIMIT 5
+      `, [req.session.user.id_usuario]);
+      
+      // 2. Contar cuántas no ha leído
+      const countRes = await db.query(`
+        SELECT COUNT(*) as count FROM Notificaciones 
+        WHERE id_usuario = $1 AND leido = false
+      `, [req.session.user.id_usuario]);
+
+      res.locals.notifications = notifRes.rows;
+      res.locals.unreadCount = parseInt(countRes.rows[0].count);
+
+    } catch (error) {
+      console.error('⚠️ Error cargando notificaciones en header:', error.message);
+      // No bloqueamos la app si falla esto, simplemente mostramos 0 notificaciones
+    }
+  }
   
   next();
 });
@@ -72,36 +108,34 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ==========================================
-// 3. RUTAS (EL ORDEN IMPORTA MUCHO AQUÍ)
+// 3. IMPORTACIÓN DE RUTAS
 // ==========================================
-
-// Importar archivos de rutas
 const authRoutes = require('./routes/authRoutes');
-const dashboardRoutes = require('./routes/dashboardRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes'); // Maneja: Admin, Alan, Jimmy, Lobby
 const communicationRoutes = require('./routes/communicationRoutes');
-const monitoringRoutes = require('./routes/monitoringRoutes'); // <--- NUEVO: Importar Monitoreo
-const reportRoutes = require('./routes/reportRoutes');
+const monitoringRoutes = require('./routes/monitoringRoutes'); // Jhosep
+const reportRoutes = require('./routes/reportRoutes'); // Renan
 const indexRoutes = require('./routes/index');
 
-// --- DEFINICIÓN DE ENDPOINTS ---
+// ==========================================
+// 4. DEFINICIÓN DE ENDPOINTS (ORDEN CRÍTICO)
+// ==========================================
 
-// En server.js (Línea 85 aprox)
-
-// A. Rutas Principales
+// A. Rutas Públicas y Autenticación
 app.use('/', indexRoutes);
 app.use('/auth', authRoutes);
 
-// B. Rutas Específicas (IMPORTANTE: Estas van PRIMERO)
+// B. Rutas Especializadas (Deben ir ANTES del dashboard general)
 app.use('/dashboard/communication', communicationRoutes);
-app.use('/dashboard/monitoring', monitoringRoutes); // <--- ¿Está esta línea aquí?
+app.use('/dashboard/monitoring', monitoringRoutes);
 app.use('/reports', reportRoutes);
 
-// C. Ruta General (Esta "se come" todo lo que empiece con /dashboard)
+// C. Router Maestro / Lobby (Maneja Alan, Jimmy, Admin y Redirecciones)
 app.use('/dashboard', dashboardRoutes);
 
 
 // ==========================================
-// 4. MANEJO DE ERRORES (404 y 500)
+// 5. MANEJO DE ERRORES (404 y 500)
 // ==========================================
 
 // 404: Página no encontrada
@@ -117,10 +151,8 @@ app.use((req, res) => {
 // 500: Error del Servidor
 app.use((err, req, res, next) => {
   console.error('🔥 ERROR DEL SERVIDOR:', err.stack);
-  // Evitar doble respuesta si ya se enviaron headers
-  if (res.headersSent) {
-    return next(err);
-  }
+  if (res.headersSent) return next(err);
+  
   res.status(err.status || 500).render('error', {
     title: 'Error del Sistema',
     message: 'Ha ocurrido un error interno. Por favor intenta más tarde.',
@@ -130,9 +162,9 @@ app.use((err, req, res, next) => {
 });
 
 // ==========================================
-// 5. CONFIGURACIÓN SOCKET.IO (CHAT REALTIME)
+// 6. CONFIGURACIÓN SOCKET.IO (CHAT REALTIME)
 // ==========================================
-global.io = io; // Hacerlo global para usarlo en controladores
+global.io = io; 
 
 io.on('connection', (socket) => {
   // Unirse a sala privada (Para recibir mensajes personales)
@@ -147,7 +179,7 @@ io.on('connection', (socket) => {
 });
 
 // ==========================================
-// 6. INICIAR SERVIDOR
+// 7. INICIAR SERVIDOR
 // ==========================================
 server.listen(PORT, () => {
   console.log(`

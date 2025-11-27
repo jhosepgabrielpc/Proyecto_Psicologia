@@ -1,60 +1,54 @@
-<%- include('../partials/header', { title: 'Command Center' }) %>
+<%- include('../partials/header', { title: 'Gestión de Crisis' }) %>
 
-<div class="min-h-screen bg-slate-100 font-sans pb-10">
+<div class="min-h-screen bg-slate-100 py-8 font-sans">
     
-    <div class="bg-slate-900 text-white py-4 px-6 shadow-lg sticky top-0 z-30">
+    <div class="bg-slate-900 text-white py-4 px-6 shadow-lg sticky top-0 z-30 mb-8">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <div class="flex items-center gap-3">
                 <div class="h-10 w-10 bg-indigo-500 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/50">
-                    <i class="fas fa-satellite-dish text-xl"></i>
+                    <i class="fas fa-satellite-dish text-xl animate-pulse"></i>
                 </div>
                 <div>
                     <h1 class="text-lg font-bold leading-none">Centro de Comando</h1>
-                    <p class="text-xs text-slate-400">Gestión de Incidencias en Tiempo Real</p>
+                    <p class="text-xs text-slate-400">Gestión de Incidencias Clínicas</p>
                 </div>
             </div>
             <div class="flex items-center gap-4">
                 <div class="text-right hidden md:block">
-                    <p class="text-xs text-slate-400">Operador Activo</p>
+                    <p class="text-xs text-slate-400">Operador en Línea</p>
                     <p class="font-bold text-sm"><%= user.nombre %> <%= user.apellido %></p>
                 </div>
                 <a href="/dashboard/communication" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2">
-                    <i class="fas fa-comments"></i> <span class="hidden sm:inline">Ir al Chat Global</span>
+                    <i class="fas fa-comments"></i> <span class="hidden sm:inline">Chat Global</span>
                 </a>
             </div>
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div class="bg-white p-4 rounded-xl border-l-4 border-rose-500 shadow-sm flex items-center justify-between">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="bg-white p-5 rounded-xl border-l-4 border-rose-500 shadow-sm flex items-center justify-between relative overflow-hidden">
+                <% if (incidents.length > 0) { %><div class="absolute top-0 right-0 w-3 h-3 bg-rose-500 rounded-full animate-ping m-2"></div><% } %>
                 <div>
-                    <p class="text-xs font-bold text-slate-400 uppercase">Crisis (24h)</p>
-                    <p class="text-2xl font-black text-rose-600"><%= stats.crisis_24h %></p>
+                    <p class="text-xs font-bold text-slate-400 uppercase">Incidencias Pendientes</p>
+                    <p class="text-3xl font-black text-rose-600 mt-1"><%= stats.pendientes %></p>
                 </div>
-                <i class="fas fa-heartbeat text-rose-200 text-2xl"></i>
+                <i class="fas fa-bell text-rose-200 text-3xl"></i>
             </div>
-            <div class="bg-white p-4 rounded-xl border-l-4 border-amber-500 shadow-sm flex items-center justify-between">
+            <div class="bg-white p-5 rounded-xl border-l-4 border-emerald-500 shadow-sm flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-bold text-slate-400 uppercase">Pendientes</p>
-                    <p class="text-2xl font-black text-amber-600"><%= stats.msgs_pendientes %></p>
+                    <p class="text-xs font-bold text-slate-400 uppercase">Casos Gestionados</p>
+                    <p class="text-3xl font-black text-emerald-600 mt-1"><%= stats.gestionados %></p>
                 </div>
-                <i class="fas fa-envelope-open-text text-amber-200 text-2xl"></i>
+                <i class="fas fa-check-circle text-emerald-200 text-3xl"></i>
             </div>
-            <div class="bg-white p-4 rounded-xl border-l-4 border-indigo-500 shadow-sm flex items-center justify-between">
+            <div class="bg-white p-5 rounded-xl border-l-4 border-indigo-500 shadow-sm flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-bold text-slate-400 uppercase">Pacientes</p>
-                    <p class="text-2xl font-black text-indigo-900"><%= stats.total_pacientes %></p>
+                    <p class="text-xs font-bold text-slate-400 uppercase">Equipo Médico Activo</p>
+                    <p class="text-3xl font-black text-indigo-900 mt-1"><%= stats.equipo_medico %></p>
                 </div>
-                <i class="fas fa-users text-indigo-200 text-2xl"></i>
-            </div>
-            <div class="bg-white p-4 rounded-xl border-l-4 border-emerald-500 shadow-sm flex items-center justify-between">
-                <div>
-                    <p class="text-xs font-bold text-slate-400 uppercase">Terapeutas</p>
-                    <p class="text-2xl font-black text-emerald-600"><%= stats.total_terapeutas %></p>
-                </div>
-                <i class="fas fa-user-md text-emerald-200 text-2xl"></i>
+                <i class="fas fa-user-md text-indigo-200 text-3xl"></i>
             </div>
         </div>
 
@@ -63,132 +57,150 @@
             <div class="lg:col-span-2 space-y-6">
                 <div class="flex justify-between items-center">
                     <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                        <span class="relative flex h-3 w-3">
-                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                          <span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
-                        </span>
-                        Alertas Recientes
+                        <i class="fas fa-inbox text-indigo-600"></i> Bandeja de Triaje
                     </h2>
-                    <span class="text-xs font-bold bg-slate-200 text-slate-600 px-2 py-1 rounded-md">Últimos 20 eventos</span>
+                    <span class="text-xs font-bold bg-slate-200 text-slate-600 px-2 py-1 rounded-md">Orden: Prioridad</span>
                 </div>
 
-                <% if (alerts.length > 0) { %>
+                <% if (incidents.length > 0) { %>
                     <div class="space-y-4">
-                        <% alerts.forEach(alert => { %>
-                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition-shadow relative overflow-hidden">
-                                <div class="absolute left-0 top-0 bottom-0 w-1.5 <%= alert.valencia == 1 ? 'bg-rose-600' : 'bg-amber-500' %>"></div>
+                        <% incidents.forEach(inc => { %>
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative overflow-hidden transition-all hover:shadow-md group">
+                                <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-rose-500"></div>
                                 
-                                <div class="flex flex-col sm:flex-row justify-between gap-4">
-                                    <div class="flex gap-4">
-                                        <div class="relative">
-                                            <div class="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold border border-slate-200">
-                                                <%= alert.pac_nombre.charAt(0) %>
-                                            </div>
-                                            <div class="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5">
-                                                <i class="fas fa-exclamation-circle text-rose-500"></i>
+                                <div class="flex flex-col md:flex-row justify-between gap-6">
+                                    
+                                    <div class="flex items-start gap-4 w-full">
+                                        <div class="relative flex-shrink-0">
+                                            <% if (inc.foto_perfil) { %>
+                                                <img src="<%= inc.foto_perfil %>" class="h-14 w-14 rounded-full object-cover border-2 border-slate-100">
+                                            <% } else { %>
+                                                <div class="h-14 w-14 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 border border-slate-200 text-lg">
+                                                    <%= inc.nombre.charAt(0) %><%= inc.apellido.charAt(0) %>
+                                                </div>
+                                            <% } %>
+                                            <div class="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
+                                                <i class="fas fa-exclamation-triangle text-rose-500"></i>
                                             </div>
                                         </div>
-                                        <div>
-                                            <h3 class="font-bold text-slate-800"><%= alert.pac_nombre %> <%= alert.pac_apellido %></h3>
-                                            <p class="text-xs text-slate-500 flex items-center gap-1">
-                                                <i class="far fa-clock"></i> <%= new Date(alert.fecha_hora).toLocaleString() %>
-                                            </p>
-                                            
-                                            <div class="mt-2 flex flex-wrap gap-2">
-                                                <span class="px-2 py-1 bg-rose-50 text-rose-700 text-xs font-bold rounded-md border border-rose-100">
-                                                    Ánimo: <%= alert.valencia %>/5 (<%= alert.emocion_principal %>)
-                                                </span>
-                                                <span class="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-md border border-indigo-100">
-                                                    Sueño: <%= alert.horas_sueno || '?' %>h
+                                        
+                                        <div class="w-full">
+                                            <div class="flex justify-between items-start">
+                                                <div>
+                                                    <h3 class="font-bold text-lg text-slate-800 leading-tight"><%= inc.nombre %> <%= inc.apellido %></h3>
+                                                    <p class="text-[10px] text-slate-400 font-mono uppercase mt-0.5">
+                                                        TICKET #<%= inc.id_incidencia %> • RECIBIDO: <%= new Date(inc.fecha_creacion).toLocaleTimeString() %>
+                                                    </p>
+                                                </div>
+                                                <span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded border border-slate-200">
+                                                    Monitor: Jhosep
                                                 </span>
                                             </div>
-                                            <% if (alert.notas) { %>
-                                                <p class="mt-2 text-sm text-slate-600 italic bg-slate-50 p-2 rounded border-l-2 border-slate-300">"<%= alert.notas %>"</p>
-                                            <% } %>
+                                            
+                                            <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 mt-3 text-sm text-slate-700 font-medium font-mono whitespace-pre-line shadow-inner">
+                                                <%= inc.reporte_inicial %>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div class="flex flex-col items-end justify-between min-w-[140px]">
-                                        <div class="text-right mb-2">
-                                            <p class="text-[10px] font-bold text-slate-400 uppercase">Terapeuta Asignado</p>
-                                            <% if (alert.doc_nombre) { %>
-                                                <p class="text-sm font-bold text-indigo-900">Dr. <%= alert.doc_apellido %></p>
+                                    <div class="flex flex-col justify-between items-end min-w-[180px] border-l border-slate-100 pl-4 md:pl-6">
+                                        <div class="text-right w-full">
+                                            <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Médico Asignado</p>
+                                            <% if (inc.doc_nombre) { %>
+                                                <div class="flex items-center justify-end gap-2">
+                                                    <p class="text-sm font-bold text-indigo-900">Dr. <%= inc.doc_apellido %></p>
+                                                    <i class="fas fa-user-check text-emerald-500 text-xs"></i>
+                                                </div>
                                             <% } else { %>
-                                                <p class="text-sm font-bold text-rose-500">SIN ASIGNAR</p>
+                                                <div class="bg-rose-50 text-rose-600 px-2 py-1 rounded text-xs font-bold inline-block">
+                                                    SIN ASIGNAR
+                                                </div>
                                             <% } %>
                                         </div>
 
-                                        <% if (alert.id_usuario_terapeuta) { %>
-                                            <a href="/dashboard/communication?chat=<%= alert.id_usuario_terapeuta %>" class="bg-slate-800 hover:bg-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm">
-                                                <i class="fas fa-paper-plane"></i> Notificar Dr.
-                                            </a>
-                                        <% } else { %>
-                                            <a href="/dashboard/admin/assign" class="bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
-                                                <i class="fas fa-user-plus"></i> Asignar
-                                            </a>
-                                        <% } %>
+                                        <form action="/dashboard/manager/escalate" method="POST" class="mt-4 w-full">
+                                            <input type="hidden" name="id_incidencia" value="<%= inc.id_incidencia %>">
+                                            <input type="hidden" name="id_terapeuta_user" value="<%= inc.id_terapeuta_user %>">
+                                            <input type="hidden" name="reporte_paciente" value="<%= inc.reporte_inicial %>">
+                                            <input type="hidden" name="nombre_paciente" value="<%= inc.nombre %> <%= inc.apellido %>">
+                                            
+                                            <% if (inc.id_terapeuta_user) { %>
+                                                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 transition-all transform active:scale-95 group-hover:bg-indigo-700">
+                                                    <i class="fas fa-share-square"></i> Notificar Dr. & Alan
+                                                </button>
+                                                <p class="text-[9px] text-slate-400 mt-2 text-center">
+                                                    <i class="fas fa-info-circle"></i> Envía alertas automáticas
+                                                </p>
+                                            <% } else { %>
+                                                <a href="/dashboard/admin" class="w-full block text-center bg-amber-100 hover:bg-amber-200 text-amber-800 px-4 py-2 rounded-lg font-bold text-xs transition-colors">
+                                                    <i class="fas fa-user-plus"></i> Asignar Primero
+                                                </a>
+                                            <% } %>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
                         <% }); %>
                     </div>
                 <% } else { %>
-                    <div class="bg-white rounded-xl border border-dashed border-slate-300 p-12 text-center">
-                        <div class="h-16 w-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
-                            <i class="fas fa-check"></i>
+                    <div class="flex flex-col items-center justify-center h-96 bg-white rounded-2xl border-2 border-dashed border-slate-200 text-center p-8">
+                        <div class="h-24 w-24 bg-emerald-50 rounded-full flex items-center justify-center mb-4 animate-pulse">
+                            <i class="fas fa-clipboard-check text-4xl text-emerald-500"></i>
                         </div>
-                        <h3 class="text-lg font-bold text-slate-700">Sin Incidencias Activas</h3>
-                        <p class="text-slate-500 text-sm">Todo parece estar en orden por ahora.</p>
+                        <h3 class="text-xl font-bold text-slate-700">Bandeja Limpia</h3>
+                        <p class="text-slate-500 mt-2 max-w-xs mx-auto">No hay incidencias pendientes. Todo el flujo clínico está al día.</p>
                     </div>
                 <% } %>
             </div>
 
             <div class="space-y-6">
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <i class="fas fa-user-md text-indigo-500"></i> Equipo Médico
-                    </h3>
-                    <div class="space-y-3">
-                        <% doctors.forEach(doc => { %>
-                            <div class="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-default">
-                                <div class="flex items-center gap-3">
-                                    <div class="h-8 w-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs">
-                                        <%= doc.nombre.charAt(0) %><%= doc.apellido.charAt(0) %>
-                                    </div>
-                                    <div>
-                                        <p class="text-xs font-bold text-slate-700">Dr. <%= doc.apellido %></p>
-                                        <p class="text-[10px] text-slate-400"><%= doc.especialidad %></p>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <span class="text-[10px] font-bold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
-                                        <%= doc.carga_pacientes %> pac.
-                                    </span>
-                                </div>
-                            </div>
-                        <% }); %>
+                <div class="bg-slate-800 rounded-xl p-6 text-white shadow-lg">
+                    <div class="flex items-center justify-between mb-4 border-b border-slate-700 pb-4">
+                        <h3 class="font-bold text-sm uppercase text-slate-400">Estado de Red</h3>
+                        <span class="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-1 rounded font-mono">ONLINE</span>
                     </div>
-                    <div class="mt-4 pt-3 border-t border-slate-100 text-center">
-                        <a href="/dashboard/communication" class="text-xs font-bold text-indigo-600 hover:underline">Ver Directorio Completo</a>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                                <p class="text-sm font-medium">Monitoreo (Jhosep)</p>
+                            </div>
+                            <i class="fas fa-wifi text-xs text-slate-500"></i>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="h-2 w-2 rounded-full bg-emerald-400"></div>
+                                <p class="text-sm font-medium">Gestión Citas (Alan)</p>
+                            </div>
+                            <i class="fas fa-link text-xs text-slate-500"></i>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="h-2 w-2 rounded-full bg-emerald-400"></div>
+                                <p class="text-sm font-medium">Base de Datos</p>
+                            </div>
+                            <i class="fas fa-database text-xs text-slate-500"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 pt-4 border-t border-slate-700 text-center">
+                        <p class="text-[10px] text-slate-500 font-mono">MindCare System v2.1</p>
                     </div>
                 </div>
 
-                <div class="bg-slate-800 rounded-xl p-5 text-white shadow-lg">
-                    <h3 class="font-bold text-sm uppercase text-slate-400 mb-3">Estado del Sistema</h3>
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></div>
-                        <p class="text-sm font-medium">Monitoreo Activo</p>
+                <div class="bg-indigo-50 rounded-xl p-5 border border-indigo-100 text-indigo-900 text-sm">
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-lightbulb text-indigo-500 mt-1"></i>
+                        <div>
+                            <p class="font-bold mb-1">Protocolo de Acción</p>
+                            <p class="opacity-80">Al hacer clic en "Notificar", se enviará automáticamente un mensaje prioritario al doctor asignado y una solicitud de agenda a Alan.</p>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <div class="h-2 w-2 rounded-full bg-emerald-400"></div>
-                        <p class="text-sm font-medium">Base de Datos Conectada</p>
-                    </div>
-                    <p class="text-[10px] text-slate-500 mt-4 text-right">v2.0.0 Stable</p>
                 </div>
             </div>
 
         </div>
     </div>
 </div>
-
 <%- include('../partials/footer') %>

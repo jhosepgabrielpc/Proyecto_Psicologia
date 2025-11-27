@@ -173,7 +173,32 @@ const saveCheckin = async (req, res) => {
     }
 };
 
+// ====================================================================
+// 3. CREAR INCIDENCIA (ACCIÓN DE JHOSEP)
+// ====================================================================
+const createIncident = async (req, res) => {
+    const { id_paciente, valencia, emocion, notas, sueno } = req.body;
+    const monitorId = req.session.user.id_usuario;
+
+    try {
+        // Jhosep genera el reporte técnico automático
+        const reporte = `ALERTA DE MONITOREO\nPac ID: ${id_paciente}\nEstado: ${valencia}/5 (${emocion})\nSueño: ${sueno}h\nObs: ${notas}`;
+
+        await db.query(`
+            INSERT INTO incidencias_clinicas (id_paciente, id_monitor, nivel_gravedad, reporte_inicial, estado)
+            VALUES ($1, $2, 'ALTA', $3, 'PENDIENTE')
+        `, [id_paciente, monitorId, reporte]);
+
+        res.redirect('/dashboard/monitoring?msg=alert_sent');
+
+    } catch (error) {
+        console.error('Error creando incidencia:', error);
+        res.redirect('/dashboard/monitoring?msg=error');
+    }
+};
+
 module.exports = {
     getMonitoringDashboard,
-    saveCheckin
+    saveCheckin,
+    createIncident // <--- IMPORTANTE: AGREGAR ESTO
 };
