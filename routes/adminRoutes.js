@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
-
+// autenticación y autorización
 router.use(authenticateToken);
 router.use(requireAdmin);
 

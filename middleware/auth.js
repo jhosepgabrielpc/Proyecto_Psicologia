@@ -3,7 +3,7 @@
 // ==================================================================
 
 /**
- * Verifica si el usuario ha iniciado sesión.
+ * Verifica si el usuario ha iniciado sesiónnnnn.
  * Si no, lo redirige al login.
  */
 const isAuthenticated = (req, res, next) => {

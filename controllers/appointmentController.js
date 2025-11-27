@@ -1,6 +1,6 @@
 const db = require('../config/database');
 const { generateSessionToken } = require('../utils/helpers');
-
+//Controller para manejar citas
 const getAvailableSlots = async (req, res) => {
   try {
     const { therapistId, date } = req.query;
@@ -20,7 +20,7 @@ const getAvailableSlots = async (req, res) => {
     res.status(500).json({ error: 'Error al obtener horarios disponibles' });
   }
 };
-
+//Crear citas
 const createAppointment = async (req, res) => {
   const client = await db.pool.connect();
 
