@@ -1,119 +1,179 @@
+// routes/authRoutes.js
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const { check } = require('express-validator');
 
 // ==================================================================
-// 1. RUTAS DE VISTA (GET)
-// ==================================================================
-router.get('/login', authController.showLoginForm);
-router.get('/register', authController.showRegisterForm);
-router.get('/register-pro', authController.showTherapistRegisterForm);
-router.get('/logout', authController.logout);
-
-// ==================================================================
-// VALIDATORS PERSONALIZADOS (Lógica Reutilizable)
+// VALIDADORES PERSONALIZADOS (Lógica Reutilizable)
 // ==================================================================
 
-// 1. Validador de Edad (+18 y No Futuro)
+// 1. Validador de Edad (+18, no futuro, sin edades absurdas)
 const validarEdad = (value) => {
-    if (!value) throw new Error('La fecha de nacimiento es obligatoria');
+    if (!value) {
+        throw new Error('La fecha de nacimiento es obligatoria');
+    }
+
     const fechaNacimiento = new Date(value);
+    if (isNaN(fechaNacimiento.getTime())) {
+        throw new Error('La fecha de nacimiento no es válida');
+    }
+
     const hoy = new Date();
-    
-    // Check Fechas Futuras
+
+    // No permitir fechas futuras
     if (fechaNacimiento > hoy) {
         throw new Error('No puedes nacer en el futuro');
     }
 
-    // Cálculo exacto de edad
     let edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
     const mes = hoy.getMonth() - fechaNacimiento.getMonth();
     if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
         edad--;
     }
 
+    // Estándar profesional: mayor de edad, y sin edades absurdas
     if (edad < 18) {
         throw new Error('Debes ser mayor de 18 años para registrarte');
     }
+    if (edad > 100) {
+        throw new Error('La edad ingresada no es válida');
+    }
+
     return true;
 };
 
-// 2. Validador de Nombre (Solo letras y espacios)
+// 2. Validador de Nombre / Apellido (Solo letras y espacios, 2-64 chars)
 const validarNombre = (value) => {
-    // Regex: Letras (a-z), Acentos (À-ÿ), Ñ (u00f1/D1), Espacios (\s)
+    if (!value || typeof value !== 'string') {
+        throw new Error('Este campo es obligatorio');
+    }
+
+    const limpio = value.trim();
+
+    if (limpio.length < 2 || limpio.length > 64) {
+        throw new Error('Debe tener entre 2 y 64 caracteres');
+    }
+
+    // Letras (a-z), acentos, Ñ/ñ y espacios
     const regex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+$/;
-    if (!regex.test(value)) {
-        throw new Error('No se permiten números ni símbolos en el nombre');
+    if (!regex.test(limpio)) {
+        throw new Error('Solo se permiten letras y espacios');
     }
+
     return true;
 };
 
-// 3. Validador de Celular (Bolivia: Empieza con 6 o 7, longitud 8)
+// 3. Validador de Celular (Bolivia: Empieza con 6 o 7, exactamente 8 dígitos)
 const validarCelular = (value) => {
-    const regex = /^[67]\d{7}$/; // Empieza con 6 o 7, seguido de 7 dígitos
-    if (!regex.test(value)) {
-        throw new Error('El celular debe tener 8 dígitos y empezar con 6 o 7');
+    if (!value) {
+        throw new Error('El celular es obligatorio');
     }
+
+    const limpio = value.trim();
+    const regex = /^[67]\d{7}$/; // 6/7 + 7 dígitos = 8 en total
+
+    if (!regex.test(limpio)) {
+        throw new Error('El celular debe tener exactamente 8 dígitos y empezar con 6 o 7');
+    }
+
     return true;
 };
 
-// 4. Validador de Password (8 chars + 1 especial)
+// 4. Validador de Password (8-128 chars, mayús, minús, número, símbolo)
 const validarPassword = (value) => {
-    if (value.length < 8) throw new Error('La contraseña debe tener al menos 8 caracteres');
-    // Regex: Al menos un caracter que NO sea letra ni número (\W) o guión bajo (_)
-    if (!/[\W_]/.test(value)) {
-        throw new Error('La contraseña debe incluir al menos un carácter especial (@, #, !, etc.)');
+    if (!value) {
+        throw new Error('La contraseña es obligatoria');
     }
+
+    if (value.length < 8 || value.length > 128) {
+        throw new Error('La contraseña debe tener entre 8 y 128 caracteres');
+    }
+
+    if (!/[A-Z]/.test(value)) {
+        throw new Error('La contraseña debe incluir al menos una letra mayúscula');
+    }
+    if (!/[a-z]/.test(value)) {
+        throw new Error('La contraseña debe incluir al menos una letra minúscula');
+    }
+    if (!/[0-9]/.test(value)) {
+        throw new Error('La contraseña debe incluir al menos un número');
+    }
+    if (!/[\W_]/.test(value)) {
+        throw new Error('La contraseña debe incluir al menos un símbolo (@, #, !, etc.)');
+    }
+
     return true;
 };
 
 // ==================================================================
-// 2. RUTAS DE LÓGICA (POST) - SISTEMA BLINDADO
+// 1. RUTAS DE VISTA (GET)
+// ==================================================================
+router.get('/login', authController.showLoginForm);
+router.get('/register', authController.showRegisterForm);
+router.get('/register-therapist', authController.showTherapistRegisterForm);
+router.get('/logout', authController.logout);
+
+// ==================================================================
+// 2. RUTAS DE LÓGICA (POST)
 // ==================================================================
 
 // A. LOGIN
-router.post('/login', [
-    check('email', 'El email es obligatorio').isEmail(),
-    check('password', 'La contraseña es obligatoria').not().isEmpty()
-], authController.login);
+router.post(
+    '/login',
+    [
+        check('email')
+            .trim()
+            .notEmpty().withMessage('El email es obligatorio')
+            .isEmail().withMessage('El formato del email no es válido')
+            .isLength({ max: 254 }).withMessage('El email es demasiado largo')
+            .normalizeEmail(),
+        check('password', 'La contraseña es obligatoria').not().isEmpty()
+    ],
+    authController.login
+);
 
 // B. REGISTRO PACIENTE
-router.post('/register', [
-    check('nombre').custom(validarNombre),
-    check('apellido').custom(validarNombre),
-    
-    check('telefono').custom(validarCelular),
-    
-    check('fecha_nacimiento').custom(validarEdad),
-
-    check('email', 'El formato del email no es válido').isEmail(),
-    
-    check('password').custom(validarPassword)
-], authController.register);
+router.post(
+    '/register',
+    [
+        check('nombre').custom(validarNombre),
+        check('apellido').custom(validarNombre),
+        check('telefono').custom(validarCelular),
+        check('fecha_nacimiento').custom(validarEdad),
+        check('email')
+            .trim()
+            .notEmpty().withMessage('El email es obligatorio')
+            .isEmail().withMessage('El formato del email no es válido')
+            .isLength({ max: 254 }).withMessage('El email es demasiado largo')
+            .normalizeEmail(),
+        check('password').custom(validarPassword)
+    ],
+    authController.register
+);
 
 // C. REGISTRO TERAPEUTA
-// C. REGISTRO TERAPEUTA (BLINDADO TOTAL)
-router.post('/register-pro', [
-    check('nombre').custom(validarNombre),
-    check('apellido').custom(validarNombre),
-
-    // Nuevas validaciones
-    check('telefono').custom(validarCelular),
-    check('fecha_nacimiento').custom(validarEdad),
-
-    check('email', 'Agrega un email institucional válido').isEmail(),
-    
-    check('password').custom(validarPassword),
-    
-    check('especialidad', 'La especialidad es obligatoria').not().isEmpty(),
-    
-    // Matrícula alfanumérica
-    check('licencia')
-        .isAlphanumeric().withMessage('La matrícula debe ser alfanumérica')
-        .not().isEmpty().withMessage('La matrícula es obligatoria'),
-    
-    check('codigo_acceso', 'El código maestro es requerido').not().isEmpty()
-], authController.registerTherapist);
+router.post(
+    '/register-pro',
+    [
+        check('nombre').custom(validarNombre),
+        check('apellido').custom(validarNombre),
+        check('telefono').custom(validarCelular),
+        check('fecha_nacimiento').custom(validarEdad),
+        check('email')
+            .trim()
+            .notEmpty().withMessage('El email es obligatorio')
+            .isEmail().withMessage('Agrega un email institucional válido')
+            .isLength({ max: 254 }).withMessage('El email es demasiado largo')
+            .normalizeEmail(),
+        check('password').custom(validarPassword),
+        check('especialidad', 'La especialidad es obligatoria').not().isEmpty(),
+        check('licencia')
+            .not().isEmpty().withMessage('La matrícula es obligatoria')
+            .isAlphanumeric().withMessage('La matrícula debe ser alfanumérica'),
+        check('codigo_acceso', 'El código maestro es requerido').not().isEmpty()
+    ],
+    authController.registerTherapist
+);
 
 module.exports = router;

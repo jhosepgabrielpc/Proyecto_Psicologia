@@ -1,369 +1,448 @@
-<%- include('../partials/header', { title: 'Expediente Clínico - ' + patient.nombre }) %>
+<%- include('../partials/header', { title: 'Expediente Clínico - MindCare' }) %>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-    @media print {
-        .no-print { display: none !important; }
-        body { background: white; font-size: 12pt; }
-        .shadow-sm, .shadow-lg { box-shadow: none !important; border: 1px solid #ddd; }
-        .bg-slate-50 { background: white !important; }
-        .text-white { color: #000 !important; }
-        canvas { max-height: 300px !important; }
+    body { margin: 0; padding: 0; }
+    .app-wrapper {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
     }
-    .tab-active { border-bottom: 2px solid #4f46e5; color: #4f46e5; background: rgba(79, 70, 229, 0.05); }
-    .tab-inactive { color: #64748b; }
-    .animate-fade-in { animation: fadeIn 0.5s ease-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .app-content {
+        flex: 1;
+        position: relative;
+        z-index: 10;
+    }
+    .card-hover {
+        transition: all 0.25s ease;
+    }
+    .card-hover:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 30px -10px rgba(15, 23, 42, 0.18);
+    }
 </style>
 
-<div class="min-h-screen bg-slate-50 py-8 font-sans">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        <nav class="flex mb-6 text-sm font-medium text-slate-500 no-print">
-            <a href="/dashboard/clinical" class="hover:text-indigo-600 transition-colors flex items-center">
-                <i class="fas fa-columns mr-2"></i>Centro de Comando
-            </a>
-            <span class="mx-2 text-slate-300">/</span>
-            <span class="text-indigo-600 font-bold">Expediente #<%= patient.id_paciente %></span>
-        </nav>
+<div class="app-wrapper bg-slate-50 font-sans">
 
-        <div class="bg-white rounded-2xl shadow-lg border border-slate-100 p-6 mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden animate-fade-in">
-            <div class="absolute top-0 left-0 w-2 h-full <%= patient.estado_tratamiento === 'activo' ? 'bg-emerald-500' : 'bg-slate-300' %>"></div>
-            
-            <div class="flex items-center gap-6 pl-4">
-                <div class="relative">
-                    <img src="<%= patient.foto_perfil || 'https://ui-avatars.com/api/?name='+patient.nombre+'+'+patient.apellido+'&background=6366f1&color=fff&size=128' %>" 
-                         class="w-24 h-24 rounded-2xl object-cover shadow-md border-4 border-white">
-                    <span class="absolute -bottom-3 -right-3 text-[10px] font-black px-2 py-1 rounded-lg uppercase tracking-wide shadow-sm border-2 border-white 
-                        <%= patient.estado_tratamiento === 'activo' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600' %>">
-                        <%= patient.estado_tratamiento %>
-                    </span>
-                </div>
-                <div>
-                    <h1 class="text-3xl font-black text-slate-800 tracking-tight"><%= patient.nombre %> <%= patient.apellido %></h1>
-                    <div class="flex flex-wrap gap-4 mt-2 text-sm text-slate-500">
-                        <span class="flex items-center gap-2 bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">
-                            <i class="far fa-envelope text-indigo-400"></i> <%= patient.email %>
-                        </span>
-                        <span class="flex items-center gap-2 bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">
-                            <i class="fas fa-phone-alt text-indigo-400"></i> <%= patient.telefono || 'Sin registrar' %>
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex gap-3 no-print">
-                <a href="/reports/patient/<%= patient.id_paciente %>/create-report" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all flex items-center gap-2 transform hover:-translate-y-0.5">
-                    <i class="fas fa-file-medical"></i> Nuevo Reporte
-                </a>
-                <button onclick="window.print()" class="bg-white text-slate-600 border border-slate-200 px-4 py-2.5 rounded-xl font-bold hover:bg-slate-50 transition shadow-sm flex items-center gap-2">
-                    <i class="fas fa-print"></i>
-                </button>
-            </div>
+    <div class="app-content relative">
+        <!-- Fondo decorativo -->
+        <div class="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+            <div class="absolute top-0 left-0 right-0 h-[400px] bg-gradient-to-b from-indigo-100/60 via-white/40 to-slate-50"></div>
+            <div class="absolute top-[-120px] right-[-120px] w-[520px] h-[520px] bg-purple-200/40 rounded-full mix-blend-multiply filter blur-[110px] opacity-70"></div>
+            <div class="absolute top-[160px] left-[-120px] w-[480px] h-[480px] bg-blue-200/40 rounded-full mix-blend-multiply filter blur-[110px] opacity-60"></div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            <div class="lg:col-span-1 space-y-6 animate-fade-in" style="animation-delay: 0.1s">
-                
-                <div class="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-                    <div class="absolute right-0 top-0 opacity-10 transform translate-x-4 -translate-y-4">
-                        <i class="fas fa-heart-pulse text-9xl"></i>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+            <!-- ENCABEZADO -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10">
+                <div>
+                    <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/80 backdrop-blur rounded-full border border-indigo-100 shadow-sm mb-3">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="text-[10px] font-black text-indigo-600 uppercase tracking-widest">
+                            Expediente Clínico
+                        </span>
                     </div>
-                    <h3 class="text-xs font-bold text-indigo-200 uppercase tracking-wider mb-1">Promedio de Ánimo</h3>
-                    <div class="flex items-baseline gap-2">
-                        <span class="text-5xl font-black"><%= moodStats.promedio_animo || '0.0' %></span>
-                        <span class="text-lg text-indigo-300">/ 5</span>
-                    </div>
-                    <div class="mt-4 text-sm text-indigo-100 bg-white/10 rounded-lg p-2 inline-block">
-                        <i class="fas fa-history mr-1"></i> Basado en <%= moodStats.total_registros %> registros
-                    </div>
+                    <h1 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                        <img src="<%= patient.foto_perfil || ('https://ui-avatars.com/api/?name='+patient.nombre+'+'+patient.apellido+'&background=6366f1&color=fff') %>"
+                             class="w-12 h-12 rounded-2xl border-2 border-white shadow-md object-cover">
+                        <span><%= patient.nombre %> <%= patient.apellido %></span>
+                    </h1>
+                    <p class="text-slate-500 mt-2 text-sm md:text-base max-w-2xl">
+                        Resumen integral de la evolución clínica, sesiones, reportes y registros emocionales del paciente.
+                    </p>
                 </div>
 
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[400px]">
-                    <div class="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                        <h3 class="font-bold text-slate-800 flex items-center gap-2">
-                            <i class="fas fa-folder-open text-indigo-500"></i> Documentos
-                        </h3>
-                        <span class="text-xs font-bold bg-white border border-slate-200 px-2 py-1 rounded-md text-slate-500"><%= reports ? reports.length : 0 %></span>
+                <div class="flex flex-col items-stretch gap-3 w-full md:w-auto">
+                    <div class="bg-white/80 backdrop-blur rounded-2xl border border-slate-200 px-4 py-3 flex items-center justify-between gap-4">
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Terapeuta</p>
+                            <p class="text-sm font-bold text-slate-800">Dr(a). <%= user.apellido %></p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Última actualización</p>
+                            <p class="text-xs font-medium text-slate-600"><%= new Date().toLocaleString('es-ES') %></p>
+                        </div>
                     </div>
-                    
-                    <div class="flex-1 overflow-y-auto p-4 space-y-2">
-                        <% if (reports && reports.length > 0) { %>
-                            <% reports.forEach(r => { %>
-                                <div onclick="openReportModal('<%= r.tipo_reporte %>', '<%= new Date(r.fecha_generacion).toLocaleDateString() %>', `<%= r.resumen_evolucion %>`)" 
-                                     class="group flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-indigo-200 hover:bg-indigo-50 transition-all cursor-pointer">
-                                    <div class="flex items-center gap-3">
-                                        <div class="bg-indigo-100 text-indigo-600 w-10 h-10 rounded-lg flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                                            <i class="far fa-file-alt"></i>
-                                        </div>
-                                        <div>
-                                            <p class="text-sm font-bold text-slate-700 group-hover:text-indigo-700"><%= r.tipo_reporte %></p>
-                                            <p class="text-[10px] text-slate-400 group-hover:text-indigo-400"><%= new Date(r.fecha_generacion).toLocaleDateString() %></p>
-                                        </div>
-                                    </div>
-                                    <i class="fas fa-chevron-right text-slate-300 text-xs group-hover:text-indigo-400"></i>
-                                </div>
-                            <% }) %>
-                        <% } else { %>
-                            <div class="flex flex-col items-center justify-center h-full text-slate-300">
-                                <i class="far fa-folder-open text-4xl mb-2 opacity-50"></i>
-                                <p class="text-sm">Sin documentos</p>
-                            </div>
+
+                    <div class="flex gap-2 justify-end">
+                        <a href="/reports/patient/<%= patient.id_paciente %>/create-report"
+                           class="bg-white text-slate-800 px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 hover:bg-slate-50 shadow-sm flex items-center gap-2">
+                            <i class="fas fa-file-medical-alt text-indigo-500"></i>
+                            Nuevo Reporte
+                        </a>
+                        <a href="/dashboard/clinical"
+                           class="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-800 shadow-md flex items-center gap-2">
+                            <i class="fas fa-arrow-left"></i>
+                            Volver
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RESUMEN SUPERIOR -->
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-10">
+                <!-- Ficha rápida -->
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4 card-hover">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Datos del Paciente</h2>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold
+                            <%= patient.estado_tratamiento === 'activo' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500' %>">
+                            <%= (patient.estado_tratamiento || '').toUpperCase() %>
+                        </span>
+                    </div>
+                    <div class="space-y-2 text-sm text-slate-600">
+                        <p class="flex items-center gap-2">
+                            <i class="fas fa-envelope text-slate-400 w-4"></i>
+                            <span><%= patient.email %></span>
+                        </p>
+                        <% if (patient.telefono) { %>
+                        <p class="flex items-center gap-2">
+                            <i class="fas fa-phone-alt text-slate-400 w-4"></i>
+                            <span><%= patient.telefono %></span>
+                        </p>
+                        <% } %>
+                        <p class="flex items-center gap-2">
+                            <i class="fas fa-calendar-plus text-slate-400 w-4"></i>
+                            <span>Registro: <%= new Date(patient.fecha_registro).toLocaleDateString('es-ES') %></span>
+                        </p>
+                        <% if (patient.ultimo_login) { %>
+                        <p class="flex items-center gap-2">
+                            <i class="fas fa-clock text-slate-400 w-4"></i>
+                            <span>Último acceso: <%= new Date(patient.ultimo_login).toLocaleString('es-ES') %></span>
+                        </p>
                         <% } %>
                     </div>
                 </div>
-            </div>
 
-            <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 min-h-[600px] flex flex-col animate-fade-in" style="animation-delay: 0.2s">
-                
-                <div class="flex border-b border-slate-100">
-                    <button onclick="switchTab('timeline')" id="tab-timeline" class="flex-1 py-4 text-sm font-bold transition-all tab-active">
-                        <i class="fas fa-stream mr-2"></i> Línea de Tiempo
-                    </button>
-                    <button onclick="switchTab('evolution')" id="tab-evolution" class="flex-1 py-4 text-sm font-bold transition-all tab-inactive hover:bg-slate-50 text-slate-500">
-                        <i class="fas fa-chart-line mr-2"></i> Gráficas de Evolución
-                    </button>
+                <!-- KPI: estado emocional -->
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col justify-between card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Estado Emocional</p>
+                        <i class="fas fa-heart-pulse text-rose-400"></i>
+                    </div>
+                    <div class="flex items-end justify-between">
+                        <div>
+                            <p class="text-3xl font-black text-slate-900">
+                                <%= Number(moodStats.promedio_animo || 0).toFixed(1) %> / 5
+                            </p>
+                            <p class="text-xs text-slate-400 mt-1">Promedio últimos registros</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-2xl font-black text-indigo-600"><%= moodStats.total_registros || 0 %></p>
+                            <p class="text-xs text-slate-400">Check-ins totales</p>
+                        </div>
+                    </div>
                 </div>
 
-                <div id="view-timeline" class="p-6 flex-1 overflow-y-auto">
-                    <% if (sessions && sessions.length > 0) { %>
-                        <div class="relative border-l-2 border-slate-200 ml-4 space-y-8 pl-8 py-2">
-                            <% sessions.forEach(session => { %>
-                                <div class="relative group">
-                                    <span class="absolute -left-[41px] top-0 h-5 w-5 rounded-full border-4 border-white shadow-sm z-10 
-                                        <%= session.estado === 'Completada' ? 'bg-emerald-500' : 'bg-slate-300' %>"></span>
-                                    
-                                    <div class="flex items-center mb-2 gap-3">
-                                        <span class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
-                                            <%= new Date(session.fecha_hora_inicio).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' }) %>
-                                        </span>
-                                        <span class="text-[10px] font-black uppercase tracking-wider text-indigo-500"><%= session.modalidad %></span>
-                                    </div>
-
-                                    <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-all hover:border-indigo-200 group-hover:bg-slate-50/50">
-                                        <div class="flex justify-between items-start mb-3">
-                                            <h4 class="font-bold text-slate-800 flex items-center gap-2">
-                                                <i class="fas fa-notes-medical text-slate-400"></i> Nota Clínica
-                                            </h4>
-                                            <button onclick="openSOAPModal('<%= session.id_cita %>', `<%= session.notas_terapeuta %>`)" class="text-slate-400 hover:text-indigo-600 transition-colors no-print p-2 rounded-full hover:bg-white hover:shadow-sm" title="Editar Nota SOAP">
-                                                <i class="fas fa-pencil-alt"></i>
-                                            </button>
-                                        </div>
-                                        
-                                        <div class="text-sm text-slate-600 leading-relaxed whitespace-pre-line font-mono bg-slate-50 p-3 rounded-lg border border-slate-100">
-                                            <%= session.notas_terapeuta || 'Sin notas registradas para esta sesión.' %>
-                                        </div>
-                                    </div>
-                                </div>
-                            <% }) %>
+                <!-- KPI: sesiones -->
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col justify-between card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Sesiones</p>
+                        <i class="fas fa-user-md text-emerald-500"></i>
+                    </div>
+                    <div class="flex items-end justify-between">
+                        <div>
+                            <p class="text-3xl font-black text-slate-900"><%= sessions.length %></p>
+                            <p class="text-xs text-slate-400 mt-1">Sesiones realizadas</p>
                         </div>
-                    <% } else { %>
-                        <div class="flex flex-col items-center justify-center h-full text-slate-400 py-12">
-                            <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-3xl text-slate-300">
-                                <i class="far fa-calendar-times"></i>
+                        <% if (sessions.length > 0) { %>
+                        <div class="text-right text-xs text-slate-500">
+                            <p class="font-semibold">Última:</p>
+                            <p><%= new Date(sessions[0].fecha_hora_inicio).toLocaleDateString('es-ES') %></p>
+                        </div>
+                        <% } %>
+                    </div>
+                </div>
+
+                <!-- KPI: reportes/tests -->
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col justify-between card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Documentos</p>
+                        <i class="fas fa-folder-open text-indigo-500"></i>
+                    </div>
+                    <div class="flex items-end justify-between">
+                        <div>
+                            <p class="text-3xl font-black text-slate-900"><%= reports.length %></p>
+                            <p class="text-xs text-slate-400 mt-1">Reportes clínicos</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-2xl font-black text-slate-900"><%= tests.length %></p>
+                            <p class="text-xs text-slate-400 mt-1">Tests aplicados</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CUERPO PRINCIPAL -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+
+                <!-- Columna izquierda (gráfico + notas) -->
+                <div class="lg:col-span-2 space-y-8">
+
+                    <!-- Evolución emocional -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 card-hover">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                                    <span class="w-1 h-5 bg-indigo-500 rounded-full"></span>
+                                    Evolución emocional reciente
+                                </h3>
+                                <p class="text-xs text-slate-400 mt-1">
+                                    Últimos <%= checkins.length %> registros de check-in emocional.
+                                </p>
                             </div>
-                            <h3 class="font-bold text-slate-600">Historial Vacío</h3>
-                            <p class="text-sm text-slate-400 max-w-xs text-center mt-1">Este paciente aún no tiene sesiones registradas en el sistema.</p>
+                            <span class="text-[10px] px-2 py-1 rounded-full bg-slate-100 text-slate-500 font-bold uppercase tracking-wider">
+                                ESCALA 1–5
+                            </span>
                         </div>
-                    <% } %>
-                </div>
 
-                <div id="view-evolution" class="p-6 hidden space-y-8">
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative">
-                        <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2">
-                            <span class="w-1 h-6 bg-indigo-500 rounded-full"></span> Evolución del Ánimo
-                        </h3>
-                        <div class="h-72 w-full relative">
-                            <% if (!checkins || checkins.length === 0) { %>
-                                <div class="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10 backdrop-blur-sm">
-                                    <p class="text-slate-400 font-medium">Faltan datos de monitoreo</p>
-                                </div>
-                            <% } %>
-                            <canvas id="chartEmociones"></canvas>
+                        <div id="chartData"
+                             data-checkins='<%- JSON.stringify(checkins || []) %>'
+                             style="display:none;"></div>
+
+                        <div class="relative h-64 w-full">
+                            <canvas id="patientMoodChart"></canvas>
                         </div>
                     </div>
 
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                        <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2">
-                            <span class="w-1 h-6 bg-emerald-500 rounded-full"></span> Resultados Psicométricos
-                        </h3>
-                        <div class="h-64 w-full relative">
-                            <% if (!tests || tests.length === 0) { %>
-                                <div class="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10 backdrop-blur-sm">
-                                    <p class="text-slate-400 font-medium">No hay tests realizados</p>
-                                </div>
-                            <% } %>
-                            <canvas id="chartTests"></canvas>
+                    <!-- Sesiones -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 card-hover">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fas fa-list-ul text-indigo-500"></i>
+                                Historial de sesiones
+                            </h3>
+                            <span class="text-xs text-slate-400">
+                                <%= sessions.length %> registro(s)
+                            </span>
                         </div>
+
+                        <% if (sessions.length === 0) { %>
+                            <div class="py-10 text-center text-slate-400 text-sm">
+                                No hay sesiones registradas todavía.
+                            </div>
+                        <% } else { %>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-slate-600">
+                                    <thead>
+                                        <tr class="text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
+                                            <th class="py-2 text-left">Fecha</th>
+                                            <th class="py-2 text-left">Hora</th>
+                                            <th class="py-2 text-left">Modalidad</th>
+                                            <th class="py-2 text-left">Estado</th>
+                                            <th class="py-2 text-left">Calidad</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-50">
+                                        <% sessions.forEach(s => { %>
+                                            <tr class="hover:bg-slate-50">
+                                                <td class="py-2">
+                                                    <%= new Date(s.fecha_hora_inicio).toLocaleDateString('es-ES') %>
+                                                </td>
+                                                <td class="py-2">
+                                                    <%= new Date(s.fecha_hora_inicio).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) %>
+                                                </td>
+                                                <td class="py-2">
+                                                    <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold
+                                                        <%= s.modalidad === 'Virtual' ? 'bg-indigo-50 text-indigo-700' : 'bg-emerald-50 text-emerald-700' %>">
+                                                        <%= s.modalidad %>
+                                                    </span>
+                                                </td>
+                                                <td class="py-2">
+                                                    <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold
+                                                        <%= s.estado === 'Completada' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700' %>">
+                                                        <%= s.estado %>
+                                                    </span>
+                                                </td>
+                                                <td class="py-2 text-xs text-slate-500">
+                                                    <%= s.calidad_sesion %>
+                                                </td>
+                                            </tr>
+                                        <% }) %>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <% } %>
                     </div>
+
                 </div>
 
-            </div>
-        </div>
-    </div>
-</div>
+                <!-- Columna derecha (reportes + tests) -->
+                <div class="lg:col-span-1 space-y-6">
 
-<div id="soapModal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print transition-opacity">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform transition-all scale-95" id="soapModalContent">
-        <div class="px-6 py-4 bg-slate-900 text-white flex justify-between items-center rounded-t-2xl">
-            <h3 class="font-bold text-lg"><i class="fas fa-edit mr-2"></i> Nota Clínica (SOAP)</h3>
-            <button onclick="closeModal('soapModal')" class="text-slate-400 hover:text-white transition-colors"><i class="fas fa-times text-xl"></i></button>
-        </div>
-        <form action="/reports/session/update" method="POST" class="p-6 space-y-4">
-            <input type="hidden" name="sessionId" id="soapSessionId">
-            <input type="hidden" name="patientId" value="<%= patient.id_paciente %>">
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="text-[10px] font-black text-indigo-600 uppercase tracking-wider mb-1 block">S - Subjetivo</label>
-                    <textarea id="soapS" rows="3" class="w-full rounded-xl border-slate-200 text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all p-3" placeholder="Lo que el paciente reporta..."></textarea>
-                </div>
-                <div>
-                    <label class="text-[10px] font-black text-indigo-600 uppercase tracking-wider mb-1 block">O - Objetivo</label>
-                    <textarea id="soapO" rows="3" class="w-full rounded-xl border-slate-200 text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all p-3" placeholder="Observaciones clínicas..."></textarea>
-                </div>
-                <div>
-                    <label class="text-[10px] font-black text-indigo-600 uppercase tracking-wider mb-1 block">A - Análisis</label>
-                    <textarea id="soapA" rows="3" class="w-full rounded-xl border-slate-200 text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all p-3" placeholder="Diagnóstico/Evaluación..."></textarea>
-                </div>
-                <div>
-                    <label class="text-[10px] font-black text-indigo-600 uppercase tracking-wider mb-1 block">P - Plan</label>
-                    <textarea id="soapP" rows="3" class="w-full rounded-xl border-slate-200 text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all p-3" placeholder="Tratamiento/Tareas..."></textarea>
-                </div>
-            </div>
-            <input type="hidden" name="notas" id="finalNotes">
-            <div class="flex justify-end pt-4 border-t border-slate-100">
-                <button type="button" onclick="closeModal('soapModal')" class="mr-3 px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors">Cancelar</button>
-                <button type="submit" onclick="combineSOAP()" class="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all transform active:scale-95">Guardar Cambios</button>
-            </div>
-        </form>
-    </div>
-</div>
+                    <!-- Reportes -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 card-hover">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fas fa-file-medical text-indigo-500"></i>
+                                Reportes clínicos
+                            </h3>
+                            <span class="text-xs text-slate-400">
+                                <%= reports.length %> total
+                            </span>
+                        </div>
 
-<div id="reportModal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 relative">
-        <button onclick="closeModal('reportModal')" class="absolute top-4 right-4 text-slate-300 hover:text-slate-600"><i class="fas fa-times"></i></button>
-        
-        <div class="mb-6">
-            <span class="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded uppercase tracking-wider" id="repDate">FECHA</span>
-            <h3 class="text-2xl font-black text-slate-900 mt-2" id="repTitle">TÍTULO</h3>
-        </div>
-        
-        <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 text-sm text-slate-600 leading-relaxed max-h-80 overflow-y-auto shadow-inner" id="repContent">
-            CONTENIDO
-        </div>
-        
-        <div class="mt-6 flex justify-end">
-            <button onclick="closeModal('reportModal')" class="bg-slate-900 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-slate-800 transition-colors">Entendido</button>
+                        <% if (reports.length === 0) { %>
+                            <p class="text-xs text-slate-400 italic py-4">
+                                Aún no se han generado reportes para este paciente.
+                            </p>
+                        <% } else { %>
+                            <div class="space-y-3 max-h-72 overflow-y-auto pr-1">
+                                <% reports.forEach(r => { %>
+                                    <div class="border border-slate-100 rounded-2xl p-3 bg-slate-50/60 hover:bg-slate-50">
+                                        <div class="flex justify-between items-center">
+                                            <div>
+                                                <p class="text-xs font-semibold text-slate-700">
+                                                    <%= r.tipo_reporte || 'Reporte de progreso' %>
+                                                </p>
+                                                <p class="text-[11px] text-slate-400 mt-0.5">
+                                                    <%= r.periodo_inicio ? new Date(r.periodo_inicio).toLocaleDateString('es-ES') : '?' %>
+                                                    –
+                                                    <%= r.periodo_fin ? new Date(r.periodo_fin).toLocaleDateString('es-ES') : '?' %>
+                                                </p>
+                                            </div>
+                                            <span class="text-[11px] text-slate-400">
+                                                <%= new Date(r.fecha_generacion).toLocaleDateString('es-ES') %>
+                                            </span>
+                                        </div>
+                                        <% if (r.resumen_evolucion) { %>
+                                            <p class="text-[11px] text-slate-500 mt-2 line-clamp-3">
+                                                <%= r.resumen_evolucion %>
+                                            </p>
+                                        <% } %>
+                                    </div>
+                                <% }) %>
+                            </div>
+                        <% } %>
+                    </div>
+
+                    <!-- Tests -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 card-hover">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fas fa-clipboard-check text-emerald-500"></i>
+                                Tests psicométricos
+                            </h3>
+                            <span class="text-xs text-slate-400">
+                                <%= tests.length %> aplicado(s)
+                            </span>
+                        </div>
+
+                        <% if (tests.length === 0) { %>
+                            <p class="text-xs text-slate-400 italic py-4">
+                                No hay tests registrados para este paciente.
+                            </p>
+                        <% } else { %>
+                            <ul class="space-y-3 max-h-64 overflow-y-auto pr-1">
+                                <% tests.forEach(t => { %>
+                                    <li class="flex items-center justify-between border border-slate-100 rounded-2xl px-3 py-2 bg-slate-50/70">
+                                        <div>
+                                            <p class="text-xs font-semibold text-slate-700">
+                                                <%= t.nombre_escala %>
+                                            </p>
+                                            <p class="text-[11px] text-slate-400">
+                                                <%= new Date(t.fecha_completacion).toLocaleDateString('es-ES') %>
+                                            </p>
+                                        </div>
+                                    </li>
+                                <% }) %>
+                            </ul>
+                        <% } %>
+                    </div>
+
+                </div>
+            </div>
+
         </div>
     </div>
+
+    <%- include('../partials/footer') %>
 </div>
 
 <script>
-    // --- 1. Lógica de Pestañas ---
-    function switchTab(tabName) {
-        // Ocultar todo
-        document.getElementById('view-timeline').classList.add('hidden');
-        document.getElementById('view-evolution').classList.add('hidden');
-        
-        // Desactivar estilos tabs
-        document.getElementById('tab-timeline').className = 'tab-inactive pb-3 px-1 text-sm transition-colors cursor-pointer';
-        document.getElementById('tab-evolution').className = 'tab-inactive pb-3 px-1 text-sm transition-colors cursor-pointer';
+    document.addEventListener('DOMContentLoaded', function () {
+        try {
+            const chartDiv = document.getElementById('chartData');
+            if (!chartDiv) return;
 
-        // Activar seleccionado
-        document.getElementById('view-' + tabName).classList.remove('hidden');
-        document.getElementById('tab-' + tabName).className = 'tab-active pb-3 px-1 text-sm transition-colors cursor-pointer border-b-2 border-indigo-600 text-indigo-600 font-bold';
-    }
+            const raw = chartDiv.getAttribute('data-checkins') || '[]';
+            const data = JSON.parse(raw).reverse(); // más antiguo → primero
 
-    // --- 2. Lógica SOAP ---
-    function openSOAPModal(sessionId, currentNotes) {
-        document.getElementById('soapSessionId').value = sessionId;
-        
-        // Intentar parsear notas existentes
-        const sMatch = currentNotes.match(/S:\s*(.*?)(?=\nO:|$)/s);
-        const oMatch = currentNotes.match(/O:\s*(.*?)(?=\nA:|$)/s);
-        const aMatch = currentNotes.match(/A:\s*(.*?)(?=\nP:|$)/s);
-        const pMatch = currentNotes.match(/P:\s*(.*)/s);
+            const canvas = document.getElementById('patientMoodChart');
+            if (!canvas) return;
 
-        document.getElementById('soapS').value = sMatch ? sMatch[1].trim() : (currentNotes.includes('S:') ? '' : currentNotes);
-        document.getElementById('soapO').value = oMatch ? oMatch[1].trim() : '';
-        document.getElementById('soapA').value = aMatch ? aMatch[1].trim() : '';
-        document.getElementById('soapP').value = pMatch ? pMatch[1].trim() : '';
+            if (data.length === 0) {
+                canvas.parentNode.innerHTML =
+                    '<div class="h-full flex items-center justify-center text-slate-300 text-sm">Sin datos suficientes para graficar.</div>';
+                return;
+            }
 
-        document.getElementById('soapModal').classList.remove('hidden');
-    }
+            const ctx = canvas.getContext('2d');
+            const labels = data.map(d =>
+                new Date(d.fecha_hora).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+            );
+            const values = data.map(d => d.valencia);
 
-    function combineSOAP() {
-        const s = document.getElementById('soapS').value;
-        const o = document.getElementById('soapO').value;
-        const a = document.getElementById('soapA').value;
-        const p = document.getElementById('soapP').value;
-        
-        const final = `S: ${s}\nO: ${o}\nA: ${a}\nP: ${p}`;
-        document.getElementById('finalNotes').value = final;
-    }
-
-    // --- 3. Modales Genéricos ---
-    function openReportModal(type, date, content) {
-        document.getElementById('repTitle').innerText = 'Reporte ' + type;
-        document.getElementById('repDate').innerText = 'Generado el: ' + date;
-        document.getElementById('repContent').innerText = content;
-        document.getElementById('reportModal').classList.remove('hidden');
-    }
-
-    function closeModal(id) {
-        document.getElementById(id).classList.add('hidden');
-    }
-
-    // --- 4. Gráficas con Chart.js ---
-    document.addEventListener('DOMContentLoaded', function() {
-        // Datos inyectados desde el backend (graphData)
-        const rawCheckins = '<%- JSON.stringify(graphData?.checkins || []) %>';
-        const rawTests = '<%- JSON.stringify(graphData?.tests || []) %>';
-        
-        const checkins = JSON.parse(rawCheckins);
-        const tests = JSON.parse(rawTests);
-
-        // Gráfico 1: Emociones
-        const ctxEmo = document.getElementById('chartEmociones');
-        if (ctxEmo && checkins.length > 0) {
-            new Chart(ctxEmo, {
+            new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: checkins.map(c => new Date(c.fecha_hora).toLocaleDateString()),
+                    labels: labels,
                     datasets: [{
-                        label: 'Nivel de Ánimo (1-5)',
-                        data: checkins.map(c => c.valencia),
-                        borderColor: '#4f46e5',
-                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        label: 'Nivel de ánimo',
+                        data: values,
+                        borderColor: '#6366f1',
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#6366f1',
+                        pointBorderWidth: 2,
                         fill: true,
-                        tension: 0.4
+                        backgroundColor: function (context) {
+                            const c = context.chart.ctx;
+                            const gradient = c.createLinearGradient(0, 0, 0, 260);
+                            gradient.addColorStop(0, 'rgba(99, 102, 241, 0.25)');
+                            gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
+                            return gradient;
+                        },
+                        tension: 0.35
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 1, max: 5 } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            min: 1,
+                            max: 5,
+                            ticks: {
+                                stepSize: 1
+                            },
+                            grid: {
+                                color: '#e5e7eb',
+                                borderDash: [6, 6]
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        }
+                    }
+                }
             });
-        }
-
-        // Gráfico 2: Tests
-        const ctxTests = document.getElementById('chartTests');
-        if (ctxTests && tests.length > 0) {
-            new Chart(ctxTests, {
-                type: 'bar',
-                data: {
-                    labels: tests.map(t => `${t.tipo_test} (${new Date(t.fecha_realizacion).toLocaleDateString()})`),
-                    datasets: [{
-                        label: 'Puntaje',
-                        data: tests.map(t => t.puntaje_total),
-                        backgroundColor: '#10b981',
-                        borderRadius: 6
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
+        } catch (e) {
+            console.error('Error al renderizar gráfico de paciente:', e);
         }
     });
 </script>
-
-<%- include('../partials/footer') %>

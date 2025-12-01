@@ -1,243 +1,575 @@
 const db = require('../config/database');
 
 // ====================================================================
-// 1. DASHBOARD CLÍNICO (CENTRO DE COMANDO) 🏥
+// 1. DASHBOARD CLÍNICO (CENTRO DE COMANDO)
 // ====================================================================
 const getClinicalDashboard = async (req, res) => {
-    const userId = req.session.user.id_usuario;
+    const user = req.session.user;
+    if (!user) {
+        return res.redirect('/auth/login');
+    }
+
+    const userId = user.id_usuario;
 
     try {
-        // 1. IDENTIFICAR AL TERAPEUTA
-        const tRes = await db.query('SELECT id_terapeuta FROM Terapeutas WHERE id_usuario = $1', [userId]);
-        
+        // 1) OBTENER ID DEL TERAPEUTA ASOCIADO AL USUARIO
+        const tRes = await db.query(
+            'SELECT id_terapeuta FROM Terapeutas WHERE id_usuario = $1',
+            [userId]
+        );
+
+        // Si el usuario no es terapeuta, mostramos un panel vacío pero elegante
         if (tRes.rows.length === 0) {
-            return res.render('dashboard/clinical', { 
-                title: 'Dirección Clínica', user: req.session.user, 
-                stats: { pacientes_activos: 0, reportes_mes: 0, sesiones_totales: 0 },
-                patients: [], agendaHoy: [], alertasRiesgo: []
+            return res.render('dashboard/clinical', {
+                title: 'Centro de Comando Clínico',
+                user,
+                stats: {
+                    pacientes_activos: 0,
+                    reportes_mes: 0,
+                    sesiones_totales: 0,
+                    alertas_activas: 0
+                },
+                patients: [],
+                agendaHoy: [],
+                alertasRiesgo: [],
+                mensajeInfo:
+                    'Este usuario aún no está vinculado a un perfil de terapeuta. Pide a un administrador que te asigne pacientes.'
             });
         }
+
         const terapeutaId = tRes.rows[0].id_terapeuta;
 
-        // 2. QUERY PARALELO (4 CONSULTAS)
+        // 2) CARGAR TODO EN PARALELO: KPIs, PACIENTES, AGENDA, ALERTAS
         const [statsRes, patientsRes, agendaRes, riskRes] = await Promise.all([
-            // A. KPIs
-            db.query(`
+            // A) KPIs PRINCIPALES
+            db.query(
+                `
                 SELECT 
-                    (SELECT COUNT(*) FROM Pacientes WHERE id_terapeuta = $1 AND estado_tratamiento = 'activo') as pacientes_activos,
-                    (SELECT COUNT(*) FROM reportes_progreso WHERE id_terapeuta = $1 AND fecha_generacion > NOW() - INTERVAL '30 days') as reportes_mes,
-                    (SELECT COUNT(*) FROM Citas WHERE id_terapeuta = $1 AND estado = 'Completada') as sesiones_totales
-            `, [terapeutaId]),
+                    -- Pacientes activos del terapeuta
+                    (SELECT COUNT(*)
+                       FROM Pacientes
+                      WHERE id_terapeuta = $1
+                        AND estado_tratamiento = 'activo') AS pacientes_activos,
 
-            // B. DIRECTORIO DE MIS PACIENTES
-            db.query(`
-                SELECT p.id_paciente, u.nombre, u.apellido, u.email, u.foto_perfil, p.estado_tratamiento,
-                       (SELECT fecha_hora_inicio FROM Citas WHERE id_paciente = p.id_paciente AND estado = 'Completada' ORDER BY fecha_hora_inicio DESC LIMIT 1) as ultima_sesion,
-                       (SELECT COUNT(*) FROM reportes_progreso WHERE id_paciente = p.id_paciente) as total_reportes
+                    -- Reportes generados en los últimos 30 días
+                    (SELECT COUNT(*)
+                       FROM reportes_progreso r
+                       JOIN Pacientes p ON r.id_paciente = p.id_paciente
+                      WHERE p.id_terapeuta = $1
+                        AND r.fecha_generacion > NOW() - INTERVAL '30 days') AS reportes_mes,
+
+                    -- Sesiones completadas históricas
+                    (SELECT COUNT(*)
+                       FROM Citas
+                      WHERE id_terapeuta = $1
+                        AND estado = 'Completada') AS sesiones_totales,
+
+                    -- Alertas de riesgo abiertas (independiente del formato de nivel_gravedad)
+                    (SELECT COUNT(*)
+                       FROM incidencias_clinicas i
+                       JOIN Pacientes p2 ON i.id_paciente = p2.id_paciente
+                      WHERE p2.id_terapeuta = $1
+                        AND i.estado != 'RESUELTO') AS alertas_activas
+                `,
+                [terapeutaId]
+            ),
+
+            // B) PACIENTES ASIGNADOS
+            db.query(
+                `
+                SELECT 
+                    p.id_paciente,
+                    u.nombre,
+                    u.apellido,
+                    u.email,
+                    u.foto_perfil,
+                    p.estado_tratamiento,
+                    -- Última sesión completada
+                    (
+                        SELECT fecha_hora_inicio
+                          FROM Citas
+                         WHERE id_paciente = p.id_paciente
+                           AND estado = 'Completada'
+                      ORDER BY fecha_hora_inicio DESC
+                         LIMIT 1
+                    ) AS ultima_sesion,
+                    -- Cantidad total de reportes registrados
+                    (
+                        SELECT COUNT(*)
+                          FROM reportes_progreso
+                         WHERE id_paciente = p.id_paciente
+                    ) AS total_reportes
                 FROM Pacientes p
                 JOIN Usuarios u ON p.id_usuario = u.id_usuario
                 WHERE p.id_terapeuta = $1
-                ORDER BY u.apellido ASC
-            `, [terapeutaId]),
+                ORDER BY u.apellido ASC, u.nombre ASC
+                `,
+                [terapeutaId]
+            ),
 
-            // C. AGENDA INTELIGENTE
-            db.query(`
-                SELECT c.id_cita, c.fecha_hora_inicio, c.fecha_hora_fin, c.modalidad, c.enlace_reunion, c.estado,
-                       u.nombre, u.apellido, u.foto_perfil, p.id_paciente
+            // C) AGENDA DE HOY
+            db.query(
+                `
+                SELECT 
+                    c.id_cita,
+                    c.fecha_hora_inicio,
+                    c.fecha_hora_fin,
+                    c.modalidad,
+                    c.enlace_reunion,
+                    c.estado,
+                    u.nombre,
+                    u.apellido,
+                    u.foto_perfil,
+                    p.id_paciente
                 FROM Citas c
                 JOIN Pacientes p ON c.id_paciente = p.id_paciente
                 JOIN Usuarios u ON p.id_usuario = u.id_usuario
-                WHERE c.id_terapeuta = $1 
+                WHERE c.id_terapeuta = $1
                   AND c.fecha_hora_inicio::date = CURRENT_DATE
                   AND c.estado != 'Cancelada'
                 ORDER BY c.fecha_hora_inicio ASC
-            `, [terapeutaId]),
+                `,
+                [terapeutaId]
+            ),
 
-            // D. RADAR DE RIESGO
-            db.query(`
-                SELECT c.valencia, c.emocion_principal, c.fecha_hora, c.notas,
-                       u.nombre, u.apellido, u.foto_perfil, p.id_paciente
-                FROM checkins_emocionales c
-                JOIN Pacientes p ON c.id_paciente = p.id_paciente
-                JOIN Usuarios u ON p.id_usuario = u.id_usuario
-                WHERE p.id_terapeuta = $1
-                  AND c.valencia <= 2
-                  AND c.fecha_hora > NOW() - INTERVAL '3 days'
-                ORDER BY c.fecha_hora DESC
-                LIMIT 5
-            `, [terapeutaId])
+            // D) RADAR DE RIESGO (INCIDENCIAS ABIERTAS)
+            db.query(
+                `
+                SELECT 
+                    i.id_incidencia,
+                    i.id_paciente,
+                    i.reporte_inicial,
+                    i.fecha_creacion,
+                    i.estado,
+                    i.nivel_gravedad AS nivel_texto,
+
+                    -- Mapeo SEGURO a un número 1–5 para la UI
+                    CASE 
+                        WHEN i.nivel_gravedad ~ '^[0-9]+$'
+                            THEN i.nivel_gravedad::integer              -- valores "1", "2", etc.
+                        WHEN UPPER(i.nivel_gravedad) IN ('CRITICA','CRÍTICA')
+                            THEN 5
+                        WHEN UPPER(i.nivel_gravedad) = 'ALTA'
+                            THEN 4
+                        WHEN UPPER(i.nivel_gravedad) = 'MEDIA'
+                            THEN 3
+                        WHEN UPPER(i.nivel_gravedad) = 'BAJA'
+                            THEN 2
+                        ELSE 1
+                    END AS nivel_valencia,
+
+                    u.nombre,
+                    u.apellido,
+                    u.foto_perfil
+                FROM incidencias_clinicas i
+                JOIN Pacientes   p ON i.id_paciente   = p.id_paciente
+                JOIN Terapeutas  t ON p.id_terapeuta = t.id_terapeuta
+                JOIN Usuarios    u ON p.id_usuario   = u.id_usuario
+                WHERE t.id_terapeuta = $1
+                  AND i.estado != 'RESUELTO'
+                ORDER BY i.fecha_creacion DESC
+                LIMIT 10
+                `,
+                [terapeutaId]
+            )
         ]);
 
-        // 3. RENDERIZADO
-        res.render('dashboard/clinical', {
+        // 3) NORMALIZAR DATOS PARA LA VISTA
+        const stats = statsRes.rows[0] || {
+            pacientes_activos: 0,
+            reportes_mes: 0,
+            sesiones_totales: 0,
+            alertas_activas: 0
+        };
+
+        const alertasRiesgo = riskRes.rows.map(row => ({
+            id_incidencia: row.id_incidencia,
+            id_paciente: row.id_paciente,
+            nombre: row.nombre,
+            apellido: row.apellido,
+            foto_perfil: row.foto_perfil,
+            fecha_hora: row.fecha_creacion,
+            // Usamos el valor numérico mapeado para la “barrita” / etiqueta Nivel X/5
+            valencia: row.nivel_valencia ?? 3,
+            // Mostramos la etiqueta textual como “emoción principal”/tipo
+            emocion_principal: row.nivel_texto || 'Crisis',
+            // Texto principal de la alerta
+            notas: row.reporte_inicial || 'Incidencia registrada en el sistema.'
+        }));
+
+        // Mensaje contextual superior (bajo el header)
+        let mensajeInfo = null;
+        if (!agendaRes.rows.length && !alertasRiesgo.length) {
+            mensajeInfo =
+                'Hoy no tienes citas programadas ni alertas activas. Es un buen momento para revisar expedientes o actualizar notas clínicas.';
+        } else if (alertasRiesgo.length && !agendaRes.rows.length) {
+            mensajeInfo =
+                'No hay citas para hoy, pero existen alertas de riesgo que requieren tu revisión.';
+        }
+
+        // 4) RENDER DEL PANEL
+        return res.render('dashboard/clinical', {
             title: 'Centro de Comando Clínico',
-            user: req.session.user,
-            stats: statsRes.rows[0],
+            user,
+            stats,
             patients: patientsRes.rows,
             agendaHoy: agendaRes.rows,
-            alertasRiesgo: riskRes.rows
+            alertasRiesgo,
+            mensajeInfo
         });
-
     } catch (error) {
         console.error('Error Dashboard Clínico:', error);
-        res.status(500).render('error', { title: 'Error', message: 'Error cargando el panel clínico.', error, user: req.session.user });
-    }
-};
-
-// ====================================================================
-// 2. EXPEDIENTE Y REPORTES
-// ====================================================================
-
-const getPatientHistory = async (req, res) => {
-    const patientId = req.params.id;
-    try {
-        // A. Datos Paciente
-        const patientRes = await db.query(`SELECT p.*, u.nombre, u.apellido, u.email, u.telefono, u.foto_perfil, u.ultimo_login, u.fecha_registro FROM Pacientes p JOIN Usuarios u ON p.id_usuario = u.id_usuario WHERE p.id_paciente = $1`, [patientId]);
-        if (patientRes.rows.length === 0) return res.redirect('/dashboard/clinical');
-        
-        // B. Sesiones con Notas
-        const sessionsRes = await db.query(`
-            SELECT c.id_cita, c.fecha_hora_inicio, c.modalidad, c.estado, 
-                   'Consulta' as tipo_consulta,
-                   st.notas_terapeuta, st.objetivos_trabajados, st.calidad_sesion, st.tareas_asignadas
-            FROM Citas c
-            LEFT JOIN Sesiones_Terapia st ON c.id_cita = st.id_cita
-            WHERE c.id_paciente = $1 AND c.fecha_hora_inicio < NOW() 
-            ORDER BY c.fecha_hora_inicio DESC
-        `, [patientId]);
-        
-        // C. Reportes
-        let reports = [];
-        try { const r = await db.query(`SELECT * FROM reportes_progreso WHERE id_paciente = $1 ORDER BY fecha_generacion DESC`, [patientId]); reports = r.rows; } catch (e) {}
-
-        // D. Stats Rápidos
-        const moodStats = await db.query(`SELECT AVG(valencia)::numeric(10,1) as promedio_animo, COUNT(*) as total_registros FROM checkins_emocionales WHERE id_paciente = $1`, [patientId]);
-
-        // E. Datos para Gráficas
-        const checkinsData = await db.query(`SELECT valencia, fecha_hora FROM checkins_emocionales WHERE id_paciente = $1 ORDER BY fecha_hora ASC LIMIT 30`, [patientId]);
-        
-        // F. Datos de Tests
-        const testsData = await db.query(`
-            SELECT puntaje_total, tipo_test as nombre_escala, fecha_realizacion as fecha_completacion
-            FROM resultados_tests
-            WHERE id_paciente = $1 
-            ORDER BY fecha_realizacion ASC LIMIT 10
-        `, [patientId]);
-
-        res.render('reports/patient-history', {
-            title: `Expediente: ${patientRes.rows[0].nombre}`, 
-            user: req.session.user,
-            patient: patientRes.rows[0], 
-            sessions: sessionsRes.rows, 
-            reports: reports,
-            moodStats: moodStats.rows[0] || { promedio_animo: 0, total_registros: 0 },
-            
-            // CORRECCIÓN AQUÍ: Enviamos las variables directas para que el EJS las encuentre
-            checkins: checkinsData.rows, 
-            tests: testsData.rows,
-            
-            // Y mantenemos graphData para el script de Chart.js
-            graphData: {
-                checkins: checkinsData.rows,
-                tests: testsData.rows
-            }
+        return res.status(500).render('error', {
+            title: 'Error cargando el panel clínico',
+            message:
+                'Ha ocurrido un error interno inesperado. El equipo técnico ha sido notificado.',
+            error,
+            user: req.session.user
         });
-    } catch (error) { 
-        console.error(error); 
-        res.status(500).render('error', { title: 'Error', message: 'Error cargando expediente', error, user: req.session.user }); 
     }
 };
 
-const getCreateReportForm = async (req, res) => {
-    const patientId = req.params.id;
-    try {
-        const patientRes = await db.query(`SELECT p.id_paciente, u.nombre, u.apellido FROM Pacientes p JOIN Usuarios u ON p.id_usuario = u.id_usuario WHERE p.id_paciente = $1`, [patientId]);
-        if (patientRes.rows.length === 0) return res.redirect('/dashboard');
-        res.render('reports/create-progress', { title: 'Generar Reporte', user: req.session.user, patient: patientRes.rows[0], formData: {} });
-    } catch (error) { res.redirect('/dashboard'); }
-};
 
-// GUARDAR REPORTE
-const saveProgressReport = async (req, res) => {
-    const { patientId, tipo_reporte, periodo_inicio, periodo_fin, resumen_evolucion, recomendaciones } = req.body;
-    
-    try {
-        const tRes = await db.query('SELECT id_terapeuta FROM Terapeutas WHERE id_usuario = $1', [req.session.user.id_usuario]);
-        if (tRes.rows.length === 0) throw new Error("Usuario no es terapeuta");
-        
-        const sesionesCount = await db.query(
-            `SELECT COUNT(*) as total FROM Citas WHERE id_paciente = $1 AND estado = 'Completada' AND fecha_hora_inicio BETWEEN $2 AND $3`,
-            [patientId, periodo_inicio, periodo_fin]
-        );
-        
-        const metricas = {
-            total_sesiones: parseInt(sesionesCount.rows[0].total),
-            generado_por: "Sistema MindCare"
-        };
 
+// ====================================================================
+// 2. RESOLVER INCIDENCIA
+// ====================================================================
+const resolveIncident = async (req, res) => {
+    const { id_incidencia, notas } = req.body;
+
+    try {
         await db.query(
-            `INSERT INTO reportes_progreso (id_paciente, id_terapeuta, tipo_reporte, periodo_inicio, periodo_fin, resumen_evolucion, metricas_principales, recomendaciones, firmado_por, fecha_firma) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())`,
-            [patientId, tRes.rows[0].id_terapeuta, tipo_reporte, periodo_inicio, periodo_fin, resumen_evolucion, JSON.stringify(metricas), recomendaciones, req.session.user.id_usuario]
+            `
+            UPDATE incidencias_clinicas 
+            SET estado = 'RESUELTO', 
+                fecha_resolucion = NOW(), 
+                reporte_inicial = CONCAT(
+                    reporte_inicial,
+                    E'\n\n✅ ATENDIDO POR TERAPEUTA:\n',
+                    $1::text
+                )
+            WHERE id_incidencia = $2
+            `,
+            [notas || 'Caso cerrado.', id_incidencia]
         );
 
-        res.redirect(`/reports/patient/${patientId}/view?msg=report_created`);
-    } catch (error) { 
-        console.error("Error creando reporte:", error);
-        res.redirect(`/reports/patient/${patientId}/create-report?msg=error`); 
+        res.redirect('/dashboard/clinical?msg=crisis_resolved');
+    } catch (error) {
+        console.error('Error resolviendo incidencia:', error);
+        res.redirect('/dashboard/clinical?msg=error');
     }
 };
 
-// ACTUALIZAR NOTA SOAP
-const updateSessionNote = async (req, res) => {
-    const { sessionId, notas, patientId } = req.body;
-    try {
-        const result = await db.query(`UPDATE Sesiones_Terapia SET notas_terapeuta = $1, fecha_registro = NOW() WHERE id_cita = $2 RETURNING *`, [notas, sessionId]);
-        
-        if (result.rowCount === 0) {
-            await db.query(`INSERT INTO Sesiones_Terapia (id_cita, notas_terapeuta, fecha_registro) VALUES ($1, $2, NOW())`, [sessionId, notas]);
-        }
-        
-        res.redirect(`/reports/patient/${patientId}/view?msg=note_updated`);
-    } catch (error) { 
-        console.error("Error guardando nota:", error);
-        res.redirect(`/reports/patient/${patientId}/view?msg=error`); 
-    }
-};
-
-// ANALYTICS
+// ====================================================================
+// 3. ANALYTICS GENERAL
+// ====================================================================
 const getAnalytics = async (req, res) => {
     const period = req.query.period || 'all';
-    
-    let userFilter = "";
-    let citFilter = "";
-    let chkFilter = "";
-
-    if (period === 'week') {
-        userFilter = "AND fecha_registro >= NOW() - INTERVAL '7 days'";
-        citFilter = "AND fecha_hora_inicio >= NOW() - INTERVAL '7 days'";
-        chkFilter = "AND fecha_hora >= NOW() - INTERVAL '7 days'";
-    } else if (period === 'month') {
-        userFilter = "AND fecha_registro >= NOW() - INTERVAL '1 month'";
-        citFilter = "AND fecha_hora_inicio >= NOW() - INTERVAL '1 month'";
-        chkFilter = "AND fecha_hora >= NOW() - INTERVAL '1 month'";
-    }
 
     try {
-        const stats = {
-            usuarios: (await db.query(`SELECT COUNT(*) FROM Usuarios WHERE estado = true ${userFilter}`)).rows[0].count,
-            citas: (await db.query(`SELECT COUNT(*) FROM Citas WHERE estado = 'Completada' ${citFilter}`)).rows[0].count,
-            checkins: (await db.query(`SELECT COUNT(*) FROM Checkins_Emocionales WHERE 1=1 ${chkFilter}`)).rows[0].count,
-            pacientes_activos: (await db.query("SELECT COUNT(*) FROM Pacientes WHERE estado_tratamiento = 'activo'")).rows[0].count
-        };
-        res.render('reports/analytics', { title: 'Analytics & Métricas', user: req.session.user, stats, period });
-    } catch (error) { 
-        res.status(500).render('error', { title: 'Error', message: 'Error analytics', error, user: req.session.user }); 
+        const statsQuery = `
+            SELECT 
+                (SELECT COUNT(*) FROM Usuarios WHERE fecha_registro > NOW() - INTERVAL '30 days') AS nuevos_usuarios,
+                (SELECT COUNT(*) FROM Citas WHERE estado = 'Completada') AS citas_completadas,
+                (SELECT COUNT(*) FROM checkins_emocionales) AS total_checkins,
+                (SELECT COUNT(*) FROM Pacientes WHERE estado_tratamiento = 'activo') AS pacientes_activos
+        `;
+        const statsRes = await db.query(statsQuery);
+
+        const distRes = await db.query(`
+            SELECT estado, COUNT(*) AS cantidad 
+            FROM Citas 
+            GROUP BY estado
+        `);
+
+        res.render('reports/analytics', {
+            title: 'Analytics & Métricas',
+            user: req.session.user,
+            stats: {
+                usuarios: statsRes.rows[0].nuevos_usuarios,
+                citas: statsRes.rows[0].citas_completadas,
+                checkins: statsRes.rows[0].total_checkins,
+                pacientes_activos: statsRes.rows[0].pacientes_activos
+            },
+            period,
+            distribution: distRes.rows
+        });
+    } catch (error) {
+        console.error('Error analytics:', error);
+        res.status(500).render('error', {
+            title: 'Error',
+            message: 'Error al cargar analytics.',
+            error,
+            user: req.session.user
+        });
     }
 };
 
+// ====================================================================
+// 4. EXPEDIENTE DEL PACIENTE
+// ====================================================================
+const getPatientHistory = async (req, res) => {
+    const patientId = parseInt(req.params.id, 10);
+
+    if (Number.isNaN(patientId)) {
+        return res.status(400).render('error', {
+            title: 'Error',
+            message: 'Identificador de paciente inválido.',
+            error: null,
+            user: req.session.user
+        });
+    }
+
+    try {
+        const patientRes = await db.query(
+            `
+            SELECT 
+                p.*,
+                u.nombre,
+                u.apellido,
+                u.email,
+                u.telefono,
+                u.foto_perfil,
+                u.ultimo_login,
+                u.fecha_registro
+            FROM Pacientes p
+            JOIN Usuarios u ON p.id_usuario = u.id_usuario
+            WHERE p.id_paciente = $1
+            `,
+            [patientId]
+        );
+
+        if (patientRes.rows.length === 0) {
+            return res.status(404).render('error', {
+                title: 'Paciente no encontrado',
+                message: 'No se encontró el paciente solicitado.',
+                error: null,
+                user: req.session.user
+            });
+        }
+
+        const patient = patientRes.rows[0];
+
+        const [sessionsRes, reportsRes, moodStatsRes, checkinsRes] =
+            await Promise.all([
+                db.query(
+                    `
+                    SELECT 
+                        id_cita,
+                        fecha_hora_inicio,
+                        modalidad,
+                        estado,
+                        notas_admin AS notas_terapeuta,
+                        CASE 
+                            WHEN estado = 'Completada' THEN 'excelente' 
+                            ELSE 'regular' 
+                        END AS calidad_sesion
+                    FROM Citas
+                    WHERE id_paciente = $1
+                      AND fecha_hora_inicio < NOW()
+                    ORDER BY fecha_hora_inicio DESC
+                    `,
+                    [patientId]
+                ),
+
+                db.query(
+                    `
+                    SELECT *
+                    FROM reportes_progreso
+                    WHERE id_paciente = $1
+                    ORDER BY fecha_generacion DESC
+                    `,
+                    [patientId]
+                ),
+
+                db.query(
+                    `
+                    SELECT 
+                        COALESCE(AVG(valencia), 0)::numeric(10,1) AS promedio_animo,
+                        COUNT(*) AS total_registros
+                    FROM checkins_emocionales
+                    WHERE id_paciente = $1
+                    `,
+                    [patientId]
+                ),
+
+                db.query(
+                    `
+                    SELECT 
+                        fecha_hora,
+                        valencia
+                    FROM checkins_emocionales
+                    WHERE id_paciente = $1
+                    ORDER BY fecha_hora DESC
+                    LIMIT 30
+                    `,
+                    [patientId]
+                )
+            ]);
+
+        let tests = [];
+        try {
+            const testsQuery = await db.query(
+                `
+                SELECT 
+                    r.tipo_test AS nombre_escala,
+                    r.fecha_realizacion AS fecha_completacion
+                FROM resultados_tests r
+                WHERE r.id_paciente = $1
+                ORDER BY r.fecha_realizacion DESC
+                LIMIT 10
+                `,
+                [patientId]
+            );
+            tests = testsQuery.rows;
+        } catch (testsErr) {
+            console.warn(
+                '⚠️ Error cargando tests para paciente',
+                patientId,
+                testsErr.message
+            );
+            tests = [];
+        }
+
+        res.render('reports/patient-history', {
+            title: `Expediente clínico: ${patient.nombre} ${patient.apellido}`,
+            user: req.session.user,
+            patient,
+            sessions: sessionsRes.rows,
+            reports: reportsRes.rows,
+            moodStats: moodStatsRes.rows[0] || {
+                promedio_animo: 0,
+                total_registros: 0
+            },
+            checkins: checkinsRes.rows,
+            tests
+        });
+    } catch (error) {
+        console.error('Error expediente:', error);
+        res.status(500).render('error', {
+            title: 'Error',
+            message: 'Error al cargar el expediente del paciente.',
+            error,
+            user: req.session.user
+        });
+    }
+};
+
+// ====================================================================
+// 5. FORMULARIO PARA CREAR REPORTE
+// ====================================================================
+const getCreateReportForm = async (req, res) => {
+    const patientId = req.params.id;
+
+    try {
+        const patientRes = await db.query(
+            `
+            SELECT 
+                p.id_paciente, 
+                u.nombre, 
+                u.apellido 
+            FROM Pacientes p 
+            JOIN Usuarios u ON p.id_usuario = u.id_usuario 
+            WHERE p.id_paciente = $1
+            `,
+            [patientId]
+        );
+
+        if (patientRes.rows.length === 0) {
+            return res.redirect('/dashboard/clinical');
+        }
+
+        res.render('reports/create-progress', {
+            title: 'Generar Reporte de Progreso',
+            user: req.session.user,
+            patient: patientRes.rows[0],
+            formData: {}
+        });
+    } catch (error) {
+        console.error('Error cargar formulario reporte:', error);
+        res.redirect('/dashboard/clinical');
+    }
+};
+
+// ====================================================================
+// 6. GUARDAR REPORTE DE PROGRESO
+// ====================================================================
+const saveProgressReport = async (req, res) => {
+    const {
+        patientId,
+        tipo_reporte,
+        periodo_inicio,
+        periodo_fin,
+        resumen_evolucion,
+        recomendaciones
+    } = req.body;
+
+    try {
+        const terapeutaRes = await db.query(
+            'SELECT id_terapeuta FROM Terapeutas WHERE id_usuario = $1',
+            [req.session.user.id_usuario]
+        );
+        const tId =
+            terapeutaRes.rows.length > 0
+                ? terapeutaRes.rows[0].id_terapeuta
+                : null;
+
+        await db.query(
+            `
+            INSERT INTO reportes_progreso 
+                (id_paciente, id_terapeuta, tipo_reporte, periodo_inicio, periodo_fin, resumen_evolucion, recomendaciones) 
+            VALUES 
+                ($1, $2, $3, $4, $5, $6, $7)
+            `,
+            [
+                patientId,
+                tId,
+                tipo_reporte,
+                periodo_inicio,
+                periodo_fin,
+                resumen_evolucion,
+                recomendaciones
+            ]
+        );
+
+        res.redirect(
+            `/reports/patient/${patientId}/view?msg=report_created`
+        );
+    } catch (error) {
+        console.error('Error guardando reporte de progreso:', error);
+        res.redirect(
+            `/reports/patient/${patientId}/create-report?msg=error`
+        );
+    }
+};
+
+// ====================================================================
+// 7. ACTUALIZAR NOTA DE SESIÓN
+// ====================================================================
+const updateSessionNote = async (req, res) => {
+    const { sessionId, notas, patientId } = req.body;
+
+    try {
+        await db.query(
+            'UPDATE Citas SET notas_admin = $1 WHERE id_cita = $2',
+            [notas, sessionId]
+        );
+
+        res.redirect(
+            `/reports/patient/${patientId}/view?msg=note_updated`
+        );
+    } catch (error) {
+        console.error('Error actualizando nota de sesión:', error);
+        res.redirect(`/reports/patient/${patientId}/view?msg=error`);
+    }
+};
+
+// ====================================================================
+// EXPORTS
+// ====================================================================
 module.exports = {
     getClinicalDashboard,
+    resolveIncident,
     getAnalytics,
     getPatientHistory,
     getCreateReportForm,

@@ -2,75 +2,97 @@
 
 <div class="min-h-screen bg-slate-50 font-sans pb-12">
 
+    <!-- BARRA SUPERIOR FIJA -->
     <div class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm/50 backdrop-blur-md bg-white/90">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div class="flex justify-between items-center">
 
+                <div class="flex items-center gap-4">
+                    <div class="h-12 w-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                        <i class="fas fa-stethoscope text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-black text-slate-800 tracking-tight">Centro de Comando</h1>
+                        <p class="text-xs font-bold text-indigo-500 uppercase tracking-widest">
+                            <%= new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }) %>
+                        </p>
+                    </div>
 
-<div class="flex items-center gap-4">
-        <div class="h-12 w-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
-            <i class="fas fa-stethoscope text-xl"></i>
-        </div>
-        <div>
-            <h1 class="text-xl font-black text-slate-800 tracking-tight">Centro de Comando</h1>
-            <p class="text-xs font-bold text-indigo-500 uppercase tracking-widest">
-                <%= new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }) %>
-            </p>
-        </div>
-
-        <div class="hidden md:block ml-6 pl-6 border-l border-slate-200">
-            <a href="/dashboard/monitoring" class="group flex items-center gap-3 px-4 py-2 bg-slate-50 hover:bg-indigo-50 rounded-lg transition-all border border-slate-200 hover:border-indigo-200">
-                <div class="h-8 w-8 rounded-full bg-white flex items-center justify-center text-slate-400 group-hover:text-indigo-600 shadow-sm">
-                    <i class="fas fa-heart-pulse"></i>
+                    <div class="hidden md:block ml-6 pl-6 border-l border-slate-200">
+                        <a href="/dashboard/monitoring" class="group flex items-center gap-3 px-4 py-2 bg-slate-50 hover:bg-indigo-50 rounded-lg transition-all border border-slate-200 hover:border-indigo-200">
+                            <div class="h-8 w-8 rounded-full bg-white flex items-center justify-center text-slate-400 group-hover:text-indigo-600 shadow-sm">
+                                <i class="fas fa-heart-pulse"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-500 group-hover:text-indigo-600 uppercase">Ir a</p>
+                                <p class="text-sm font-bold text-slate-700 group-hover:text-indigo-700">Monitoreo</p>
+                            </div>
+                        </a>
+                    </div>
                 </div>
-                <div>
-                    <p class="text-xs font-bold text-slate-500 group-hover:text-indigo-600 uppercase">Ir a</p>
-                    <p class="text-sm font-bold text-slate-700 group-hover:text-indigo-700">Monitoreo</p>
-                </div>
-            </a>
-        </div>
-    </div>
 
-                
                 <div class="flex items-center gap-4">
                     <div class="hidden md:block text-right">
                         <p class="text-[10px] font-bold text-slate-400 uppercase">Doctor en turno</p>
                         <p class="font-bold text-sm text-slate-700">Dr. <%= user.apellido %></p>
                     </div>
-                    <img src="<%= user.foto_perfil || 'https://ui-avatars.com/api/?name='+user.nombre+'+'+user.apellido %>" class="w-10 h-10 rounded-full border-2 border-white shadow-md">
+                    <img src="<%= user.foto_perfil || ('https://ui-avatars.com/api/?name='+encodeURIComponent(user.nombre+' '+user.apellido)) %>" class="w-10 h-10 rounded-full border-2 border-white shadow-md" alt="Foto de perfil">
                 </div>
+
             </div>
         </div>
     </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
 
+        <% if (mensajeInfo) { %>
+            <div class="mb-6 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl text-sm flex items-center gap-3">
+                <i class="fas fa-info-circle"></i>
+                <span><%= mensajeInfo %></span>
+            </div>
+        <% } %>
+
+        <!-- PRIMER BLOQUE: RADAR + AGENDA -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
             
+            <!-- RADAR DE RIESGO -->
             <div class="lg:col-span-1 space-y-4">
                 <div class="flex items-center justify-between">
                     <h2 class="text-sm font-black text-slate-700 uppercase tracking-wide flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span> Radar de Riesgo
+                        <span class="w-2 h-2 rounded-full <%= (alertasRiesgo && alertasRiesgo.length > 0) ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500' %>"></span>
+                        Radar de Riesgo
                     </h2>
-                    <span class="bg-rose-100 text-rose-700 text-xs font-bold px-2 py-0.5 rounded-md"><%= alertasRiesgo.length %> Alertas</span>
+                    <span class="bg-rose-100 text-rose-700 text-xs font-bold px-2 py-0.5 rounded-md">
+                        <%= (alertasRiesgo && alertasRiesgo.length) || 0 %> Alertas
+                    </span>
                 </div>
 
-                <% if (alertasRiesgo.length > 0) { %>
+                <% if (alertasRiesgo && alertasRiesgo.length > 0) { %>
                     <div class="space-y-3">
                         <% alertasRiesgo.forEach(alert => { %>
-                            <div class="bg-white p-4 rounded-xl border-l-4 border-rose-500 shadow-sm hover:shadow-md transition-all cursor-pointer group" onclick="window.location='/reports/patient/<%= alert.id_paciente %>/view'">
+                            <div class="bg-white p-4 rounded-xl border-l-4 border-rose-500 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                                 onclick="window.location='/reports/patient/<%= alert.id_paciente %>/view'">
                                 <div class="flex justify-between items-start mb-2">
                                     <div class="flex items-center gap-2">
-                                        <img src="<%= alert.foto_perfil || 'https://ui-avatars.com/api/?name=P+A' %>" class="w-8 h-8 rounded-full">
+                                        <img src="<%= alert.foto_perfil || ('https://ui-avatars.com/api/?name='+encodeURIComponent(alert.nombre+' '+alert.apellido)) %>" class="w-8 h-8 rounded-full border border-slate-100">
                                         <span class="font-bold text-slate-700 text-sm"><%= alert.nombre %> <%= alert.apellido %></span>
                                     </div>
-                                    <span class="text-[10px] font-bold text-slate-400"><%= new Date(alert.fecha_hora).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) %></span>
+                                    <span class="text-[10px] font-bold text-slate-400">
+                                        <%= new Date(alert.fecha_hora).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) %>
+                                    </span>
                                 </div>
                                 <div class="flex items-center gap-2 mb-2">
-                                    <span class="bg-rose-50 text-rose-600 text-xs font-bold px-2 py-1 rounded">Nivel <%= alert.valencia %>/5</span>
+                                    <span class="bg-rose-50 text-rose-600 text-xs font-bold px-2 py-1 rounded">
+                                        Riesgo <%= alert.valencia %>/5
+                                    </span>
                                     <span class="text-xs text-slate-500 italic"><%= alert.emocion_principal %></span>
+                                    <% if (alert.requiere_atencion) { %>
+                                        <span class="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">Requiere atención</span>
+                                    <% } %>
                                 </div>
-                                <p class="text-xs text-slate-600 line-clamp-2 bg-slate-50 p-2 rounded-lg border border-slate-100">"<%= alert.notas %>"</p>
+                                <p class="text-xs text-slate-600 line-clamp-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                    "<%= alert.notas %>"
+                                </p>
                             </div>
                         <% }) %>
                     </div>
@@ -80,21 +102,24 @@
                             <i class="fas fa-check"></i>
                         </div>
                         <p class="text-sm font-bold text-slate-600">Todo bajo control</p>
-                        <p class="text-xs text-slate-400">No hay alertas críticas recientes.</p>
+                        <p class="text-xs text-slate-400">No hay alertas críticas recientes en tus pacientes asignados.</p>
                     </div>
                 <% } %>
             </div>
 
+            <!-- AGENDA DEL DÍA -->
             <div class="lg:col-span-2">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-sm font-black text-slate-700 uppercase tracking-wide flex items-center gap-2">
                         <i class="far fa-calendar-alt text-indigo-500"></i> Agenda de Hoy
                     </h2>
-                    <a href="/dashboard/appointments" class="text-xs font-bold text-indigo-600 hover:text-indigo-800">Ver Calendario Completo &rarr;</a>
+                    <a href="/dashboard/appointments" class="text-xs font-bold text-indigo-600 hover:text-indigo-800">
+                        Ver Calendario Completo &rarr;
+                    </a>
                 </div>
 
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 min-h-[300px]">
-                    <% if (agendaHoy.length > 0) { %>
+                    <% if (agendaHoy && agendaHoy.length > 0) { %>
                         <div class="relative border-l-2 border-indigo-100 ml-3 space-y-8 py-2">
                             <% agendaHoy.forEach(cita => { %>
                                 <div class="relative pl-8 group">
@@ -103,15 +128,21 @@
                                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200">
                                         <div class="flex items-start gap-4">
                                             <div class="text-center min-w-[60px]">
-                                                <p class="text-lg font-black text-slate-800"><%= new Date(cita.fecha_hora_inicio).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) %></p>
+                                                <p class="text-lg font-black text-slate-800">
+                                                    <%= new Date(cita.fecha_hora_inicio).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) %>
+                                                </p>
                                                 <p class="text-[10px] font-bold text-slate-400 uppercase"><%= cita.modalidad %></p>
                                             </div>
                                             <div>
                                                 <h3 class="font-bold text-slate-700 text-lg flex items-center gap-2">
                                                     <%= cita.nombre %> <%= cita.apellido %>
-                                                    <a href="/reports/patient/<%= cita.id_paciente %>/view" class="text-slate-300 hover:text-teal-600 transition-colors" title="Ver Expediente"><i class="fas fa-external-link-alt text-xs"></i></a>
+                                                    <a href="/reports/patient/<%= cita.id_paciente %>/view" class="text-slate-300 hover:text-teal-600 transition-colors" title="Ver Expediente">
+                                                        <i class="fas fa-external-link-alt text-xs"></i>
+                                                    </a>
                                                 </h3>
-                                                <p class="text-xs text-slate-500">Consulta de seguimiento</p>
+                                                <p class="text-xs text-slate-500">
+                                                    <%= cita.estado === 'Completada' ? 'Cita completada' : 'Consulta programada' %>
+                                                </p>
                                             </div>
                                         </div>
 
@@ -121,7 +152,9 @@
                                                     <i class="fas fa-video"></i> Unirse
                                                 </a>
                                             <% } %>
-                                            <button onclick="window.location='/reports/patient/<%= cita.id_paciente %>/view'" class="bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 text-xs font-bold px-3 py-2 rounded-lg transition-colors">
+                                            <button type="button"
+                                                    onclick="window.location='/reports/patient/<%= cita.id_paciente %>/view'"
+                                                    class="bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 text-xs font-bold px-3 py-2 rounded-lg transition-colors">
                                                 Notas
                                             </button>
                                         </div>
@@ -135,18 +168,28 @@
                                 <i class="fas fa-mug-hot"></i>
                             </div>
                             <h3 class="font-bold text-slate-700">Agenda libre hoy</h3>
-                            <p class="text-sm text-slate-400 max-w-xs mx-auto">No tienes citas programadas para hoy. Aprovecha para revisar expedientes pendientes.</p>
+                            <p class="text-sm text-slate-400 max-w-xs mx-auto">
+                                No tienes citas programadas para hoy. Aprovecha para revisar expedientes pendientes o responder alertas.
+                            </p>
                         </div>
                     <% } %>
                 </div>
             </div>
         </div>
 
+        <!-- TABLA DE PACIENTES ASIGNADOS -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="px-6 py-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-50/50">
                 <div class="flex items-center gap-2">
-                    <div class="bg-teal-100 text-teal-700 p-2 rounded-lg"><i class="fas fa-users"></i></div>
-                    <h3 class="font-bold text-slate-700">Mis Pacientes Asignados</h3>
+                    <div class="bg-teal-100 text-teal-700 p-2 rounded-lg">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-700">Mis Pacientes Asignados</h3>
+                        <p class="text-xs text-slate-400">
+                            <%= patients && patients.length ? patients.length : 0 %> paciente(s)
+                        </p>
+                    </div>
                 </div>
                 <div class="relative w-full sm:w-64">
                     <input type="text" id="searchPatient" onkeyup="filterTable()" placeholder="Buscar paciente..." class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all">
@@ -166,12 +209,12 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-50">
-                        <% if (patients.length > 0) { %>
+                        <% if (patients && patients.length > 0) { %>
                             <% patients.forEach(p => { %>
                                 <tr class="hover:bg-indigo-50/30 transition-colors group">
                                     <td class="px-6 py-4">
                                         <div class="flex items-center gap-3">
-                                            <img src="<%= p.foto_perfil || 'https://ui-avatars.com/api/?name='+p.nombre+'+'+p.apellido %>" class="w-10 h-10 rounded-full border border-slate-100">
+                                            <img src="<%= p.foto_perfil || ('https://ui-avatars.com/api/?name='+encodeURIComponent(p.nombre+' '+p.apellido)) %>" class="w-10 h-10 rounded-full border border-slate-100">
                                             <div>
                                                 <p class="font-bold text-slate-800 text-sm"><%= p.nombre %> <%= p.apellido %></p>
                                                 <p class="text-xs text-slate-400"><%= p.email %></p>
@@ -181,14 +224,14 @@
                                     <td class="px-6 py-4 text-center">
                                         <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold <%= p.estado_tratamiento === 'activo' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500' %>">
                                             <span class="w-1.5 h-1.5 rounded-full <%= p.estado_tratamiento === 'activo' ? 'bg-emerald-500' : 'bg-slate-400' %>"></span>
-                                            <%= p.estado_tratamiento.toUpperCase() %>
+                                            <%= (p.estado_tratamiento || '').toUpperCase() %>
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 text-center">
                                         <div class="w-full bg-slate-100 rounded-full h-1.5 max-w-[100px] mx-auto overflow-hidden">
-                                            <div class="bg-indigo-500 h-1.5 rounded-full" style="width: <%= Math.min(p.total_reportes * 10, 100) %>%"></div>
+                                            <div class="bg-indigo-500 h-1.5 rounded-full" style="width: <%= Math.min((p.total_reportes || 0) * 10, 100) %>%"></div>
                                         </div>
-                                        <p class="text-[10px] text-slate-400 mt-1"><%= p.total_reportes %> docs</p>
+                                        <p class="text-[10px] text-slate-400 mt-1"><%= p.total_reportes || 0 %> docs</p>
                                     </td>
                                     <td class="px-6 py-4 text-sm text-slate-500 font-medium">
                                         <%= p.ultima_sesion ? new Date(p.ultima_sesion).toLocaleDateString() : 'Nunca' %>
@@ -202,7 +245,9 @@
                             <% }); %>
                         <% } else { %>
                             <tr>
-                                <td colspan="5" class="px-6 py-12 text-center text-slate-400 italic">No tienes pacientes asignados.</td>
+                                <td colspan="5" class="px-6 py-12 text-center text-slate-400 italic">
+                                    No tienes pacientes asignados.
+                                </td>
                             </tr>
                         <% } %>
                     </tbody>
@@ -215,15 +260,15 @@
 <script>
     function filterTable() {
         const input = document.getElementById("searchPatient");
-        const filter = input.value.toUpperCase();
+        const filter = (input.value || "").toUpperCase();
         const table = document.getElementById("patientsTable");
         const tr = table.getElementsByTagName("tr");
         for (let i = 1; i < tr.length; i++) {
             const tdName = tr[i].getElementsByTagName("td")[0];
             if (tdName) {
-                const txtValue = tdName.textContent || tdName.innerText;
-                tr[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
-            }       
+                const txtValue = (tdName.textContent || tdName.innerText || "").toUpperCase();
+                tr[i].style.display = txtValue.indexOf(filter) > -1 ? "" : "none";
+            }
         }
     }
 </script>

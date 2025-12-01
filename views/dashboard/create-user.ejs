@@ -1,71 +1,79 @@
-<%- include('../partials/header') %>
+<%- include('../partials/header', { title: 'Nuevo Usuario' }) %>
 
-<div class="min-h-screen bg-gray-100 py-10">
+<div class="min-h-screen bg-slate-50 py-10">
     <div class="max-w-2xl mx-auto px-4">
         
         <div class="mb-6 flex items-center justify-between">
-            <h1 class="text-3xl font-bold text-gray-900">Nuevo Usuario</h1>
-            <a href="/dashboard/admin" class="text-gray-600 hover:text-gray-900">
+            <h1 class="text-3xl font-bold text-slate-900">Nuevo Usuario</h1>
+            <a href="/dashboard/admin" class="text-slate-600 hover:text-slate-900 text-sm font-medium">
                 <i class="fas fa-arrow-left mr-2"></i>Volver
             </a>
         </div>
 
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-            <div class="bg-purple-600 px-6 py-4">
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-100">
+            <div class="bg-indigo-600 px-6 py-4">
                 <h2 class="text-white text-lg font-semibold">Información de Registro</h2>
             </div>
 
             <form action="/dashboard/admin/create" method="POST" class="p-6 space-y-6">
                 
                 <% if (error) { %>
-                    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4">
+                    <div class="bg-rose-50 border-l-4 border-rose-500 text-rose-700 p-4 rounded-md text-sm mb-2">
                         <%= error %>
                     </div>
                 <% } %>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre</label>
                         <input type="text" name="nombre" required value="<%= formData.nombre || '' %>"
-                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 border p-2">
+                            class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2 bg-slate-50">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Apellido</label>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Apellido</label>
                         <input type="text" name="apellido" required value="<%= formData.apellido || '' %>"
-                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 border p-2">
+                            class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2 bg-slate-50">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Correo Electrónico</label>
                     <input type="email" name="email" required value="<%= formData.email || '' %>"
-                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 border p-2">
+                        class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2 bg-slate-50">
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Contraseña</label>
                         <input type="password" name="password" required minlength="8"
-                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 border p-2">
+                            class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2 bg-slate-50">
+                        <p class="text-xs text-slate-500 mt-1">Mínimo 8 caracteres.</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Teléfono</label>
                         <input type="tel" name="telefono" value="<%= formData.telefono || '' %>"
-                            class="w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 border p-2">
+                            class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2 bg-slate-50">
                     </div>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Rol del Usuario</label>
-                    <select name="rol" class="w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 border p-2 bg-white">
-                        <option value="Paciente">Paciente</option>
-                        <option value="Terapeuta">Terapeuta</option>
-                        <option value="Administrador">Administrador</option>
-                    </select>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Nacimiento</label>
+                        <input type="date" name="fecha_nacimiento" value="<%= formData.fecha_nacimiento || '' %>"
+                            class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2 bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Rol del Usuario</label>
+                        <select name="rol" class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2 bg-white">
+                            <option value="Paciente" <%= formData.rol === 'Paciente' ? 'selected' : '' %>>Paciente</option>
+                            <option value="Terapeuta" <%= formData.rol === 'Terapeuta' ? 'selected' : '' %>>Terapeuta</option>
+                            <option value="Administrador" <%= formData.rol === 'Administrador' ? 'selected' : '' %>>Administrador</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="pt-4 flex justify-end">
-                    <button type="submit" class="bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-purple-700 transition shadow-md">
+                    <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-xl hover:bg-indigo-700 transition shadow-md text-sm font-semibold">
                         <i class="fas fa-save mr-2"></i>Crear Usuario
                     </button>
                 </div>

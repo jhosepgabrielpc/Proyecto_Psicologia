@@ -1,92 +1,221 @@
 <%- include('../partials/header', { title: 'Acceso Seguro' }) %>
 
-<div class="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans">
-    <div class="max-w-md w-full space-y-8">
-        
-        <div class="text-center animate-fade-in-down">
-            <div class="mx-auto h-20 w-20 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-500/30 flex items-center justify-center mb-6 transform rotate-3 hover:rotate-0 transition-transform duration-300">
-                <i class="fas fa-brain text-white text-4xl"></i>
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans">
+    <div class="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+
+        <!-- LADO IZQUIERDO: BRANDING / HERO -->
+        <div class="hidden lg:block text-slate-100 space-y-8 animate-fade-in-left">
+            <div class="inline-flex items-center gap-3 px-4 py-1 rounded-full bg-white/10 border border-white/10 backdrop-blur-sm text-xs font-semibold tracking-[0.2em] uppercase">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Plataforma Clínica · MindCare</span>
             </div>
-            <h2 class="text-4xl font-extrabold text-slate-900 tracking-tight">MindCare</h2>
-            <p class="mt-2 text-slate-500 text-lg">Bienvenido de nuevo</p>
-        </div>
 
-        <div class="bg-white rounded-3xl shadow-xl p-8 sm:p-10 border border-slate-100 relative overflow-hidden animate-slide-up">
-            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+            <h1 class="text-4xl xl:text-5xl font-black leading-tight">
+                Salud mental<br />
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-sky-400 to-emerald-400">
+                    segura y conectada
+                </span>
+            </h1>
 
-            <% if (locals.errors && errors.length > 0) { %>
-                <div class="bg-rose-50 border border-rose-100 rounded-xl p-4 mb-6 flex items-start gap-3 animate-pulse">
-                    <i class="fas fa-exclamation-circle text-rose-500 mt-0.5"></i>
-                    <div class="text-rose-700 text-sm font-medium">
-                        <% errors.forEach(error => { %>
-                            <p><%= error.msg %></p>
-                        <% }); %>
-                    </div>
+            <p class="text-sm text-slate-300 leading-relaxed max-w-md">
+                Accede al panel clínico, gestiona tus pacientes y mantén un seguimiento continuo
+                con herramientas diseñadas para profesionales de la salud mental.
+            </p>
+
+            <div class="grid grid-cols-3 gap-4 text-xs text-slate-200/80">
+                <div class="bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm">
+                    <p class="font-semibold mb-1">Citas Seguras</p>
+                    <p>Videoconsultas cifradas y agenda inteligente.</p>
                 </div>
-            <% } %>
-
-            <form action="/auth/login" method="POST" class="space-y-6">
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2 ml-1">Correo Electrónico</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <i class="fas fa-envelope text-slate-400"></i>
-                        </div>
-                        <input type="email" name="email" required 
-                               class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-slate-700 font-medium placeholder:text-slate-400"
-                               placeholder="ejemplo@mindcare.bo">
-                    </div>
+                <div class="bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm">
+                    <p class="font-semibold mb-1">Alertas en Tiempo Real</p>
+                    <p>Detección temprana de crisis y seguimientos.</p>
                 </div>
-
-                <div>
-                    <div class="flex justify-between items-center mb-2 ml-1">
-                        <label class="block text-sm font-bold text-slate-700">Contraseña</label>
-                        <a href="#" class="text-xs font-bold text-indigo-600 hover:text-indigo-700">¿Olvidaste tu clave?</a>
-                    </div>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <i class="fas fa-lock text-slate-400"></i>
-                        </div>
-                        <input type="password" name="password" required 
-                               class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-slate-700 font-medium placeholder:text-slate-400"
-                               placeholder="••••••••">
-                    </div>
+                <div class="bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm">
+                    <p class="font-semibold mb-1">Historias Clínicas</p>
+                    <p>Expedientes unificados y reportes profesionales.</p>
                 </div>
+            </div>
 
-                <button type="submit" 
-                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-indigo-500/40 transition-all duration-200 transform active:scale-[0.98] flex items-center justify-center group">
-                    <span>Iniciar Sesión</span>
-                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                </button>
-            </form>
-
-            <div class="mt-8 pt-6 border-t border-slate-100 text-center">
-                <p class="text-slate-500 text-sm">
-                    ¿Aún no tienes cuenta? 
-                    <a href="/auth/register" class="text-indigo-600 hover:text-indigo-700 font-bold transition-colors">
-                        Crear cuenta gratis
-                    </a>
-                </p>
+            <div class="flex items-center gap-3 text-xs text-slate-400/90 pt-2">
+                <i class="fas fa-shield-alt text-emerald-400"></i>
+                <span>Cumplimiento de buenas prácticas de seguridad y privacidad.</span>
             </div>
         </div>
 
-        <div class="text-center">
-            <button onclick="document.getElementById('demo-users').classList.toggle('hidden')" class="text-xs text-slate-400 font-bold hover:text-indigo-500 transition-colors focus:outline-none">
-                <i class="fas fa-flask mr-1"></i> Ver credenciales de prueba
-            </button>
-            <div id="demo-users" class="hidden mt-4 bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-slate-200 text-left shadow-sm max-w-xs mx-auto">
-                <div class="space-y-3 text-xs text-slate-600">
-                    <div class="flex justify-between items-center p-2 bg-indigo-50 rounded-lg cursor-pointer hover:bg-indigo-100 transition-colors" onclick="fillLogin('admin@mindcare.bo', 'Admin123!')">
-                        <span><strong class="text-indigo-700">Admin:</strong> admin@mindcare.bo</span>
-                        <i class="fas fa-copy text-indigo-400"></i>
+        <!-- LADO DERECHO: FORMULARIO -->
+        <div class="bg-white rounded-3xl shadow-[0_20px_60px_rgba(15,23,42,0.65)] border border-slate-800/60 relative overflow-hidden animate-fade-in-up">
+            <!-- Borde superior -->
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-sky-400 to-emerald-400"></div>
+
+            <!-- Glow decorativo -->
+            <div class="pointer-events-none absolute -top-32 -right-32 w-64 h-64 bg-indigo-500/20 blur-3xl rounded-full"></div>
+            <div class="pointer-events-none absolute -bottom-40 -left-24 w-72 h-72 bg-emerald-500/15 blur-3xl rounded-full"></div>
+
+            <div class="relative px-8 py-9 sm:px-10 sm:py-11">
+
+                <!-- Logo pequeño + título -->
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="h-11 w-11 rounded-2xl bg-gradient-to-br from-indigo-600 to-sky-500 flex items-center justify-center shadow-lg shadow-indigo-500/40">
+                        <i class="fas fa-brain text-white text-2xl"></i>
                     </div>
-                    <div class="flex justify-between items-center p-2 bg-purple-50 rounded-lg cursor-pointer hover:bg-purple-100 transition-colors" onclick="fillLogin('dra.martinez@mindcare.bo', 'Terapeuta123!')">
-                        <span><strong class="text-purple-700">Terapeuta:</strong> dra.martinez...</span>
-                        <i class="fas fa-copy text-purple-400"></i>
+                    <div>
+                        <p class="text-xs font-semibold tracking-[0.25em] uppercase text-slate-400">Panel Clínico</p>
+                        <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Iniciar sesión</h2>
                     </div>
-                    <div class="flex justify-between items-center p-2 bg-emerald-50 rounded-lg cursor-pointer hover:bg-emerald-100 transition-colors" onclick="fillLogin('juan.perez@email.com', 'Paciente123!')">
-                        <span><strong class="text-emerald-700">Paciente:</strong> juan.perez...</span>
-                        <i class="fas fa-copy text-emerald-400"></i>
+                </div>
+
+                <!-- ALERTAS -->
+                <% if (locals.success) { %>
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-5 flex items-start gap-3">
+                        <i class="fas fa-check-circle text-emerald-500 mt-0.5 text-lg"></i>
+                        <div class="text-emerald-800 text-sm font-medium">
+                            <p><%= success %></p>
+                        </div>
+                    </div>
+                <% } %>
+
+                <% if (locals.errors && errors.length > 0) { %>
+                    <div class="bg-rose-50 border border-rose-200 rounded-xl p-4 mb-5 flex items-start gap-3">
+                        <i class="fas fa-exclamation-circle text-rose-500 mt-0.5"></i>
+                        <div class="text-rose-800 text-sm font-medium space-y-1">
+                            <% errors.forEach(error => { %>
+                                <p><%= error.msg %></p>
+                            <% }); %>
+                        </div>
+                    </div>
+                <% } %>
+
+                <!-- FORM -->
+                <form action="/auth/login" method="POST" class="space-y-5">
+
+                    <!-- EMAIL -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-2 tracking-wide uppercase">
+                            Correo institucional
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i class="fas fa-envelope text-slate-400"></i>
+                            </div>
+                            <input
+                                type="email"
+                                name="email"
+                                required
+                                class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl
+                                       focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent
+                                       transition-all outline-none text-sm text-slate-800 font-medium placeholder:text-slate-400"
+                                placeholder="nombre.apellido@mindcare.bo"
+                            >
+                        </div>
+                    </div>
+
+                    <!-- PASSWORD -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-2 tracking-wide uppercase">
+                            Contraseña
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i class="fas fa-lock text-slate-400"></i>
+                            </div>
+                            <input
+                                type="password"
+                                name="password"
+                                required
+                                class="w-full pl-11 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl
+                                       focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent
+                                       transition-all outline-none text-sm text-slate-800 font-medium placeholder:text-slate-400"
+                                placeholder="••••••••"
+                                id="passwordInput"
+                            >
+                            <button
+                                type="button"
+                                class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 text-xs"
+                                onclick="togglePassword()"
+                                aria-label="Mostrar u ocultar contraseña"
+                            >
+                                <i class="far fa-eye" id="passwordIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- BOTÓN LOGIN -->
+                    <button
+                        type="submit"
+                        class="w-full mt-1 bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500
+                               hover:from-indigo-500 hover:via-sky-400 hover:to-emerald-400
+                               text-white font-semibold text-sm py-3.5 rounded-xl shadow-lg shadow-indigo-500/40
+                               transition-all duration-200 transform active:scale-[0.98]
+                               flex items-center justify-center gap-2"
+                    >
+                        <span>Acceder al panel</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                </form>
+
+                <!-- CTA DE REGISTRO -->
+                <div class="mt-6">
+                    <p class="text-[11px] font-semibold tracking-[0.18em] uppercase text-slate-400 mb-3">
+                        Registro de cuentas
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <!-- Registro Paciente -->
+                        <a
+                            href="/auth/register"
+                            class="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50
+                                   hover:bg-slate-100 text-xs font-semibold text-slate-700 py-3 transition-colors"
+                        >
+                            <i class="fas fa-user-plus text-indigo-500"></i>
+                            <span>Crear cuenta de paciente</span>
+                        </a>
+
+                        <!-- Registro Terapeuta -->
+                        <a
+                            href="/auth/register-therapist"
+                            class="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50
+                                   hover:bg-indigo-100 text-xs font-semibold text-indigo-700 py-3 transition-colors"
+                        >
+                            <i class="fas fa-user-md"></i>
+                            <span>Registro de terapeuta</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- FOOTER DEL CARD -->
+                <div class="mt-7 pt-5 border-t border-slate-100 text-xs text-slate-400 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <p>
+                        Acceso exclusivo para personal autorizado de MindCare.
+                    </p>
+                    <p class="flex items-center gap-1">
+                        <i class="fas fa-lock text-emerald-500"></i>
+                        Conexión segura cifrada
+                    </p>
+                </div>
+
+                <!-- CREDENCIAL DEMO ADMIN (ÚNICA) -->
+                <div class="mt-4">
+                    <button
+                        type="button"
+                        class="text-[11px] font-semibold text-slate-400 hover:text-indigo-500 flex items-center gap-1"
+                        onclick="toggleAdminDemo()"
+                    >
+                        <i class="fas fa-flask text-xs"></i>
+                        <span>Usar cuenta demo de administrador</span>
+                    </button>
+
+                    <div
+                        id="admin-demo"
+                        class="hidden mt-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[11px] text-slate-600 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors"
+                        onclick="fillLogin('admin@mindcare.bo', 'Admin123!')"
+                    >
+                        <div>
+                            <p class="font-semibold text-slate-800 flex items-center gap-1">
+                                <i class="fas fa-user-shield text-indigo-500"></i> Admin
+                            </p>
+                            <p class="mt-0.5">admin@mindcare.bo · Admin123!</p>
+                        </div>
+                        <i class="fas fa-copy text-slate-400"></i>
                     </div>
                 </div>
             </div>
@@ -96,20 +225,49 @@
 </div>
 
 <script>
-    // Animaciones simples
+    // Animaciones
     const style = document.createElement('style');
     style.innerHTML = `
-        @keyframes fade-in-down { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in-down { animation: fade-in-down 0.6s ease-out; }
-        .animate-slide-up { animation: slide-up 0.7s ease-out; }
+        @keyframes fade-in-left {
+            from { opacity: 0; transform: translateX(-16px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translateY(16px) scale(0.98); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .animate-fade-in-left { animation: fade-in-left 0.7s ease-out; }
+        .animate-fade-in-up   { animation: fade-in-up 0.6s ease-out; }
     `;
     document.head.appendChild(style);
 
-    // Función Helper para demos
+    // Mostrar / ocultar contraseña
+    function togglePassword() {
+        const input = document.getElementById('passwordInput');
+        const icon  = document.getElementById('passwordIcon');
+        if (!input) return;
+        const isPassword = input.type === 'password';
+        input.type = isPassword ? 'text' : 'password';
+        icon.classList.toggle('fa-eye');
+        icon.classList.toggle('fa-eye-slash');
+    }
+
+    // Rellenar login para demo Admin
     function fillLogin(email, pass) {
-        document.querySelector('input[name="email"]').value = email;
-        document.querySelector('input[name="password"]').value = pass;
+        const emailInput = document.querySelector('input[name="email"]');
+        const passInput  = document.querySelector('input[name="password"]');
+        if (emailInput && passInput) {
+            emailInput.value = email;
+            passInput.value  = pass;
+        }
+    }
+
+    // Toggle panel admin demo
+    function toggleAdminDemo() {
+        const panel = document.getElementById('admin-demo');
+        if (panel) {
+            panel.classList.toggle('hidden');
+        }
     }
 </script>
 

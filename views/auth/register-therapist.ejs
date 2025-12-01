@@ -15,30 +15,73 @@
 
         <div class="bg-slate-800/80 backdrop-blur-md rounded-3xl shadow-2xl p-8 sm:p-10 border border-slate-700">
             
-            <% if (locals.errors && errors.length > 0) { %>
+            <%
+                const allErrors = errors || [];
+                const fd = formData || {};
+
+                const getErr = (field) => allErrors.find(e => e.param === field);
+
+                const nombreError = getErr('nombre');
+                const apellidoError = getErr('apellido');
+                const telefonoError = getErr('telefono');
+                const fechaError = getErr('fecha_nacimiento');
+                const especialidadError = getErr('especialidad');
+                const licenciaError = getErr('licencia');
+                const emailError = getErr('email');
+                const passwordError = getErr('password');
+                const codigoError = getErr('codigo_acceso');
+            %>
+
+            <% if (allErrors.length > 0) { %>
                 <div class="bg-rose-500/10 border border-rose-500/50 text-rose-400 p-4 rounded-xl mb-6">
                     <div class="flex items-center gap-2 mb-2">
                         <i class="fas fa-exclamation-triangle"></i>
                         <span class="font-bold">Atención:</span>
                     </div>
                     <ul class="list-disc list-inside text-xs space-y-1">
-                        <% errors.forEach(function(error) { %>
+                        <% allErrors.forEach(function(error) { %>
                             <li><%= error.msg %></li>
                         <% }); %>
                     </ul>
                 </div>
             <% } %>
 
-            <form class="space-y-5" action="/auth/register-pro" method="POST">
+            <form class="space-y-5" action="/auth/register-pro" method="POST" novalidate>
                 
                 <div class="grid grid-cols-2 gap-5">
                     <div>
                         <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Nombre</label>
-                        <input name="nombre" type="text" required value="<%= locals.formData ? formData.nombre : '' %>" class="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-xl focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none text-white placeholder-slate-600" placeholder="Dr. Nombre">
+                        <input
+                            name="nombre"
+                            type="text"
+                            required
+                            maxlength="64"
+                            value="<%= fd.nombre || '' %>"
+                            class="w-full px-4 py-3 bg-slate-900 border rounded-xl focus:ring-1 outline-none text-white placeholder-slate-600
+                                   <%= nombreError ? 'border-rose-500/70 focus:border-rose-500 focus:ring-rose-400/60' : 'border-slate-600 focus:border-teal-500 focus:ring-teal-500' %>"
+                            placeholder="Ej: María Elena">
+                        <% if (nombreError) { %>
+                            <p class="mt-1 text-[11px] text-rose-400 font-medium"><%= nombreError.msg %></p>
+                        <% } else { %>
+                            <p class="mt-1 text-[11px] text-slate-500">Solo letras y espacios, entre 2 y 64 caracteres.</p>
+                        <% } %>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Apellido</label>
-                        <input name="apellido" type="text" required value="<%= locals.formData ? formData.apellido : '' %>" class="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-xl focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none text-white" placeholder="Apellido">
+                        <input
+                            name="apellido"
+                            type="text"
+                            required
+                            maxlength="64"
+                            value="<%= fd.apellido || '' %>"
+                            class="w-full px-4 py-3 bg-slate-900 border rounded-xl focus:ring-1 outline-none text-white
+                                   <%= apellidoError ? 'border-rose-500/70 focus:border-rose-500 focus:ring-rose-400/60' : 'border-slate-600 focus:border-teal-500 focus:ring-teal-500' %>"
+                            placeholder="Ej: Rodríguez López">
+                        <% if (apellidoError) { %>
+                            <p class="mt-1 text-[11px] text-rose-400 font-medium"><%= apellidoError.msg %></p>
+                        <% } else { %>
+                            <p class="mt-1 text-[11px] text-slate-500">Solo letras y espacios, entre 2 y 64 caracteres.</p>
+                        <% } %>
                     </div>
                 </div>
 
@@ -47,30 +90,103 @@
                         <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Móvil (8 dígitos)</label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 font-bold text-xs">+591</span>
-                            <input name="telefono" type="tel" required value="<%= locals.formData ? formData.telefono : '' %>" class="w-full pl-12 pr-4 py-3 bg-slate-900 border border-slate-600 rounded-xl focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none text-white" placeholder="70000000">
+                            <input
+                                name="telefono"
+                                type="tel"
+                                required
+                                maxlength="8"
+                                value="<%= fd.telefono || '' %>"
+                                class="w-full pl-12 pr-4 py-3 bg-slate-900 border rounded-xl focus:ring-1 outline-none text-white
+                                       <%= telefonoError ? 'border-rose-500/70 focus:border-rose-500 focus:ring-rose-400/60' : 'border-slate-600 focus:border-teal-500 focus:ring-teal-500' %>"
+                                placeholder="70000000">
                         </div>
+                        <% if (telefonoError) { %>
+                            <p class="mt-1 text-[11px] text-rose-400 font-medium"><%= telefonoError.msg %></p>
+                        <% } else { %>
+                            <p class="mt-1 text-[11px] text-slate-500">Debe iniciar con 6 o 7 y tener exactamente 8 dígitos.</p>
+                        <% } %>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Fecha Nacimiento</label>
-                        <input name="fecha_nacimiento" type="date" required value="<%= locals.formData ? formData.fecha_nacimiento : '' %>" class="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-xl focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none text-white text-sm">
+                        <input
+                            name="fecha_nacimiento"
+                            type="date"
+                            required
+                            value="<%= fd.fecha_nacimiento || '' %>"
+                            class="w-full px-4 py-3 bg-slate-900 border rounded-xl focus:ring-1 outline-none text-white text-sm
+                                   <%= fechaError ? 'border-rose-500/70 focus:border-rose-500 focus:ring-rose-400/60' : 'border-slate-600 focus:border-teal-500 focus:ring-teal-500' %>">
+                        <% if (fechaError) { %>
+                            <p class="mt-1 text-[11px] text-rose-400 font-medium"><%= fechaError.msg %></p>
+                        <% } else { %>
+                            <p class="mt-1 text-[11px] text-slate-500">Profesionales mayores de 18 años. No se permiten fechas futuras.</p>
+                        <% } %>
                     </div>
                 </div>
 
                 <div class="bg-slate-900/50 p-5 rounded-2xl border border-slate-700/50">
-                    <h3 class="text-teal-400 text-xs font-extrabold uppercase mb-4 border-b border-slate-700 pb-2">Credenciales</h3>
+                    <h3 class="text-teal-400 text-xs font-extrabold uppercase mb-4 border-b border-slate-700 pb-2">
+                        Credenciales Profesionales
+                    </h3>
                     <div class="grid grid-cols-2 gap-5">
                         <div>
                             <label class="block text-xs font-bold text-slate-500 mb-1">Especialidad</label>
-                            <select name="especialidad" class="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-xl focus:border-teal-500 outline-none text-white">
-                                <option>Psicología Clínica</option>
-                                <option>Psiquiatría</option>
-                                <option>Neuropsicología</option>
-                                <option>Terapia Familiar</option>
+                            <select
+                                name="especialidad"
+                                class="w-full px-4 py-3 bg-slate-800 border rounded-xl focus:border-teal-500 outline-none text-white
+                                       <%= especialidadError ? 'border-rose-500/70' : 'border-slate-600' %>">
+                                <option value="" disabled <%= !fd.especialidad ? 'selected' : '' %>>Selecciona una especialidad</option>
+                                <option value="Psicología Clínica" <%= fd.especialidad === 'Psicología Clínica' ? 'selected' : '' %>>Psicología Clínica</option>
+                                <option value="Psiquiatría" <%= fd.especialidad === 'Psiquiatría' ? 'selected' : '' %>>Psiquiatría</option>
+                                <option value="Neuropsicología" <%= fd.especialidad === 'Neuropsicología' ? 'selected' : '' %>>Neuropsicología</option>
+                                <option value="Terapia Familiar" <%= fd.especialidad === 'Terapia Familiar' ? 'selected' : '' %>>Terapia Familiar</option>
                             </select>
+                            <% if (especialidadError) { %>
+                                <p class="mt-1 text-[11px] text-rose-400 font-medium"><%= especialidadError.msg %></p>
+                            <% } else { %>
+                                <p class="mt-1 text-[11px] text-slate-500">Selecciona la especialidad principal con la que atenderás en MindCare.</p>
+                            <% } %>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-500 mb-1">Nº Licencia</label>
-                            <input name="licencia" type="text" required value="<%= locals.formData ? formData.licencia : '' %>" class="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-xl focus:border-teal-500 outline-none text-white" placeholder="Ej: LP-998877">
+                            <input
+                                name="licencia"
+                                type="text"
+                                required
+                                value="<%= fd.licencia || '' %>"
+                                class="w-full px-4 py-3 bg-slate-800 border rounded-xl focus:border-teal-500 outline-none text-white
+                                       <%= licenciaError ? 'border-rose-500/70' : 'border-slate-600' %>"
+                                placeholder="Ej: LP998877">
+                            <% if (licenciaError) { %>
+                                <p class="mt-1 text-[11px] text-rose-400 font-medium"><%= licenciaError.msg %></p>
+                            <% } else { %>
+                                <p class="mt-1 text-[11px] text-slate-500">Solo letras y números, sin espacios. Ejemplo: LP998877.</p>
+                            <% } %>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 grid grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">Años de experiencia (opcional)</label>
+                            <input
+                                name="experiencia_anios"
+                                type="number"
+                                min="0"
+                                max="80"
+                                value="<%= fd.experiencia_anios || '' %>"
+                                class="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-xl focus:border-teal-500 outline-none text-white"
+                                placeholder="Ej: 5">
+                            <p class="mt-1 text-[11px] text-slate-500">Puedes indicar tus años de experiencia clínica (0 a 80).</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">Biografía corta (opcional)</label>
+                            <input
+                                name="biografia"
+                                type="text"
+                                maxlength="256"
+                                value="<%= fd.biografia || '' %>"
+                                class="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-xl focus:border-teal-500 outline-none text-white"
+                                placeholder="Ej: Especialista en TCC para ansiedad y depresión.">
+                            <p class="mt-1 text-[11px] text-slate-500">Breve resumen profesional que verán tus pacientes.</p>
                         </div>
                     </div>
                 </div>
@@ -78,12 +194,37 @@
                 <div class="grid grid-cols-1 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Correo Institucional</label>
-                        <input name="email" type="email" required value="<%= locals.formData ? formData.email : '' %>" class="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-xl focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none text-white" placeholder="doctor@mindcare.bo">
+                        <input
+                            name="email"
+                            type="email"
+                            required
+                            maxlength="254"
+                            value="<%= fd.email || '' %>"
+                            class="w-full px-4 py-3 bg-slate-900 border rounded-xl focus:ring-1 outline-none text-white
+                                   <%= emailError ? 'border-rose-500/70 focus:border-rose-500 focus:ring-rose-400/60' : 'border-slate-600 focus:border-teal-500 focus:ring-teal-500' %>"
+                            placeholder="doctor@mindcare.bo">
+                        <% if (emailError) { %>
+                            <p class="mt-1 text-[11px] text-rose-400 font-medium"><%= emailError.msg %></p>
+                        <% } else { %>
+                            <p class="mt-1 text-[11px] text-slate-500">Usa un correo profesional al que tengas acceso frecuente.</p>
+                        <% } %>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Contraseña</label>
-                        <input name="password" type="password" required class="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-xl focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none text-white" placeholder="••••••••">
-                        <p class="text-[10px] text-slate-500 mt-1 text-right">Mín. 8 caracteres, 1 especial.</p>
+                        <input
+                            name="password"
+                            type="password"
+                            required
+                            class="w-full px-4 py-3 bg-slate-900 border rounded-xl focus:ring-1 outline-none text-white
+                                   <%= passwordError ? 'border-rose-500/70 focus:border-rose-500 focus:ring-rose-400/60' : 'border-slate-600 focus:border-teal-500 focus:ring-teal-500' %>"
+                            placeholder="••••••••">
+                        <% if (passwordError) { %>
+                            <p class="mt-1 text-[11px] text-rose-400 font-medium"><%= passwordError.msg %></p>
+                        <% } else { %>
+                            <p class="mt-1 text-[11px] text-slate-500 text-right">
+                                Mínimo 8 caracteres, con mayúsculas, minúsculas, números y un símbolo.
+                            </p>
+                        <% } %>
                     </div>
                 </div>
 
@@ -92,18 +233,50 @@
                         <span>Código de Acceso Maestro</span>
                         <i class="fas fa-lock"></i>
                     </label>
-                    <input name="codigo_acceso" type="password" required class="w-full px-4 py-3 bg-slate-900 border border-rose-900/50 rounded-xl focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none text-white placeholder-rose-900/50 tracking-widest text-center font-mono" placeholder="CÓDIGO REQUERIDO">
+                    <input
+                        name="codigo_acceso"
+                        type="password"
+                        required
+                        class="w-full px-4 py-3 bg-slate-900 border rounded-xl focus:ring-1 outline-none text-white placeholder-rose-900/50 tracking-widest text-center font-mono
+                               <%= codigoError ? 'border-rose-500/80 focus:border-rose-500 focus:ring-rose-400/60' : 'border-rose-900/50 focus:border-rose-500 focus:ring-rose-500/60' %>"
+                        placeholder="ADMIN_MINDCARE_2025">
+                    <% if (codigoError) { %>
+                        <p class="mt-1 text-[11px] text-rose-400 font-medium text-center"><%= codigoError.msg %></p>
+                    <% } else { %>
+                        <p class="mt-1 text-[11px] text-rose-300/80 text-center">
+                            Solo profesionales autorizados con el código oficial de MindCare.
+                        </p>
+                    <% } %>
                 </div>
 
-                <button type="submit" class="w-full bg-teal-600 hover:bg-teal-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-teal-900/20 transition-all transform active:scale-[0.98]">
+                <button
+                    type="submit"
+                    class="w-full bg-teal-600 hover:bg-teal-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-teal-900/20 transition-all transform active:scale-[0.98]">
                     Validar y Registrar Profesional
                 </button>
             </form>
         </div>
         
         <div class="text-center">
-            <a href="/auth/register" class="text-slate-500 text-sm hover:text-white transition-colors font-medium">← Soy paciente, volver al registro público</a>
+            <a href="/auth/register" class="text-slate-500 text-sm hover:text-white transition-colors font-medium">
+                ← Soy paciente, volver al registro público
+            </a>
         </div>
     </div>
 </div>
+
+<script>
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @keyframes blob {
+            0%, 100% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(10px, -20px) scale(1.05); }
+            66% { transform: translate(-15px, 10px) scale(0.98); }
+        }
+        .animate-blob { animation: blob 12s infinite; }
+        .animation-delay-2000 { animation-delay: 2s; }
+    `;
+    document.head.appendChild(style);
+</script>
+
 <%- include('../partials/footer') %>

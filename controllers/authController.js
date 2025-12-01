@@ -1,218 +1,430 @@
 const db = require('../config/database');
-const bcrypt = require('bcryptjs');
+const {
+    hashPassword,
+    comparePassword,
+    generateToken,
+    generateVerificationToken
+} = require('../utils/helpers');
+const { sendVerificationEmail } = require('../config/email');
 const { validationResult } = require('express-validator');
 
-// ==================================================================
-// 1. VISTAS (GET)
-// ==================================================================
+// Código maestro para registro de terapeutas (FIJO)
+const THERAPIST_MASTER_CODE = 'ADMIN_MINDCARE_2025';
 
-// Login (Sin cambios)
-const showLoginForm = (req, res) => {
-    if (req.session && req.session.user) return res.redirect('/dashboard');
-    
-    let errors = [];
-    if (req.query.msg === 'auth_required') errors.push({ msg: 'Debes iniciar sesión para continuar.' });
-    if (req.query.msg === 'logout_success') errors.push({ msg: 'Has cerrado sesión correctamente.' });
-    if (req.query.msg === 'register_success') errors.push({ msg: 'Cuenta creada. Inicia sesión.' });
-    if (req.query.msg === 'therapist_created') errors.push({ msg: 'Perfil profesional creado. Espere validación.' });
+// ==========================================
+// MÉTODOS DE VISTA (GET)
+// ==========================================
 
-    res.render('auth/login', {
-        title: 'Iniciar Sesión - MindCare',
+// Formulario de registro de PACIENTE
+const showRegisterForm = (req, res) => {
+    res.render('auth/register', {
+        title: 'Registro - MindCare',
         user: null,
-        errors: errors,
+        errors: [],
         formData: {}
     });
 };
 
-// Registro Paciente (Público)
-const showRegisterForm = (req, res) => {
-    if (req.session && req.session.user) return res.redirect('/dashboard');
-    res.render('auth/register', { title: 'Registro Paciente', user: null, errors: [], formData: {} });
+// Formulario de login
+const showLoginForm = (req, res) => {
+    let successMessage = null;
+    let errorMessage = null;
+
+    if (req.query.registered === 'true') {
+        successMessage = '¡Registro completado! Verifica tu email para iniciar sesión.';
+    } else if (req.query.verified === 'true') {
+        successMessage = 'Email verificado con éxito. Ya puedes iniciar sesión.';
+    } else if (req.query.error) {
+        errorMessage = req.query.error.replace(/_/g, ' ');
+    }
+
+    res.render('auth/login', {
+        title: 'Iniciar Sesión - MindCare',
+        user: null,
+        success: successMessage,
+        errors: errorMessage ? [{ msg: errorMessage }] : [],
+        formData: {}
+    });
 };
 
-// Registro Terapeuta (Profesional - NUEVO)
+// Formulario de registro de TERAPEUTA
 const showTherapistRegisterForm = (req, res) => {
-    if (req.session && req.session.user) return res.redirect('/dashboard');
-    res.render('auth/register-therapist', { title: 'Portal Profesional', user: null, errors: [], formData: {} });
+    res.render('auth/register-therapist', {
+        title: 'Registro Profesional - MindCare',
+        user: null,
+        errors: [],
+        formData: {}
+    });
 };
 
-// ==================================================================
-// 2. LÓGICA (POST)
-// ==================================================================
+// CERRAR SESIÓN
+const logout = (req, res) => {
+    res.clearCookie('token');
+    req.session.destroy((err) => {
+        if (err) {
+            console.error('Error logout:', err);
+            return res.status(500).redirect('/');
+        }
+        res.redirect('/auth/login?msg=Cerró_sesión_correctamente.');
+    });
+};
 
-// A. LOGIN (Mantenemos tu lógica que ya funciona)
+// ==========================================
+// REGISTRO PACIENTE
+// ==========================================
+
+const register = async (req, res) => {
+    const errors = validationResult(req);
+    const {
+        email,
+        password,
+        nombre,
+        apellido,
+        telefono,
+        fecha_nacimiento,
+        genero
+    } = req.body;
+
+    if (!errors.isEmpty()) {
+        return res.render('auth/register', {
+            title: 'Registro - MindCare',
+            user: null,
+            errors: errors.array(),
+            formData: req.body
+        });
+    }
+
+    const client = await db.pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        // Verificar si ya existe
+        const existingUser = await client.query(
+            'SELECT * FROM usuarios WHERE email = $1',
+            [email]
+        );
+
+        if (existingUser.rows.length > 0) {
+            await client.query('ROLLBACK');
+            return res.render('auth/register', {
+                title: 'Registro - MindCare',
+                user: null,
+                errors: [{ msg: 'El correo electrónico ya está registrado.' }],
+                formData: req.body
+            });
+        }
+
+        // Rol Paciente
+        const roleResult = await client.query(
+            'SELECT id_rol FROM roles WHERE nombre_rol = $1',
+            ['Paciente']
+        );
+        const idRol = roleResult.rows[0].id_rol;
+
+        const hashedPassword = await hashPassword(password);
+        const verificationToken = generateVerificationToken();
+
+        const userResult = await client.query(
+            `INSERT INTO usuarios 
+                (id_rol, email, password_hash, nombre, apellido, telefono, fecha_nacimiento, genero, token_verificacion, fecha_registro)
+             VALUES 
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+             RETURNING id_usuario, email, nombre, apellido`,
+            [idRol, email, hashedPassword, nombre, apellido, telefono, fecha_nacimiento, genero, verificationToken]
+        );
+
+        const newUser = userResult.rows[0];
+
+        // Crear paciente
+        await client.query(
+            `INSERT INTO pacientes (id_usuario, estado_tratamiento, fecha_inicio_tratamiento)
+             VALUES ($1, $2, CURRENT_DATE)`,
+            [newUser.id_usuario, 'activo']
+        );
+
+        await client.query('COMMIT');
+
+        try {
+            // await sendVerificationEmail(email, verificationToken, nombre);
+            console.log(`Email de verificación simulado enviado a ${email} con token: ${verificationToken}`);
+        } catch (emailError) {
+            console.error('Error simulado enviando email:', emailError);
+        }
+
+        return res.redirect('/auth/login?registered=true');
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error en registro:', error);
+        return res.render('auth/register', {
+            title: 'Registro - MindCare',
+            user: null,
+            errors: [{ msg: 'Error interno del servidor. Intente nuevamente.' }],
+            formData: req.body
+        });
+    } finally {
+        client.release();
+    }
+};
+
+// ==========================================
+// REGISTRO TERAPEUTA
+// ==========================================
+
+const registerTherapist = async (req, res) => {
+    const errors = validationResult(req);
+    const {
+        email,
+        password,
+        nombre,
+        apellido,
+        telefono,
+        fecha_nacimiento,
+        genero,
+        especialidad,
+        licencia,
+        experiencia_anios,
+        biografia,
+        codigo_acceso
+    } = req.body;
+
+    // Errores de express-validator
+    if (!errors.isEmpty()) {
+        return res.render('auth/register-therapist', {
+            title: 'Registro Profesional - MindCare',
+            user: null,
+            errors: errors.array(),
+            formData: req.body
+        });
+    }
+
+    // Validar código maestro fijo
+    if (codigo_acceso !== THERAPIST_MASTER_CODE) {
+        return res.render('auth/register-therapist', {
+            title: 'Registro Profesional - MindCare',
+            user: null,
+            errors: [{ msg: 'Código maestro inválido. Contacta al administrador.' }],
+            formData: req.body
+        });
+    }
+
+    const client = await db.pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        // Verificar email duplicado
+        const existingUser = await client.query(
+            'SELECT * FROM usuarios WHERE email = $1',
+            [email]
+        );
+
+        if (existingUser.rows.length > 0) {
+            await client.query('ROLLBACK');
+            return res.render('auth/register-therapist', {
+                title: 'Registro Profesional - MindCare',
+                user: null,
+                errors: [{ msg: 'El correo electrónico ya está registrado.' }],
+                formData: req.body
+            });
+        }
+
+        // Rol Terapeuta
+        const roleResult = await client.query(
+            'SELECT id_rol FROM roles WHERE nombre_rol = $1',
+            ['Terapeuta']
+        );
+        const idRol = roleResult.rows[0].id_rol;
+
+        const hashedPassword = await hashPassword(password);
+        const verificationToken = generateVerificationToken();
+
+        const userResult = await client.query(
+            `INSERT INTO usuarios 
+                (id_rol, email, password_hash, nombre, apellido, telefono, fecha_nacimiento, genero, token_verificacion, fecha_registro)
+             VALUES 
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+             RETURNING id_usuario, email, nombre, apellido`,
+            [idRol, email, hashedPassword, nombre, apellido, telefono, fecha_nacimiento, genero, verificationToken]
+        );
+
+        const newUser = userResult.rows[0];
+
+        // Normalizar experiencia
+        let expAnios = null;
+        if (experiencia_anios && experiencia_anios !== '') {
+            const n = parseInt(experiencia_anios, 10);
+            if (!isNaN(n) && n >= 0 && n <= 80) {
+                expAnios = n;
+            }
+        }
+
+        // Crear terapeuta
+        await client.query(
+            `INSERT INTO terapeutas 
+                (id_usuario, especialidad, nro_licencia, experiencia_anios, biografia, fecha_nacimiento)
+             VALUES 
+                ($1, $2, $3, $4, $5, $6)`,
+            [
+                newUser.id_usuario,
+                especialidad,
+                licencia,
+                expAnios,
+                biografia || null,
+                fecha_nacimiento || null
+            ]
+        );
+
+        await client.query('COMMIT');
+
+        try {
+            // await sendVerificationEmail(email, verificationToken, nombre);
+            console.log(`Email de verificación (TERAPEUTA) simulado enviado a ${email} con token: ${verificationToken}`);
+        } catch (emailError) {
+            console.error('Error simulado enviando email terapeuta:', emailError);
+        }
+
+        return res.redirect('/auth/login?registered=true');
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error en registro de terapeuta:', error);
+        return res.render('auth/register-therapist', {
+            title: 'Registro Profesional - MindCare',
+            user: null,
+            errors: [{ msg: 'Error interno del servidor. Intente nuevamente.' }],
+            formData: req.body
+        });
+    } finally {
+        client.release();
+    }
+};
+
+// ==========================================
+// LOGIN
+// ==========================================
+
 const login = async (req, res) => {
     const errors = validationResult(req);
+
     if (!errors.isEmpty()) {
-        return res.render('auth/login', { title: 'Iniciar Sesión', user: null, errors: errors.array(), formData: { email: req.body.email } });
+        return res.render('auth/login', {
+            title: 'Iniciar Sesión - MindCare',
+            user: null,
+            errors: errors.array(),
+            formData: { email: req.body.email }
+        });
     }
 
     const { email, password } = req.body;
 
     try {
-        const result = await db.query(`
-            SELECT u.*, r.nombre_rol
-            FROM Usuarios u
-            JOIN Roles r ON u.id_rol = r.id_rol
-            WHERE u.email = $1
-        `, [email]);
+        const result = await db.query(
+            `SELECT u.*, r.nombre_rol 
+             FROM usuarios u 
+             JOIN roles r ON u.id_rol = r.id_rol 
+             WHERE u.email = $1`,
+            [email]
+        );
 
-        const returnError = (msg) => {
-            return res.render('auth/login', { title: 'Iniciar Sesión', user: null, errors: [{ msg }], formData: { email } });
+        const returnLoginError = (msg) => {
+            return res.render('auth/login', {
+                title: 'Iniciar Sesión - MindCare',
+                user: null,
+                errors: [{ msg }],
+                formData: { email }
+            });
         };
 
-        if (result.rows.length === 0) return returnError('Credenciales inválidas.');
+        if (result.rows.length === 0) {
+            return returnLoginError('Credenciales inválidas.');
+        }
+
         const user = result.rows[0];
 
-        if (!user.estado) return returnError('Tu cuenta ha sido desactivada. Contacta a soporte.');
+        if (user.estado === false) {
+            return returnLoginError('Cuenta desactivada. Contacta al administrador.');
+        }
 
-        const isValid = await bcrypt.compare(password, user.password_hash);
-        if (!isValid) return returnError('Contraseña incorrecta.');
+        if (user.bloqueado_hasta && new Date(user.bloqueado_hasta) > new Date()) {
+            return returnLoginError('Tu cuenta está temporalmente bloqueada. Intenta más tarde.');
+        }
 
-        // Crear Sesión
+        const isValidPassword = await comparePassword(password, user.password_hash);
+
+        if (!isValidPassword) {
+            await db.query(
+                `UPDATE usuarios 
+                 SET intentos_login = intentos_login + 1 
+                 WHERE id_usuario = $1`,
+                [user.id_usuario]
+            );
+            return returnLoginError('Credenciales inválidas.');
+        }
+
+        await db.query(
+            `UPDATE usuarios 
+             SET intentos_login = 0, ultimo_login = NOW(), bloqueado_hasta = NULL 
+             WHERE id_usuario = $1`,
+            [user.id_usuario]
+        );
+
         req.session.user = {
             id_usuario: user.id_usuario,
-            email: user.email,
             nombre: user.nombre,
             apellido: user.apellido,
-            id_rol: user.id_rol,
-            nombre_rol: user.nombre_rol,
-            foto_perfil: user.foto_perfil
+            nombre_rol: user.nombre_rol
         };
 
-        await db.query('UPDATE Usuarios SET ultimo_login = NOW() WHERE id_usuario = $1', [user.id_usuario]);
-        console.log(`✅ Login: ${user.email} entró como ${user.nombre_rol}`);
-        res.redirect('/dashboard');
+        let redirectPath = '/dashboard/patient';
+
+        switch (user.nombre_rol) {
+            case 'Administrador':
+                redirectPath = '/dashboard/admin';
+                break;
+            case 'Terapeuta':
+                redirectPath = '/dashboard/clinical';
+                break;
+            case 'Paciente':
+            default:
+                redirectPath = '/dashboard/patient';
+                break;
+        }
+
+        return res.redirect(redirectPath);
 
     } catch (error) {
         console.error('Error en login:', error);
-        res.render('auth/login', { title: 'Error', user: null, errors: [{ msg: 'Error interno del servidor.' }], formData: { email } });
-    }
-};
-
-// B. REGISTRO DE PACIENTE (Simplificado)
-const register = async (req, res) => {
-    const { email, password, nombre, apellido, telefono, fecha_nacimiento } = req.body;
-    const client = await db.pool.connect();
-
-    try {
-        await client.query('BEGIN');
-
-        // Verificar duplicados
-        const existingUser = await client.query('SELECT id_usuario FROM Usuarios WHERE email = $1', [email]);
-        if (existingUser.rows.length > 0) {
-            await client.query('ROLLBACK');
-            return res.render('auth/register', { title: 'Registro', user: null, errors: [{ msg: 'El correo ya está registrado.' }], formData: req.body });
-        }
-
-        // Rol Paciente
-        const roleResult = await client.query("SELECT id_rol FROM Roles WHERE nombre_rol = 'Paciente'");
-        const idRol = roleResult.rows[0].id_rol;
-
-        // Crear Usuario
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const userResult = await client.query(
-            `INSERT INTO Usuarios (id_rol, email, password_hash, nombre, apellido, telefono, fecha_registro, estado)
-             VALUES ($1, $2, $3, $4, $5, $6, NOW(), true) RETURNING id_usuario`,
-            [idRol, email, hashedPassword, nombre, apellido, telefono]
-        );
-        const newUserId = userResult.rows[0].id_usuario;
-
-        // Crear Paciente
-        await client.query(
-            'INSERT INTO Pacientes (id_usuario, fecha_nacimiento, estado_tratamiento, fecha_inicio_tratamiento) VALUES ($1, $2, $3, CURRENT_DATE)',
-            [newUserId, fecha_nacimiento || null, 'activo']
-        );
-
-        await client.query('COMMIT');
-        res.redirect('/auth/login?msg=register_success');
-
-    } catch (error) {
-        await client.query('ROLLBACK');
-        console.error('Error registro paciente:', error);
-        res.render('auth/register', { title: 'Registro', user: null, errors: [{ msg: 'Error técnico: ' + error.message }], formData: req.body });
-    } finally {
-        client.release();
-    }
-};
-
-// C. REGISTRO DE TERAPEUTA (NUEVO - Protegido)
-// C. REGISTRO DE TERAPEUTA (ACTUALIZADO CON EDAD Y TELÉFONO)
-const registerTherapist = async (req, res) => {
-    // Obtenemos los nuevos campos del body
-    const { nombre, apellido, email, password, especialidad, licencia, codigo_acceso, telefono, fecha_nacimiento } = req.body;
-    const client = await db.pool.connect();
-
-    // 1. Validar Código Maestro (Seguridad Base)
-    if (codigo_acceso !== 'ADMIN_MINDCARE_2025') {
-        return res.render('auth/register-therapist', { 
-            title: 'Portal Profesional', 
-            user: null, 
-            errors: [{ msg: '⛔ CÓDIGO DE ACCESO DENEGADO.' }], 
-            formData: req.body 
+        return res.render('auth/login', {
+            title: 'Iniciar Sesión - MindCare',
+            user: null,
+            errors: [{ msg: 'Error al conectar con el servidor.' }],
+            formData: { email }
         });
     }
-
-    try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.render('auth/register-therapist', { title: 'Portal Profesional', user: null, errors: errors.array(), formData: req.body });
-        }
-
-        await client.query('BEGIN');
-
-        // Verificar duplicados
-        const existingUser = await client.query('SELECT id_usuario FROM Usuarios WHERE email = $1', [email]);
-        if (existingUser.rows.length > 0) {
-            await client.query('ROLLBACK');
-            return res.render('auth/register-therapist', { title: 'Portal Profesional', user: null, errors: [{ msg: 'Correo institucional ya registrado.' }], formData: req.body });
-        }
-
-        // Rol Terapeuta
-        const roleResult = await client.query("SELECT id_rol FROM Roles WHERE nombre_rol = 'Terapeuta'");
-        const idRol = roleResult.rows[0].id_rol;
-
-        // Crear Usuario (Incluye Teléfono)
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const userResult = await client.query(
-            `INSERT INTO Usuarios (id_rol, email, password_hash, nombre, apellido, telefono, fecha_registro, estado)
-             VALUES ($1, $2, $3, $4, $5, $6, NOW(), true) RETURNING id_usuario`,
-            [idRol, email, hashedPassword, nombre, apellido, telefono]
-        );
-        const newUserId = userResult.rows[0].id_usuario;
-
-        // Crear Terapeuta (Incluye Fecha Nacimiento y Datos Profesionales)
-        await client.query(
-            'INSERT INTO Terapeutas (id_usuario, especialidad, numero_licencia, fecha_nacimiento) VALUES ($1, $2, $3, $4)',
-            [newUserId, especialidad, licencia, fecha_nacimiento]
-        );
-
-        await client.query('COMMIT');
-        res.redirect('/auth/login?msg=therapist_created');
-
-    } catch (error) {
-        await client.query('ROLLBACK');
-        console.error('Error registro terapeuta:', error);
-        res.render('auth/register-therapist', { title: 'Portal Profesional', user: null, errors: [{ msg: 'Error técnico: ' + error.message }], formData: req.body });
-    } finally {
-        client.release();
-    }
 };
 
-// D. LOGOUT
-const logout = (req, res) => {
-    req.session.destroy((err) => {
-        if (err) console.error('Error logout:', err);
-        res.redirect('/auth/login?msg=logout_success');
-    });
+// Stub de verificación de email
+const verifyEmail = async (req, res) => {
+    return res.redirect('/auth/login?verified=true');
+};
+
+const getCurrentUser = async (req, res) => {
+    if (!req.session || !req.session.user) {
+        return res.status(401).json({ error: 'No autenticado' });
+    }
+    return res.json({ user: req.session.user });
 };
 
 module.exports = {
-    showLoginForm,
     showRegisterForm,
+    showLoginForm,
     showTherapistRegisterForm,
-    login,
     register,
     registerTherapist,
-    logout
+    login,
+    logout,
+    verifyEmail,
+    getCurrentUser
 };

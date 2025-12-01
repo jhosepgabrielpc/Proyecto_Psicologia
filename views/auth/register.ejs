@@ -11,59 +11,186 @@
             <p class="mt-2 text-slate-500">Crea tu cuenta de paciente en segundos.</p>
         </div>
 
-        <div class="bg-white rounded-3xl shadow-xl p-8 sm:p-10 border border-slate-100 relative overflow-hidden animate-slide-up">
-            <div class="absolute top-0 left-0 w-full h-1.5 bg-indigo-500"></div>
+        <div class="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl p-8 sm:p-10 border border-slate-100 relative overflow-hidden animate-slide-up">
+            <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-400"></div>
 
-            <% if (locals.errors && errors.length > 0) { %>
-                <div class="bg-rose-50 border border-rose-100 text-rose-600 p-3 rounded-lg mb-4 text-sm"><%= errors[0].msg %></div>
+            <% 
+                const allErrors = errors || []; 
+                const nombreError = allErrors.find(e => e.param === 'nombre');
+                const apellidoError = allErrors.find(e => e.param === 'apellido');
+                const telefonoError = allErrors.find(e => e.param === 'telefono');
+                const fechaError = allErrors.find(e => e.param === 'fecha_nacimiento');
+                const emailError = allErrors.find(e => e.param === 'email');
+                const passwordError = allErrors.find(e => e.param === 'password');
+            %>
+
+            <% if (allErrors.length > 0) { %>
+                <div class="bg-rose-50 border border-rose-100 text-rose-700 p-4 rounded-2xl mb-6 text-sm flex gap-3">
+                    <div class="mt-0.5">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold mb-1">Por favor revisa los campos marcados:</p>
+                        <ul class="list-disc list-inside space-y-1">
+                            <% allErrors.forEach(err => { %>
+                                <li><%= err.msg %></li>
+                            <% }) %>
+                        </ul>
+                    </div>
+                </div>
             <% } %>
 
-            <form class="space-y-5" action="/auth/register" method="POST">
+            <form class="space-y-5" action="/auth/register" method="POST" novalidate>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre</label>
-                        <input name="nombre" type="text" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Ej: Ana">
+                        <input
+                            name="nombre"
+                            type="text"
+                            required
+                            maxlength="64"
+                            value="<%= (formData && formData.nombre) ? formData.nombre : '' %>"
+                            class="w-full px-4 py-3 bg-slate-50 border rounded-xl focus:bg-white outline-none transition-all
+                                   <%= nombreError ? 'border-rose-300 focus:ring-2 focus:ring-rose-400' : 'border-slate-200 focus:ring-2 focus:ring-indigo-500' %>"
+                            placeholder="Ej: Ana">
+                        <% if (nombreError) { %>
+                            <p class="mt-1 text-xs text-rose-500 font-medium"><%= nombreError.msg %></p>
+                        <% } else { %>
+                            <p class="mt-1 text-[11px] text-slate-400">Solo letras y espacios, 2 a 64 caracteres.</p>
+                        <% } %>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Apellido</label>
-                        <input name="apellido" type="text" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="López">
+                        <input
+                            name="apellido"
+                            type="text"
+                            required
+                            maxlength="64"
+                            value="<%= (formData && formData.apellido) ? formData.apellido : '' %>"
+                            class="w-full px-4 py-3 bg-slate-50 border rounded-xl focus:bg-white outline-none transition-all
+                                   <%= apellidoError ? 'border-rose-300 focus:ring-2 focus:ring-rose-400' : 'border-slate-200 focus:ring-2 focus:ring-indigo-500' %>"
+                            placeholder="López">
+                        <% if (apellidoError) { %>
+                            <p class="mt-1 text-xs text-rose-500 font-medium"><%= apellidoError.msg %></p>
+                        <% } else { %>
+                            <p class="mt-1 text-[11px] text-slate-400">Solo letras y espacios, 2 a 64 caracteres.</p>
+                        <% } %>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono</label>
-                        <input name="telefono" type="tel" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="70000000">
+                        <input
+                            name="telefono"
+                            type="tel"
+                            required
+                            maxlength="8"
+                            value="<%= (formData && formData.telefono) ? formData.telefono : '' %>"
+                            class="w-full px-4 py-3 bg-slate-50 border rounded-xl focus:bg-white outline-none transition-all
+                                   <%= telefonoError ? 'border-rose-300 focus:ring-2 focus:ring-rose-400' : 'border-slate-200 focus:ring-2 focus:ring-indigo-500' %>"
+                            placeholder="70000000">
+                        <% if (telefonoError) { %>
+                            <p class="mt-1 text-xs text-rose-500 font-medium"><%= telefonoError.msg %></p>
+                        <% } else { %>
+                            <p class="mt-1 text-[11px] text-slate-400">Debe iniciar con 6 o 7 y tener exactamente 8 dígitos.</p>
+                        <% } %>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nacimiento</label>
-                        <input name="fecha_nacimiento" type="date" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none text-slate-600">
+                        <input
+                            name="fecha_nacimiento"
+                            type="date"
+                            required
+                            value="<%= (formData && formData.fecha_nacimiento) ? formData.fecha_nacimiento : '' %>"
+                            class="w-full px-4 py-3 bg-slate-50 border rounded-xl focus:bg-white outline-none transition-all text-slate-600
+                                   <%= fechaError ? 'border-rose-300 focus:ring-2 focus:ring-rose-400' : 'border-slate-200 focus:ring-2 focus:ring-indigo-500' %>">
+                        <% if (fechaError) { %>
+                            <p class="mt-1 text-xs text-rose-500 font-medium"><%= fechaError.msg %></p>
+                        <% } else { %>
+                            <p class="mt-1 text-[11px] text-slate-400">Debes ser mayor de 18 años. No se permiten fechas futuras.</p>
+                        <% } %>
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label>
-                    <input name="email" type="email" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="correo@ejemplo.com">
+                    <input
+                        name="email"
+                        type="email"
+                        required
+                        maxlength="254"
+                        value="<%= (formData && formData.email) ? formData.email : '' %>"
+                        class="w-full px-4 py-3 bg-slate-50 border rounded-xl focus:bg-white outline-none transition-all
+                               <%= emailError ? 'border-rose-300 focus:ring-2 focus:ring-rose-400' : 'border-slate-200 focus:ring-2 focus:ring-indigo-500' %>"
+                        placeholder="correo@ejemplo.com">
+                    <% if (emailError) { %>
+                        <p class="mt-1 text-xs text-rose-500 font-medium"><%= emailError.msg %></p>
+                    <% } else { %>
+                        <p class="mt-1 text-[11px] text-slate-400">Usa un correo válido al que tengas acceso.</p>
+                    <% } %>
                 </div>
 
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Contraseña</label>
-                    <input name="password" type="password" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="••••••••">
+                    <input
+                        name="password"
+                        type="password"
+                        required
+                        class="w-full px-4 py-3 bg-slate-50 border rounded-xl focus:bg-white outline-none transition-all
+                               <%= passwordError ? 'border-rose-300 focus:ring-2 focus:ring-rose-400' : 'border-slate-200 focus:ring-2 focus:ring-indigo-500' %>"
+                        placeholder="••••••••">
+                    <% if (passwordError) { %>
+                        <p class="mt-1 text-xs text-rose-500 font-medium"><%= passwordError.msg %></p>
+                    <% } else { %>
+                        <p class="mt-1 text-[11px] text-slate-400">
+                            Mínimo 8 caracteres, con mayúsculas, minúsculas, números y un símbolo.
+                        </p>
+                    <% } %>
                 </div>
 
-                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-indigo-500/40 transition-all transform active:scale-[0.98]">
-                    Crear Cuenta de Paciente
+                <button
+                    type="submit"
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-indigo-500/40 transition-all transform active:scale-[0.98] flex items-center justify-center gap-2">
+                    <span>Crear Cuenta de Paciente</span>
+                    <i class="fas fa-arrow-right text-sm"></i>
                 </button>
             </form>
 
             <div class="mt-6 text-center pt-4 border-t border-slate-100">
-                <p class="text-sm text-slate-500">¿Eres profesional de la salud? <a href="/auth/register-pro" class="text-indigo-600 font-bold hover:underline">Acceso Doctores</a></p>
+                <p class="text-sm text-slate-500">
+                    ¿Eres profesional de la salud?
+                    <a href="/auth/register-pro" class="text-indigo-600 font-bold hover:underline">
+                        Acceso Doctores
+                    </a>
+                </p>
             </div>
         </div>
         
         <div class="text-center">
-            <a href="/auth/login" class="text-slate-400 text-sm font-bold hover:text-indigo-500">← Volver al Login</a>
+            <a href="/auth/login" class="text-slate-400 text-sm font-bold hover:text-indigo-500">
+                ← Volver al Login
+            </a>
         </div>
     </div>
 </div>
+
+<script>
+    // Animaciones simples
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @keyframes fade-in-down { 
+            from { opacity: 0; transform: translateY(-10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        @keyframes slide-up { 
+            from { opacity: 0; transform: translateY(20px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        .animate-fade-in-down { animation: fade-in-down 0.6s ease-out; }
+        .animate-slide-up { animation: slide-up 0.7s ease-out; }
+    `;
+    document.head.appendChild(style);
+</script>
+
 <%- include('../partials/footer') %>

@@ -1,100 +1,195 @@
 const express = require('express');
 const router = express.Router();
-const { isAuthenticated } = require('../middleware/auth');
+const { isAuthenticated, requireAdmin } = require('../middleware/auth');
 
-// IMPORTACIÓN DE CEREBROS (CONTROLADORES)
-const dashboardController = require('../controllers/dashboardController'); 
+// CONTROLADORES
+const dashboardController = require('../controllers/dashboardController');
 const reportController = require('../controllers/reportController');
-const appointmentController = require('../controllers/appointmentController'); 
+const appointmentController = require('../controllers/appointmentController');
 const testController = require('../controllers/testController');
 
 // ==================================================================
-// DESPACHADOR CENTRAL (LOBBY PRINCIPAL)
-// Ruta Base: /dashboard
+// DESPACHADOR CENTRAL /dashboard
 // ==================================================================
-
 router.get('/', isAuthenticated, (req, res) => {
     const role = req.session.user.nombre_rol;
 
-    // Redirección Inteligente según Rol
     switch (role) {
         case 'Paciente':
-            res.redirect('/dashboard/patient');
-            break;
-        
+            return res.redirect('/dashboard/patient');
         case 'Terapeuta':
-            res.redirect('/dashboard/clinical');
-            break;
-        
+            return res.redirect('/dashboard/clinical');
         case 'GestorComunicacion':
-            res.redirect('/dashboard/manager');
-            break;
-        
+            return res.redirect('/dashboard/manager');
         case 'GestorCitas':
-            res.redirect('/dashboard/appointments');
-            break;
-        
+            return res.redirect('/dashboard/appointments');
         case 'Monitorista':
-            res.redirect('/dashboard/monitoring');
-            break;
-        
+            return res.redirect('/dashboard/monitoring');
         case 'Admin':
         case 'Administrador':
-             res.redirect('/dashboard/admin');
-             break;
-
+            return res.redirect('/dashboard/admin');
         default:
-            res.render('dashboard/index', { 
-                title: 'Bienvenido a MindCare', 
-                user: req.session.user 
+            return res.render('dashboard/index', {
+                title: 'Bienvenido a MindCare',
+                user: req.session.user
             });
-            break;
     }
 });
 
 // ==================================================================
-// RUTAS ESPECÍFICAS (Vinculadas a Controladores)
+// 1. DASHBOARD PACIENTE
 // ==================================================================
-
-// 1. DASHBOARD DEL PACIENTE (AUTÓNOMO)
 router.get('/patient', isAuthenticated, dashboardController.getPatientDashboard);
 
-// 2. DASHBOARD ADMIN
-router.get('/admin', isAuthenticated, dashboardController.getAdminDashboard);
+// ==================================================================
+// 2. DASHBOARD ADMIN (Centro de Comando)
+// ==================================================================
+router.get(
+    '/admin',
+    isAuthenticated,
+    requireAdmin,
+    dashboardController.getAdminDashboard
+);
 
-// 3. DASHBOARD CLÍNICO (TERAPEUTA - CENTRO DE COMANDO)
-router.get('/clinical', isAuthenticated, reportController.getClinicalDashboard);
+// ==================================================================
+// 3. DASHBOARD CLÍNICO (TERAPEUTA)
+// ==================================================================
+router.get(
+    '/clinical',
+    isAuthenticated,
+    reportController.getClinicalDashboard
+);
 
-// 4. GESTIÓN DE CRISIS (Jimmy)
+// ==================================================================
+// 4. GESTIÓN DE CRISIS
+// ==================================================================
 router.get('/manager', isAuthenticated, (req, res) => {
-    res.render('dashboard/manager', { 
-        title: 'Gestión de Crisis', 
+    res.render('dashboard/manager', {
+        title: 'Gestión de Crisis',
         user: req.session.user,
-        incidencias: [] 
+        incidencias: []
     });
 });
 
-// 5. GESTIÓN DE CITAS (CALENDARIO INTERACTIVO) 📅
-// A. La Vista Principal
-router.get('/appointments', isAuthenticated, appointmentController.getAppointmentsDashboard);
+// ==================================================================
+// 5. CITAS (CALENDARIO)
+// ==================================================================
+router.get(
+    '/appointments',
+    isAuthenticated,
+    appointmentController.getAppointmentsDashboard
+);
 
-// B. La API del Calendario (Para que aparezcan los recuadros de colores)
-router.get('/appointments/events', isAuthenticated, appointmentController.getCalendarEvents);
+router.get(
+    '/appointments/events',
+    isAuthenticated,
+    appointmentController.getCalendarEvents
+);
 
-// C. Acciones (Crear y Cancelar)
-router.post('/appointments/create', isAuthenticated, appointmentController.createAppointment);
-router.post('/appointments/cancel', isAuthenticated, appointmentController.cancelAppointment);
+router.post(
+    '/appointments/create',
+    isAuthenticated,
+    appointmentController.createAppointment
+);
 
+router.post(
+    '/appointments/cancel',
+    isAuthenticated,
+    appointmentController.cancelAppointment
+);
 
-// 6. RUTAS CRUD DE USUARIOS (Solo Admin)
-router.get('/create-user', isAuthenticated, dashboardController.showCreateUserForm);
-router.post('/create-user', isAuthenticated, dashboardController.createUser);
-router.get('/edit-user/:id', isAuthenticated, dashboardController.showEditUserForm);
-router.post('/edit-user/:id', isAuthenticated, dashboardController.updateUser);
-router.post('/toggle-status/:id', isAuthenticated, dashboardController.toggleUserStatus);
-router.post('/assign-therapist', isAuthenticated, dashboardController.assignTherapist);
+// ==================================================================
+// 6. CRUD USUARIOS (ADMIN)  ✅
+// Rutas tipo /dashboard/admin/...
+// ==================================================================
 
-// 7. SISTEMA DE TESTS PSICOLÓGICOS (NUEVO) ✅
+// NUEVO USUARIO
+router.get(
+    '/admin/create',
+    isAuthenticated,
+    requireAdmin,
+    dashboardController.showCreateUserForm
+);
+
+router.post(
+    '/admin/create',
+    isAuthenticated,
+    requireAdmin,
+    dashboardController.createUser
+);
+
+// EDITAR USUARIO
+router.get(
+    '/admin/edit/:id',
+    isAuthenticated,
+    requireAdmin,
+    dashboardController.showEditUserForm
+);
+
+router.post(
+    '/admin/edit/:id',
+    isAuthenticated,
+    requireAdmin,
+    dashboardController.updateUser
+);
+
+// BLOQUEAR / DESBLOQUEAR
+router.post(
+    '/admin/toggle-user/:id',
+    isAuthenticated,
+    requireAdmin,
+    dashboardController.toggleUserStatus
+);
+
+// ASIGNAR TERAPEUTA A PACIENTE (MATCHMAKING)
+router.post(
+    '/admin/assign',
+    isAuthenticated,
+    requireAdmin,
+    dashboardController.assignTherapist
+);
+
+// ALIAS DE COMPATIBILIDAD (por si algo viejo usa estas rutas)
+router.get(
+    '/create-user',
+    isAuthenticated,
+    requireAdmin,
+    dashboardController.showCreateUserForm
+);
+router.post(
+    '/create-user',
+    isAuthenticated,
+    requireAdmin,
+    dashboardController.createUser
+);
+router.get(
+    '/edit-user/:id',
+    isAuthenticated,
+    requireAdmin,
+    dashboardController.showEditUserForm
+);
+router.post(
+    '/edit-user/:id',
+    isAuthenticated,
+    requireAdmin,
+    dashboardController.updateUser
+);
+router.post(
+    '/toggle-status/:id',
+    isAuthenticated,
+    requireAdmin,
+    dashboardController.toggleUserStatus
+);
+router.post(
+    '/assign-therapist',
+    isAuthenticated,
+    requireAdmin,
+    dashboardController.assignTherapist
+);
+
+// ==================================================================
+// 7. TESTS PSICOLÓGICOS
+// ==================================================================
 router.get('/test/:type', isAuthenticated, testController.showTest);
 router.post('/test/:type/save', isAuthenticated, testController.submitTest);
 
