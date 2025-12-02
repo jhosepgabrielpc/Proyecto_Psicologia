@@ -120,6 +120,9 @@ const communicationRoutes = require('./routes/communicationRoutes');
 const monitoringRoutes = require('./routes/monitoringRoutes'); // Jhosep (Monitoreo)
 const reportRoutes = require('./routes/reportRoutes'); // Renan (Clínica)
 const indexRoutes = require('./routes/index');
+const appointmentRoutes = require('./routes/appointmentRoutes');
+app.use('/dashboard/appointments', appointmentRoutes);
+
 
 // A. Rutas Públicas (Landing y Auth)
 app.use('/', indexRoutes);

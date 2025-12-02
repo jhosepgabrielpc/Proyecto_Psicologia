@@ -9,10 +9,15 @@ const getAppointmentsDashboard = async (req, res) => {
     const role = req.session.user.nombre_rol;
 
     try {
-        let patientsQuery = "SELECT id_paciente, u.nombre, u.apellido FROM Pacientes p JOIN Usuarios u ON p.id_usuario = u.id_usuario WHERE u.estado = true";
+        let patientsQuery = `
+            SELECT p.id_paciente, u.nombre, u.apellido 
+            FROM Pacientes p 
+            JOIN Usuarios u ON p.id_usuario = u.id_usuario 
+            WHERE u.estado = true
+        `;
         let patientsParams = [];
 
-        let statsQuery = "";
+        let statsQuery = '';
         let todayQuery = `
             SELECT c.*, 
                    up.nombre as pac_nombre, up.apellido as pac_apellido,
@@ -23,75 +28,109 @@ const getAppointmentsDashboard = async (req, res) => {
             JOIN Terapeutas t ON c.id_terapeuta = t.id_terapeuta
             JOIN Usuarios ut ON t.id_usuario = ut.id_usuario
             WHERE c.fecha_hora_inicio::date = CURRENT_DATE 
-            AND c.estado = 'Programada'
+              AND c.estado = 'Programada'
         `;
         let queryParams = [];
 
         // --- APLICAR FILTROS SEGÚN ROL ---
         if (role === 'Paciente') {
             // 1. Lista de pacientes: Solo él mismo
-            patientsQuery += " AND p.id_usuario = $1";
+            patientsQuery += ' AND p.id_usuario = $1';
             patientsParams = [userId];
 
             // 2. KPIs: Solo sus citas
             statsQuery = `
                 SELECT 
-                    (SELECT COUNT(*) FROM Citas c JOIN Pacientes p ON c.id_paciente = p.id_paciente WHERE p.id_usuario = $1 AND estado = 'Programada' AND fecha_hora_inicio >= NOW()) as citas_futuras,
-                    (SELECT COUNT(*) FROM Citas c JOIN Pacientes p ON c.id_paciente = p.id_paciente WHERE p.id_usuario = $1 AND estado = 'Completada' AND fecha_hora_inicio >= DATE_TRUNC('month', NOW())) as completadas_mes
+                    (SELECT COUNT(*) 
+                     FROM Citas c 
+                     JOIN Pacientes p ON c.id_paciente = p.id_paciente 
+                     WHERE p.id_usuario = $1 
+                       AND c.estado = 'Programada' 
+                       AND c.fecha_hora_inicio >= NOW()) as citas_futuras,
+                    (SELECT COUNT(*) 
+                     FROM Citas c 
+                     JOIN Pacientes p ON c.id_paciente = p.id_paciente 
+                     WHERE p.id_usuario = $1 
+                       AND c.estado = 'Completada' 
+                       AND c.fecha_hora_inicio >= DATE_TRUNC('month', NOW())) as completadas_mes
             `;
 
             // 3. Agenda Hoy: Solo sus citas
-            todayQuery += " AND p.id_usuario = $1";
+            todayQuery += ' AND p.id_usuario = $1';
             queryParams = [userId];
 
         } else if (role === 'Terapeuta') {
-            // 1. Lista de pacientes: Todos (para poder agendar)
-            // No filtramos la lista del select, el terapeuta puede ver a todos para crear citas.
+            // 1. Lista de pacientes: todos (para poder agendar libremente)
 
-            // 2. KPIs: Solo sus citas como doctor
+            // 2. KPIs: Solo sus citas como terapeuta
             statsQuery = `
                 SELECT 
-                    (SELECT COUNT(*) FROM Citas c JOIN Terapeutas t ON c.id_terapeuta = t.id_terapeuta WHERE t.id_usuario = $1 AND estado = 'Programada' AND fecha_hora_inicio >= NOW()) as citas_futuras,
-                    (SELECT COUNT(*) FROM Citas c JOIN Terapeutas t ON c.id_terapeuta = t.id_terapeuta WHERE t.id_usuario = $1 AND estado = 'Completada' AND fecha_hora_inicio >= DATE_TRUNC('month', NOW())) as completadas_mes
+                    (SELECT COUNT(*) 
+                     FROM Citas c 
+                     JOIN Terapeutas t ON c.id_terapeuta = t.id_terapeuta 
+                     WHERE t.id_usuario = $1 
+                       AND c.estado = 'Programada' 
+                       AND c.fecha_hora_inicio >= NOW()) as citas_futuras,
+                    (SELECT COUNT(*) 
+                     FROM Citas c 
+                     JOIN Terapeutas t ON c.id_terapeuta = t.id_terapeuta 
+                     WHERE t.id_usuario = $1 
+                       AND c.estado = 'Completada' 
+                       AND c.fecha_hora_inicio >= DATE_TRUNC('month', NOW())) as completadas_mes
             `;
 
             // 3. Agenda Hoy: Solo sus citas
-            todayQuery += " AND t.id_usuario = $1";
+            todayQuery += ' AND t.id_usuario = $1';
             queryParams = [userId];
 
         } else {
-            // GESTORES/ADMIN: Ven todo
+            // ADMIN / GESTOR: ven todo
             statsQuery = `
                 SELECT 
-                    (SELECT COUNT(*) FROM Citas WHERE estado = 'Programada' AND fecha_hora_inicio >= NOW()) as citas_futuras,
-                    (SELECT COUNT(*) FROM Citas WHERE estado = 'Completada' AND fecha_hora_inicio >= DATE_TRUNC('month', NOW())) as completadas_mes
+                    (SELECT COUNT(*) 
+                     FROM Citas 
+                     WHERE estado = 'Programada' 
+                       AND fecha_hora_inicio >= NOW()) as citas_futuras,
+                    (SELECT COUNT(*) 
+                     FROM Citas 
+                     WHERE estado = 'Completada' 
+                       AND fecha_hora_inicio >= DATE_TRUNC('month', NOW())) as completadas_mes
             `;
-            // No agregamos filtros al WHERE de todayQuery
+            // todayQuery ya ve todas las citas de hoy
         }
 
         // --- EJECUCIÓN DE CONSULTAS ---
-        
+
         // A. Listas para Selectores
-        const patientsRes = await db.query(patientsQuery + " ORDER BY u.apellido", patientsParams);
-        const therapistsRes = await db.query("SELECT id_terapeuta, u.nombre, u.apellido, t.especialidad FROM Terapeutas t JOIN Usuarios u ON t.id_usuario = u.id_usuario WHERE u.estado = true ORDER BY u.apellido");
+        const patientsRes = await db.query(patientsQuery + ' ORDER BY u.apellido', patientsParams);
+        const therapistsRes = await db.query(`
+            SELECT t.id_terapeuta, u.nombre, u.apellido, t.especialidad 
+            FROM Terapeutas t 
+            JOIN Usuarios u ON t.id_usuario = u.id_usuario 
+            WHERE u.estado = true 
+            ORDER BY u.apellido
+        `);
 
         // B. KPIs
-        const statsRes = await db.query(statsQuery, (role === 'Paciente' || role === 'Terapeuta') ? [userId] : []);
+        const statsRes = await db.query(
+            statsQuery,
+            (role === 'Paciente' || role === 'Terapeuta') ? [userId] : []
+        );
 
-        // C. Agenda Lateral (Hoy)
-        todayQuery += " ORDER BY c.fecha_hora_inicio ASC";
+        // C. Agenda de Hoy
+        todayQuery += ' ORDER BY c.fecha_hora_inicio ASC';
         const todayRes = await db.query(todayQuery, queryParams);
 
-        // D. Solicitudes (Solo si es Gestor o Admin las ve todas, si no, vacio o personales)
+        // D. Solicitudes (solo Gestor / Admin)
         let requestsRes = { rows: [] };
         if (role === 'GestorCitas' || role === 'Admin') {
-             requestsRes = await db.query(`
+            requestsRes = await db.query(`
                 SELECT m.id_mensaje, m.contenido, m.fecha_envio, u.nombre as remitente
                 FROM Mensajes_Seguros m
                 JOIN Usuarios u ON m.id_remitente = u.id_usuario
                 WHERE m.id_destinatario = $1 
-                AND m.contenido LIKE '%SOLICITUD%'
-                AND m.leido = false
+                  AND m.contenido LIKE '%SOLICITUD%'
+                  AND m.leido = false
                 ORDER BY m.fecha_envio DESC
             `, [userId]);
         }
@@ -108,7 +147,12 @@ const getAppointmentsDashboard = async (req, res) => {
 
     } catch (error) {
         console.error('Error dashboard citas:', error);
-        res.status(500).render('error', { title: 'Error', message: 'Fallo en sistema de citas', error, user: req.session.user });
+        res.status(500).render('error', {
+            title: 'Error',
+            message: 'Fallo en sistema de citas',
+            error,
+            user: req.session.user
+        });
     }
 };
 
@@ -132,27 +176,31 @@ const getCalendarEvents = async (req, res) => {
             JOIN Usuarios ut ON t.id_usuario = ut.id_usuario
             WHERE c.estado != 'Cancelada'
         `;
-        
-        let params = [];
+
+        const params = [];
 
         // FILTRADO ESTRICTO
         if (role === 'Terapeuta') {
-            query += ` AND t.id_usuario = $1`;
+            query += ' AND t.id_usuario = $1';
             params.push(userId);
         } else if (role === 'Paciente') {
-            query += ` AND p.id_usuario = $1`;
+            query += ' AND p.id_usuario = $1';
             params.push(userId);
         }
-        
+
         const result = await db.query(query, params);
 
         const events = result.rows.map(cita => ({
             id: cita.id_cita,
-            // Si soy paciente, quiero ver el nombre del Doctor. Si soy Doctor, quiero ver al Paciente.
-            title: role === 'Paciente' ? `Dr. ${cita.terapeuta_nombre}` : `${cita.paciente_nombre}`,
-            start: cita.fecha_hora_inicio, 
+            // Si soy paciente, veo al doctor. Si soy doctor/admin, veo al paciente.
+            title: role === 'Paciente'
+                ? `Dr(a). ${cita.terapeuta_nombre}`
+                : `${cita.paciente_nombre}`,
+            start: cita.fecha_hora_inicio,
             end: cita.fecha_hora_fin,
-            backgroundColor: cita.estado === 'Completada' ? '#94a3b8' : (cita.modalidad === 'Virtual' ? '#6366f1' : '#10b981'),
+            backgroundColor: cita.estado === 'Completada'
+                ? '#94a3b8'
+                : (cita.modalidad === 'Virtual' ? '#6366f1' : '#10b981'),
             borderColor: 'transparent',
             extendedProps: {
                 doctor: cita.terapeuta_nombre,
@@ -160,7 +208,7 @@ const getCalendarEvents = async (req, res) => {
                 status: cita.estado,
                 modality: cita.modalidad,
                 link: cita.enlace_reunion,
-                notes: cita.notas_admin
+                notes: cita.notas_admin || ''
             }
         }));
 
@@ -180,16 +228,17 @@ const createAppointment = async (req, res) => {
     try {
         await db.query('BEGIN');
 
-        const startDateTime = new Date(`${fecha}T${hora}:00`); 
-        const durationMinutes = parseInt(duracion);
+        const startDateTime = new Date(`${fecha}T${hora}:00`);
+        const durationMinutes = parseInt(duracion, 10);
         const endDateTime = new Date(startDateTime.getTime() + durationMinutes * 60000);
 
-        // Validación de Superposición (Solo importa si el terapeuta está ocupado)
+        // Validación de superposición (terapeuta ocupado)
         const overlapCheck = await db.query(`
-            SELECT id_cita FROM Citas 
+            SELECT id_cita 
+            FROM Citas 
             WHERE id_terapeuta = $1 
-            AND estado = 'Programada'
-            AND tsrange(fecha_hora_inicio, fecha_hora_fin) && tsrange($2, $3)
+              AND estado = 'Programada'
+              AND tsrange(fecha_hora_inicio, fecha_hora_fin) && tsrange($2, $3)
         `, [id_terapeuta, startDateTime, endDateTime]);
 
         if (overlapCheck.rows.length > 0) {
@@ -197,6 +246,7 @@ const createAppointment = async (req, res) => {
             return res.redirect('/dashboard/appointments?msg=error_overlap');
         }
 
+        // Enlace virtual si aplica
         let meetingLink = null;
         if (modalidad === 'Virtual') {
             const code = crypto.randomBytes(4).toString('hex');
@@ -212,22 +262,41 @@ const createAppointment = async (req, res) => {
             VALUES ($1, $2, $3, $4, $5, 'Programada', $6, $7, NOW())
         `;
 
-        await db.query(insertQuery, [id_paciente, id_terapeuta, startDateTime, endDateTime, modalidad, meetingLink, notas]);
+        await db.query(insertQuery, [
+            id_paciente,
+            id_terapeuta,
+            startDateTime,
+            endDateTime,
+            modalidad,
+            meetingLink,
+            notas
+        ]);
 
         // Notificaciones
-        const tInfo = await db.query('SELECT id_usuario FROM Terapeutas WHERE id_terapeuta = $1', [id_terapeuta]);
-        const pInfo = await db.query('SELECT id_usuario FROM Pacientes WHERE id_paciente = $1', [id_paciente]);
+        const tInfo = await db.query(
+            'SELECT id_usuario FROM Terapeutas WHERE id_terapeuta = $1',
+            [id_terapeuta]
+        );
+        const pInfo = await db.query(
+            'SELECT id_usuario FROM Pacientes WHERE id_paciente = $1',
+            [id_paciente]
+        );
 
-        if(tInfo.rows.length > 0) {
-             await db.query(`INSERT INTO Notificaciones (id_usuario, tipo, mensaje, enlace_accion, fecha_creacion, leido) VALUES ($1, 'cita_nueva', '📅 Nueva Cita Agendada', '/dashboard/clinical', NOW(), false)`, [tInfo.rows[0].id_usuario]);
+        if (tInfo.rows.length > 0) {
+            await db.query(`
+                INSERT INTO Notificaciones (id_usuario, tipo, mensaje, enlace_accion, fecha_creacion, leido) 
+                VALUES ($1, 'cita_nueva', '📅 Nueva Cita Agendada', '/dashboard/clinical', NOW(), false)
+            `, [tInfo.rows[0].id_usuario]);
         }
-        if(pInfo.rows.length > 0) {
-             await db.query(`INSERT INTO Notificaciones (id_usuario, tipo, mensaje, enlace_accion, fecha_creacion, leido) VALUES ($1, 'cita_confirmada', '✅ Cita Confirmada', '/dashboard/patient', NOW(), false)`, [pInfo.rows[0].id_usuario]);
+        if (pInfo.rows.length > 0) {
+            await db.query(`
+                INSERT INTO Notificaciones (id_usuario, tipo, mensaje, enlace_accion, fecha_creacion, leido) 
+                VALUES ($1, 'cita_confirmada', '✅ Cita Confirmada', '/dashboard/patient', NOW(), false)
+            `, [pInfo.rows[0].id_usuario]);
         }
 
         await db.query('COMMIT');
         res.redirect('/dashboard/appointments?msg=success_created');
-
     } catch (error) {
         await db.query('ROLLBACK');
         console.error('Error creando cita:', error);
@@ -240,6 +309,7 @@ const createAppointment = async (req, res) => {
 // ====================================================================
 const cancelAppointment = async (req, res) => {
     const { id_cita, motivo } = req.body;
+
     try {
         await db.query('BEGIN');
 
@@ -248,21 +318,28 @@ const cancelAppointment = async (req, res) => {
             FROM Citas c
             JOIN Terapeutas t ON c.id_terapeuta = t.id_terapeuta
             JOIN Pacientes p ON c.id_paciente = p.id_paciente
-            WHERE id_cita = $1
+            WHERE c.id_cita = $1
         `, [id_cita]);
 
-        if(citaRes.rows.length > 0) {
+        if (citaRes.rows.length > 0) {
             const cita = citaRes.rows[0];
-            
+
             await db.query(`
                 UPDATE Citas 
                 SET estado = 'Cancelada', 
-                    notas_admin = CONCAT(notas_admin, ' [Cancelada: ', $1::text, ']') 
+                    notas_admin = COALESCE(notas_admin, '') || ' [Cancelada: ' || $1::text || ']' 
                 WHERE id_cita = $2
             `, [motivo, id_cita]);
 
-            await db.query(`INSERT INTO Notificaciones (id_usuario, tipo, mensaje, enlace_accion, fecha_creacion) VALUES ($1, 'cita_cancelada', '⛔ Cita Cancelada: ' || $2, '#', NOW())`, [cita.t_user, motivo]);
-            await db.query(`INSERT INTO Notificaciones (id_usuario, tipo, mensaje, enlace_accion, fecha_creacion) VALUES ($1, 'cita_cancelada', '⛔ Cita Cancelada: ' || $2, '#', NOW())`, [cita.p_user, motivo]);
+            await db.query(`
+                INSERT INTO Notificaciones (id_usuario, tipo, mensaje, enlace_accion, fecha_creacion) 
+                VALUES ($1, 'cita_cancelada', '⛔ Cita Cancelada: ' || $2, '#', NOW())
+            `, [cita.t_user, motivo]);
+
+            await db.query(`
+                INSERT INTO Notificaciones (id_usuario, tipo, mensaje, enlace_accion, fecha_creacion) 
+                VALUES ($1, 'cita_cancelada', '⛔ Cita Cancelada: ' || $2, '#', NOW())
+            `, [cita.p_user, motivo]);
         }
 
         await db.query('COMMIT');
@@ -274,4 +351,69 @@ const cancelAppointment = async (req, res) => {
     }
 };
 
-module.exports = { getAppointmentsDashboard, getCalendarEvents, createAppointment, cancelAppointment };
+// ====================================================================
+// 5. GUARDAR NOTA CLÍNICA DE SESIÓN 🧠
+// ====================================================================
+const saveSessionNotes = async (req, res) => {
+    const {
+        id_cita,
+        motivo_sesion,
+        resumen_sesion,
+        intervenciones,
+        nivel_riesgo,
+        acuerdos,
+        plan_proxima
+    } = req.body;
+
+    if (!id_cita) {
+        return res.redirect('/dashboard/appointments?msg=error_notes');
+    }
+
+    try {
+        // intervenciones puede venir como string o array
+        let intervencionesTexto = '';
+        if (Array.isArray(intervenciones)) {
+            intervencionesTexto = intervenciones.join(', ');
+        } else if (typeof intervenciones === 'string') {
+            intervencionesTexto = intervenciones;
+        }
+
+        const bloques = [
+            motivo_sesion ? `Motivo principal: ${motivo_sesion}` : null,
+            resumen_sesion ? `Resumen clínico: ${resumen_sesion}` : null,
+            intervencionesTexto ? `Intervenciones realizadas: ${intervencionesTexto}` : null,
+            nivel_riesgo ? `Nivel de riesgo clínico: ${nivel_riesgo}` : null,
+            acuerdos ? `Acuerdos y tareas: ${acuerdos}` : null,
+            plan_proxima ? `Plan para próxima sesión: ${plan_proxima}` : null
+        ].filter(Boolean);
+
+        const cuerpoNota = bloques.join('\n');
+
+        await db.query(`
+            UPDATE Citas
+            SET notas_admin = COALESCE(notas_admin, '') 
+                || E'\n\n--- Nota de sesión (' 
+                || TO_CHAR(NOW(), 'DD/MM/YYYY HH24:MI') 
+                || E') ---\n' 
+                || $2,
+                estado = CASE 
+                            WHEN estado = 'Programada' THEN 'Completada' 
+                            ELSE estado 
+                         END
+            WHERE id_cita = $1
+        `, [id_cita, cuerpoNota]);
+
+        return res.redirect('/dashboard/appointments?msg=success_notes');
+    } catch (error) {
+        console.error('Error guardando nota de sesión:', error);
+        return res.redirect('/dashboard/appointments?msg=error_notes');
+    }
+};
+
+module.exports = {
+    getAppointmentsDashboard,
+    getCalendarEvents,
+    createAppointment,
+    cancelAppointment,
+    saveSessionNotes
+};
