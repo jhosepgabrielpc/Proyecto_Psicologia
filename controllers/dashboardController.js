@@ -1,6 +1,6 @@
 const db = require('../config/database');
 const { hashPassword } = require('../utils/helpers');
-
+//Cambios en consultas 
 // ==================================================================================
 // 1. DASHBOARD PACIENTE
 // ==================================================================================

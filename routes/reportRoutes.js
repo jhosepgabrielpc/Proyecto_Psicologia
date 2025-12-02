@@ -6,7 +6,7 @@ const { isAuthenticated } = require('../middleware/auth');
 // ==================================================================
 // RUTAS DEL MÓDULO CLÍNICO (RENAN)
 // ==================================================================
-
+//rutas para reportes clínicos
 // 1. Analytics Global
 router.get('/analytics', isAuthenticated, reportController.getAnalytics);
 
