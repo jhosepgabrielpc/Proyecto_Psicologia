@@ -190,27 +190,39 @@ const getCalendarEvents = async (req, res) => {
 
         const result = await db.query(query, params);
 
-        const events = result.rows.map(cita => ({
-            id: cita.id_cita,
-            // Si soy paciente, veo al doctor. Si soy doctor/admin, veo al paciente.
-            title: role === 'Paciente'
-                ? `Dr(a). ${cita.terapeuta_nombre}`
-                : `${cita.paciente_nombre}`,
-            start: cita.fecha_hora_inicio,
-            end: cita.fecha_hora_fin,
-            backgroundColor: cita.estado === 'Completada'
-                ? '#94a3b8'
-                : (cita.modalidad === 'Virtual' ? '#6366f1' : '#10b981'),
-            borderColor: 'transparent',
-            extendedProps: {
-                doctor: cita.terapeuta_nombre,
-                patient: cita.paciente_nombre,
-                status: cita.estado,
-                modality: cita.modalidad,
-                link: cita.enlace_reunion,
-                notes: cita.notas_admin || ''
+                const events = result.rows.map(cita => {
+            const esCrisis = cita.notas_admin && cita.notas_admin.includes('[CRISIS]');
+
+            let backgroundColor;
+            if (esCrisis) {
+                backgroundColor = '#dc2626'; // rojo para crisis
+            } else if (cita.estado === 'Completada') {
+                backgroundColor = '#94a3b8';
+            } else {
+                backgroundColor = (cita.modalidad === 'Virtual' ? '#6366f1' : '#10b981');
             }
-        }));
+
+            return {
+                id: cita.id_cita,
+                title: role === 'Paciente'
+                    ? `Dr(a). ${cita.terapeuta_nombre}`
+                    : `${cita.paciente_nombre}`,
+                start: cita.fecha_hora_inicio,
+                end: cita.fecha_hora_fin,
+                backgroundColor,
+                borderColor: 'transparent',
+                extendedProps: {
+                    doctor: cita.terapeuta_nombre,
+                    patient: cita.paciente_nombre,
+                    status: cita.estado,
+                    modality: cita.modalidad,
+                    link: cita.enlace_reunion,
+                    notes: cita.notas_admin || '',
+                    esCrisis
+                }
+            };
+        });
+
 
         res.json(events);
     } catch (error) {

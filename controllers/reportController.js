@@ -1,4 +1,12 @@
+// controllers/reportController.js
+
 const db = require('../config/database');
+const PDFDocument = require('pdfkit');
+const ExcelJS = require('exceljs');
+const path = require('path');
+
+// Helper IA-lite para resumen clínico
+const { generateClinicalSummary } = require('../helpers/clinicalSummary');
 
 // ====================================================================
 // 1. DASHBOARD CLÍNICO (CENTRO DE COMANDO)
@@ -229,8 +237,6 @@ const getClinicalDashboard = async (req, res) => {
     }
 };
 
-
-
 // ====================================================================
 // 2. RESOLVER INCIDENCIA
 // ====================================================================
@@ -306,7 +312,7 @@ const getAnalytics = async (req, res) => {
 };
 
 // ====================================================================
-// 4. EXPEDIENTE DEL PACIENTE
+// 4. EXPEDIENTE DEL PACIENTE (VISTA HTML)
 // ====================================================================
 const getPatientHistory = async (req, res) => {
     const patientId = parseInt(req.params.id, 10);
@@ -517,9 +523,9 @@ const saveProgressReport = async (req, res) => {
         await db.query(
             `
             INSERT INTO reportes_progreso 
-                (id_paciente, id_terapeuta, tipo_reporte, periodo_inicio, periodo_fin, resumen_evolucion, recomendaciones) 
+                (id_paciente, id_terapeuta, tipo_reporte, periodo_inicio, periodo_fin, resumen_evolucion, recomendaciones, fecha_generacion) 
             VALUES 
-                ($1, $2, $3, $4, $5, $6, $7)
+                ($1, $2, $3, $4, $5, $6, $7, NOW())
             `,
             [
                 patientId,
@@ -565,6 +571,612 @@ const updateSessionNote = async (req, res) => {
 };
 
 // ====================================================================
+// 8. GENERAR REPORTE CLÍNICO PDF PROFESIONAL
+//    GET /reports/patient/:id/pdf
+// ====================================================================
+const generatePatientPdf = async (req, res) => {
+    const patientId = parseInt(req.params.id, 10);
+    if (Number.isNaN(patientId)) {
+        return res.status(400).send('Paciente inválido');
+    }
+
+    try {
+        // 1) DATOS PRINCIPALES DEL PACIENTE + TERAPEUTA
+        const infoRes = await db.query(
+            `
+            SELECT 
+                p.id_paciente,
+                p.estado_tratamiento,
+                u.nombre,
+                u.apellido,
+                u.email,
+                u.telefono,
+                u.fecha_registro,
+                u.foto_perfil,
+                t.id_terapeuta,
+                ut.nombre AS terapeuta_nombre,
+                ut.apellido AS terapeuta_apellido,
+                t.especialidad
+            FROM Pacientes p
+            JOIN Usuarios u ON p.id_usuario = u.id_usuario
+            LEFT JOIN Terapeutas t ON p.id_terapeuta = t.id_terapeuta
+            LEFT JOIN Usuarios ut ON t.id_usuario = ut.id_usuario
+            WHERE p.id_paciente = $1
+            `,
+            [patientId]
+        );
+
+        if (infoRes.rows.length === 0) {
+            return res.status(404).send('Paciente no encontrado');
+        }
+
+        const info = infoRes.rows[0];
+
+        // 2) ÚLTIMAS CITAS + TESTS + CHECKINS + INCIDENCIAS
+        const [sessionsRes, testsRes, moodSeriesRes, incidentsRes] =
+            await Promise.all([
+                db.query(
+                    `
+                    SELECT 
+                        fecha_hora_inicio,
+                        modalidad,
+                        estado,
+                        notas_admin
+                    FROM Citas
+                    WHERE id_paciente = $1
+                    ORDER BY fecha_hora_inicio DESC
+                    LIMIT 10
+                    `,
+                    [patientId]
+                ),
+                db.query(
+                    `
+                    SELECT 
+                        tipo_test,
+                        puntaje_total,
+                        nivel_severidad,
+                        fecha_realizacion
+                    FROM resultados_tests
+                    WHERE id_paciente = $1
+                    ORDER BY fecha_realizacion DESC
+                    LIMIT 10
+                    `,
+                    [patientId]
+                ),
+                db.query(
+                    `
+                    SELECT 
+                        fecha_hora,
+                        valencia
+                    FROM checkins_emocionales
+                    WHERE id_paciente = $1
+                    ORDER BY fecha_hora ASC
+                    LIMIT 50
+                    `,
+                    [patientId]
+                ),
+                db.query(
+                    `
+                    SELECT 
+                        reporte_inicial,
+                        nivel_gravedad,
+                        fecha_creacion,
+                        estado
+                    FROM incidencias_clinicas
+                    WHERE id_paciente = $1
+                    ORDER BY fecha_creacion DESC
+                    LIMIT 10
+                    `,
+                    [patientId]
+                )
+            ]);
+
+        // 3) PREPARAR DATA PARA EL HELPER (IA-lite)
+        const summaryData = {
+            patient: info,
+            sessions: sessionsRes.rows,
+            tests: testsRes.rows,
+            moodSeries: moodSeriesRes.rows,
+            incidents: incidentsRes.rows
+        };
+
+        const clinicalSummaryText = generateClinicalSummary(summaryData);
+
+        // 4) CONFIGURAR RESPUESTA HTTP
+        const fileName = `reporte_clinico_${info.nombre}_${info.apellido}.pdf`.replace(
+            /\s+/g,
+            '_'
+        );
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader(
+            'Content-Disposition',
+            `inline; filename="${fileName}"`
+        );
+
+        // 5) CREAR PDF
+        const doc = new PDFDocument({
+            size: 'A4',
+            margin: 50
+        });
+
+        doc.pipe(res);
+
+        // PORTADA
+        doc
+            .fontSize(22)
+            .fillColor('#1f2933')
+            .text('MindCare - Reporte Clínico Integrado', { align: 'center' });
+
+        doc.moveDown();
+
+        doc
+            .fontSize(14)
+            .fillColor('#111827')
+            .text(
+                `${info.nombre} ${info.apellido}`,
+                { align: 'center' }
+            );
+
+        doc
+            .fontSize(10)
+            .fillColor('#4b5563')
+            .text(`ID interno: ${info.id_paciente}`, { align: 'center' });
+
+        doc.moveDown();
+
+        doc
+            .fontSize(10)
+            .fillColor('#374151')
+            .text(
+                `Terapeuta a cargo: ${
+                    info.terapeuta_nombre
+                        ? `Dr(a). ${info.terapeuta_nombre} ${info.terapeuta_apellido} (${info.especialidad || 'Sin especialidad'})`
+                        : 'No asignado'
+                }`,
+                { align: 'center' }
+            );
+
+        doc
+            .fontSize(9)
+            .fillColor('#6b7280')
+            .text(
+                `Generado: ${new Date().toLocaleString('es-ES')}`,
+                { align: 'center' }
+            );
+
+        doc.addPage();
+
+        // SECCIÓN 1: DATOS DE IDENTIFICACIÓN
+        doc
+            .fontSize(14)
+            .fillColor('#111827')
+            .text('1. Datos de identificación', { underline: true });
+        doc.moveDown(0.5);
+
+        doc.fontSize(10).fillColor('#111827');
+        doc.text(`Nombre completo: ${info.nombre} ${info.apellido}`);
+        doc.text(`Email: ${info.email}`);
+        if (info.telefono) doc.text(`Teléfono: ${info.telefono}`);
+        doc.text(
+            `Estado de tratamiento: ${info.estado_tratamiento || 'Sin dato'}`
+        );
+        doc.text(
+            `Fecha de registro en MindCare: ${
+                info.fecha_registro
+                    ? new Date(info.fecha_registro).toLocaleDateString('es-ES')
+                    : 'N/D'
+            }`
+        );
+
+        doc.moveDown();
+
+        // SECCIÓN 2: RESUMEN CLÍNICO AUTOMATIZADO
+        doc
+            .fontSize(14)
+            .fillColor('#111827')
+            .text('2. Resumen Clínico Automatizado', { underline: true });
+        doc.moveDown(0.5);
+
+        doc
+            .fontSize(10)
+            .fillColor('#374151')
+            .text(clinicalSummaryText || 'No se dispone de suficiente información clínica.', {
+                align: 'justify'
+            });
+
+        doc.moveDown();
+
+        // SECCIÓN 3: EVOLUCIÓN DE SÍNTOMAS / ESCALAS
+        doc
+            .fontSize(14)
+            .fillColor('#111827')
+            .text('3. Escalas estandarizadas (PHQ-9 / GAD-7)', {
+                underline: true
+            });
+        doc.moveDown(0.5);
+
+        if (testsRes.rows.length === 0) {
+            doc
+                .fontSize(10)
+                .fillColor('#6b7280')
+                .text(
+                    'No se registran aún aplicaciones de escalas estandarizadas para este paciente.'
+                );
+        } else {
+            testsRes.rows.forEach(test => {
+                doc
+                    .fontSize(10)
+                    .fillColor('#111827')
+                    .text(
+                        `${test.tipo_test} | Puntaje: ${test.puntaje_total} | Nivel: ${test.nivel_severidad}`,
+                        { continued: false }
+                    );
+                doc
+                    .fontSize(9)
+                    .fillColor('#6b7280')
+                    .text(
+                        `Fecha: ${new Date(
+                            test.fecha_realizacion
+                        ).toLocaleString('es-ES')}`
+                    );
+                doc.moveDown(0.4);
+            });
+        }
+
+        doc.moveDown();
+
+        // SECCIÓN 4: ÚLTIMAS CITAS Y EVOLUCIÓN
+        doc
+            .fontSize(14)
+            .fillColor('#111827')
+            .text('4. Sesiones clínicas y evolución', { underline: true });
+        doc.moveDown(0.5);
+
+        if (sessionsRes.rows.length === 0) {
+            doc
+                .fontSize(10)
+                .fillColor('#6b7280')
+                .text('No hay citas registradas en el sistema para este paciente.');
+        } else {
+            sessionsRes.rows.forEach(c => {
+                doc
+                    .fontSize(10)
+                    .fillColor('#111827')
+                    .text(
+                        `${new Date(
+                            c.fecha_hora_inicio
+                        ).toLocaleString('es-ES')} | ${c.modalidad} | ${c.estado}`
+                    );
+                if (c.notas_admin) {
+                    doc
+                        .fontSize(9)
+                        .fillColor('#4b5563')
+                        .text(`Notas: ${c.notas_admin}`, {
+                            align: 'justify'
+                        });
+                }
+                doc.moveDown(0.4);
+            });
+        }
+
+        doc.moveDown();
+
+        // SECCIÓN 5: INCIDENCIAS / CRISIS
+        doc
+            .fontSize(14)
+            .fillColor('#111827')
+            .text('5. Incidencias y alertas de crisis', { underline: true });
+        doc.moveDown(0.5);
+
+        if (incidentsRes.rows.length === 0) {
+            doc
+                .fontSize(10)
+                .fillColor('#6b7280')
+                .text('No hay incidencias clínicas registradas para este paciente.');
+        } else {
+            incidentsRes.rows.forEach(i => {
+                doc
+                    .fontSize(10)
+                    .fillColor('#b91c1c')
+                    .text(
+                        `[${i.nivel_gravedad || 'N/A'}] ${new Date(
+                            i.fecha_creacion
+                        ).toLocaleString('es-ES')} - ${i.estado}`
+                    );
+                doc
+                    .fontSize(9)
+                    .fillColor('#4b5563')
+                    .text(i.reporte_inicial || 'Sin detalle de incidente.', {
+                        align: 'justify'
+                    });
+                doc.moveDown(0.4);
+            });
+        }
+
+        doc.moveDown();
+
+        // SECCIÓN 6: RECOMENDACIONES (placeholder para que el terapeuta escriba)
+        doc
+            .fontSize(14)
+            .fillColor('#111827')
+            .text('6. Recomendaciones y plan terapéutico', { underline: true });
+        doc.moveDown(0.5);
+
+        doc
+            .fontSize(9)
+            .fillColor('#6b7280')
+            .text(
+                'Este espacio está destinado para que el terapeuta incorpore recomendaciones clínicas, ajustes de tratamiento, objetivos a corto y mediano plazo, y observaciones relevantes.',
+                {
+                    align: 'justify'
+                }
+            );
+
+        doc.moveDown(2);
+        doc
+            .fontSize(10)
+            .fillColor('#111827')
+            .text('Firma del profesional:', { continued: false });
+        doc.moveDown(2);
+        doc.text('______________________________');
+        doc
+            .fontSize(9)
+            .fillColor('#4b5563')
+            .text(
+                info.terapeuta_nombre
+                    ? `Dr(a). ${info.terapeuta_nombre} ${info.terapeuta_apellido}`
+                    : 'Terapeuta no asignado'
+            );
+
+        // Cerrar PDF
+        doc.end();
+    } catch (error) {
+        console.error('Error generando PDF clínico:', error);
+        return res
+            .status(500)
+            .send('Error interno generando el reporte clínico en PDF.');
+    }
+};
+
+// ====================================================================
+// 9. GENERAR REPORTE CLÍNICO EN EXCEL
+//    GET /reports/patient/:id/excel
+// ====================================================================
+const generatePatientExcel = async (req, res) => {
+    const patientId = parseInt(req.params.id, 10);
+    if (Number.isNaN(patientId)) {
+        return res.status(400).send('Paciente inválido');
+    }
+
+    try {
+        const infoRes = await db.query(
+            `
+            SELECT 
+                p.id_paciente,
+                p.estado_tratamiento,
+                u.nombre,
+                u.apellido,
+                u.email,
+                u.telefono,
+                u.fecha_registro,
+                t.id_terapeuta,
+                ut.nombre AS terapeuta_nombre,
+                ut.apellido AS terapeuta_apellido,
+                t.especialidad
+            FROM Pacientes p
+            JOIN Usuarios u ON p.id_usuario = u.id_usuario
+            LEFT JOIN Terapeutas t ON p.id_terapeuta = t.id_terapeuta
+            LEFT JOIN Usuarios ut ON t.id_usuario = ut.id_usuario
+            WHERE p.id_paciente = $1
+            `,
+            [patientId]
+        );
+
+        if (infoRes.rows.length === 0) {
+            return res.status(404).send('Paciente no encontrado');
+        }
+
+        const info = infoRes.rows[0];
+
+        const [sessionsRes, testsRes, moodSeriesRes, incidentsRes] =
+            await Promise.all([
+                db.query(
+                    `
+                    SELECT 
+                        fecha_hora_inicio,
+                        fecha_hora_fin,
+                        modalidad,
+                        estado,
+                        notas_admin
+                    FROM Citas
+                    WHERE id_paciente = $1
+                    ORDER BY fecha_hora_inicio DESC
+                    LIMIT 50
+                    `,
+                    [patientId]
+                ),
+                db.query(
+                    `
+                    SELECT 
+                        tipo_test,
+                        puntaje_total,
+                        nivel_severidad,
+                        fecha_realizacion
+                    FROM resultados_tests
+                    WHERE id_paciente = $1
+                    ORDER BY fecha_realizacion DESC
+                    LIMIT 50
+                    `,
+                    [patientId]
+                ),
+                db.query(
+                    `
+                    SELECT 
+                        fecha_hora,
+                        valencia
+                    FROM checkins_emocionales
+                    WHERE id_paciente = $1
+                    ORDER BY fecha_hora ASC
+                    LIMIT 200
+                    `,
+                    [patientId]
+                ),
+                db.query(
+                    `
+                    SELECT 
+                        reporte_inicial,
+                        nivel_gravedad,
+                        fecha_creacion,
+                        estado
+                    FROM incidencias_clinicas
+                    WHERE id_paciente = $1
+                    ORDER BY fecha_creacion DESC
+                    LIMIT 50
+                    `,
+                    [patientId]
+                )
+            ]);
+
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'MindCare';
+        workbook.created = new Date();
+
+        // Hoja 1: Resumen
+        const wsResumen = workbook.addWorksheet('Resumen Clínico');
+
+        wsResumen.columns = [
+            { header: 'Campo', key: 'campo', width: 30 },
+            { header: 'Valor', key: 'valor', width: 50 }
+        ];
+
+        wsResumen.addRows([
+            { campo: 'Nombre completo', valor: `${info.nombre} ${info.apellido}` },
+            { campo: 'ID Paciente', valor: info.id_paciente },
+            { campo: 'Email', valor: info.email },
+            { campo: 'Teléfono', valor: info.telefono || 'N/D' },
+            { campo: 'Estado tratamiento', valor: info.estado_tratamiento || 'N/D' },
+            {
+                campo: 'Fecha registro MindCare',
+                valor: info.fecha_registro
+                    ? new Date(info.fecha_registro).toLocaleDateString('es-ES')
+                    : 'N/D'
+            },
+            {
+                campo: 'Terapeuta',
+                valor: info.terapeuta_nombre
+                    ? `Dr(a). ${info.terapeuta_nombre} ${info.terapeuta_apellido}`
+                    : 'No asignado'
+            },
+            {
+                campo: 'Especialidad',
+                valor: info.especialidad || 'N/D'
+            }
+        ]);
+
+        wsResumen.getRow(1).font = { bold: true };
+
+        // Hoja 2: Citas
+        const wsCitas = workbook.addWorksheet('Citas');
+        wsCitas.columns = [
+            { header: 'Fecha inicio', key: 'inicio', width: 22 },
+            { header: 'Fecha fin', key: 'fin', width: 22 },
+            { header: 'Modalidad', key: 'modalidad', width: 15 },
+            { header: 'Estado', key: 'estado', width: 15 },
+            { header: 'Notas terapeuta', key: 'notas', width: 60 }
+        ];
+        wsCitas.getRow(1).font = { bold: true };
+
+        sessionsRes.rows.forEach(c => {
+            wsCitas.addRow({
+                inicio: new Date(c.fecha_hora_inicio).toLocaleString('es-ES'),
+                fin: c.fecha_hora_fin
+                    ? new Date(c.fecha_hora_fin).toLocaleString('es-ES')
+                    : '',
+                modalidad: c.modalidad,
+                estado: c.estado,
+                notas: c.notas_admin || ''
+            });
+        });
+
+        // Hoja 3: Tests
+        const wsTests = workbook.addWorksheet('Tests');
+        wsTests.columns = [
+            { header: 'Tipo test', key: 'tipo', width: 15 },
+            { header: 'Puntaje total', key: 'puntaje', width: 15 },
+            { header: 'Nivel severidad', key: 'nivel', width: 25 },
+            { header: 'Fecha realización', key: 'fecha', width: 22 }
+        ];
+        wsTests.getRow(1).font = { bold: true };
+
+        testsRes.rows.forEach(t => {
+            wsTests.addRow({
+                tipo: t.tipo_test,
+                puntaje: t.puntaje_total,
+                nivel: t.nivel_severidad,
+                fecha: new Date(t.fecha_realizacion).toLocaleString('es-ES')
+            });
+        });
+
+        // Hoja 4: Estado de ánimo (checkins)
+        const wsAnimo = workbook.addWorksheet('Estado de ánimo');
+        wsAnimo.columns = [
+            { header: 'Fecha / Hora', key: 'fecha', width: 22 },
+            { header: 'Valencia (1-5)', key: 'valencia', width: 18 }
+        ];
+        wsAnimo.getRow(1).font = { bold: true };
+
+        moodSeriesRes.rows.forEach(m => {
+            wsAnimo.addRow({
+                fecha: new Date(m.fecha_hora).toLocaleString('es-ES'),
+                valencia: m.valencia
+            });
+        });
+
+        // Hoja 5: Incidencias
+        const wsIncidencias = workbook.addWorksheet('Incidencias');
+        wsIncidencias.columns = [
+            { header: 'Fecha', key: 'fecha', width: 22 },
+            { header: 'Nivel', key: 'nivel', width: 15 },
+            { header: 'Estado', key: 'estado', width: 15 },
+            { header: 'Detalle', key: 'detalle', width: 70 }
+        ];
+        wsIncidencias.getRow(1).font = { bold: true };
+
+        incidentsRes.rows.forEach(i => {
+            wsIncidencias.addRow({
+                fecha: new Date(i.fecha_creacion).toLocaleString('es-ES'),
+                nivel: i.nivel_gravedad,
+                estado: i.estado,
+                detalle: i.reporte_inicial || ''
+            });
+        });
+
+        const fileName = `reporte_clinico_${info.nombre}_${info.apellido}.xlsx`.replace(
+            /\s+/g,
+            '_'
+        );
+
+        res.setHeader(
+            'Content-Type',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        );
+        res.setHeader(
+            'Content-Disposition',
+            `attachment; filename="${fileName}"`
+        );
+
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (error) {
+        console.error('Error generando Excel clínico:', error);
+        return res
+            .status(500)
+            .send('Error interno generando el reporte clínico en Excel.');
+    }
+};
+
+// ====================================================================
 // EXPORTS
 // ====================================================================
 module.exports = {
@@ -574,5 +1186,7 @@ module.exports = {
     getPatientHistory,
     getCreateReportForm,
     saveProgressReport,
-    updateSessionNote
+    updateSessionNote,
+    generatePatientPdf,
+    generatePatientExcel
 };

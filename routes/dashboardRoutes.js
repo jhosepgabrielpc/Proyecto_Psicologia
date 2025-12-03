@@ -7,6 +7,7 @@ const dashboardController = require('../controllers/dashboardController');
 const reportController = require('../controllers/reportController');
 const appointmentController = require('../controllers/appointmentController');
 const testController = require('../controllers/testController');
+const monitoringController = require('../controllers/monitoringController'); // 👈 nuevo
 
 // ==================================================================
 // DESPACHADOR CENTRAL /dashboard
@@ -24,7 +25,7 @@ router.get('/', isAuthenticated, (req, res) => {
         case 'GestorCitas':
             return res.redirect('/dashboard/appointments');
         case 'Monitorista':
-            return res.redirect('/dashboard/monitoring');
+            return res.redirect('/dashboard/monitoring'); // 👈 aquí ya existía
         case 'Admin':
         case 'Administrador':
             return res.redirect('/dashboard/admin');
@@ -61,7 +62,7 @@ router.get(
 );
 
 // ==================================================================
-// 4. GESTIÓN DE CRISIS
+// 4. GESTIÓN DE CRISIS (Gestor de Comunicación)
 // ==================================================================
 router.get('/manager', isAuthenticated, (req, res) => {
     res.render('dashboard/manager', {
@@ -188,7 +189,39 @@ router.post(
 );
 
 // ==================================================================
-// 7. TESTS PSICOLÓGICOS
+// 7. DASHBOARD MONITOREO (Monitorista + endpoints de pánico / check-in)
+// ==================================================================
+
+// Vista principal para el rol "Monitorista"
+router.get(
+    '/monitoring',
+    isAuthenticated,
+    monitoringController.getMonitoringDashboard
+);
+
+// Guardar check-in del paciente (formulario del paciente)
+router.post(
+    '/monitoring/checkin',
+    isAuthenticated,
+    monitoringController.saveCheckin
+);
+
+// Botón de pánico del paciente (llamado vía fetch desde el front)
+router.post(
+    '/monitoring/panic',
+    isAuthenticated,
+    monitoringController.triggerPanic
+);
+
+// (opcional) crear incidencia tipo "alert-jimmy" desde el panel de monitoreo
+router.post(
+    '/monitoring/alert-jimmy',
+    isAuthenticated,
+    monitoringController.createIncident
+);
+
+// ==================================================================
+// 8. TESTS PSICOLÓGICOS
 // ==================================================================
 router.get('/test/:type', isAuthenticated, testController.showTest);
 router.post('/test/:type/save', isAuthenticated, testController.submitTest);

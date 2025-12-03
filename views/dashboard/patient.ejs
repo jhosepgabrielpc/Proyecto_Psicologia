@@ -62,6 +62,42 @@
     }
 </style>
 
+<!-- MODAL: Confirmación de alerta de pánico -->
+<div id="panic-confirm-modal"
+     class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl p-6 space-y-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                <i class="fas fa-check text-lg"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-slate-800">Alerta enviada</h3>
+                <p class="text-sm text-slate-500">
+                    Tu terapeuta ya recibió la notificación y te contactará en breve.
+                </p>
+            </div>
+        </div>
+
+        <div class="text-xs text-slate-500 bg-slate-50 border border-slate-100 rounded-xl p-3 leading-relaxed">
+            <p class="font-semibold mb-1">Mientras tanto, puedes:</p>
+            <ul class="list-disc pl-4 space-y-1">
+                <li>Hacer 3 respiraciones profundas (4s inhalar, 4s sostener, 6s exhalar).</li>
+                <li>Llamar a tu contacto de confianza si te sientes en peligro.</li>
+                <li>Si es una emergencia, acude a servicios de emergencia de tu zona.</li>
+            </ul>
+        </div>
+
+        <div class="flex justify-end">
+            <button type="button"
+                    onclick="hidePanicModal()"
+                    class="px-4 py-2 text-sm font-semibold text-white bg-slate-900 rounded-lg hover:bg-slate-800">
+                Entendido
+            </button>
+        </div>
+    </div>
+</div>
+
+
 <div class="app-wrapper bg-slate-50 font-sans">
 
     <div class="app-content relative">
@@ -373,77 +409,165 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // --- CHARTS ---
+    // ================================
+    // 1. GRÁFICA "TU EVOLUCIÓN"
+    // ================================
+    document.addEventListener('DOMContentLoaded', function () {
         try {
-            const rawData = document.getElementById('chartData').getAttribute('data-checkins');
+            const chartDataEl = document.getElementById('chartData');
+            if (!chartDataEl) return;
+
+            const rawData = chartDataEl.getAttribute('data-checkins') || '[]';
             const data = JSON.parse(rawData).reverse();
-            
-            const ctx = document.getElementById('patientChart');
-            if (ctx) {
-                if (data.length > 0) {
-                    new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: data.map(d => new Date(d.fecha_hora).toLocaleDateString('es-ES', {weekday: 'short'})),
-                            datasets: [{
-                                label: 'Nivel',
-                                data: data.map(d => d.valencia),
-                                borderColor: '#6366f1',
-                                borderWidth: 3,
-                                backgroundColor: (context) => {
-                                    const ctx = context.chart.ctx;
-                                    const gradient = ctx.createLinearGradient(0, 0, 0, 250);
-                                    gradient.addColorStop(0, 'rgba(99, 102, 241, 0.3)');
-                                    gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
-                                    return gradient;
+
+            const canvas = document.getElementById('patientChart');
+            if (!canvas) return;
+
+            if (data.length > 0) {
+                new Chart(canvas, {
+                    type: 'line',
+                    data: {
+                        labels: data.map(d =>
+                            new Date(d.fecha_hora).toLocaleDateString('es-ES', {
+                                weekday: 'short'
+                            })
+                        ),
+                        datasets: [{
+                            label: 'Nivel',
+                            data: data.map(d => d.valencia),
+                            borderColor: '#6366f1',
+                            borderWidth: 3,
+                            backgroundColor: (context) => {
+                                const ctx = context.chart.ctx;
+                                const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+                                gradient.addColorStop(0, 'rgba(99, 102, 241, 0.3)');
+                                gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
+                                return gradient;
+                            },
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#fff',
+                            pointBorderColor: '#6366f1',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            pointHoverRadius: 7
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                min: 1,
+                                max: 5,
+                                grid: {
+                                    borderDash: [8, 8],
+                                    color: '#f1f5f9'
                                 },
-                                fill: true,
-                                tension: 0.4,
-                                pointBackgroundColor: '#fff',
-                                pointBorderColor: '#6366f1',
-                                pointBorderWidth: 2,
-                                pointRadius: 5,
-                                pointHoverRadius: 7
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: { legend: { display: false } },
-                            scales: {
-                                y: { min: 1, max: 5, grid: { borderDash: [8, 8], color: '#f1f5f9' }, ticks: { display: false } },
-                                x: { grid: { display: false }, ticks: { font: { family: "'Inter', sans-serif", size: 11 }, color: '#94a3b8' } }
+                                ticks: { display: false }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: {
+                                    font: { family: "'Inter', sans-serif", size: 11 },
+                                    color: '#94a3b8'
+                                }
                             }
                         }
-                    });
-                } else {
-                    ctx.parentNode.innerHTML = '<div class="h-full flex items-center justify-center text-slate-300 font-medium">Sin datos suficientes</div>';
-                }
+                    }
+                });
+            } else {
+                canvas.parentNode.innerHTML =
+                    '<div class="h-full flex items-center justify-center text-slate-300 font-medium">Sin datos suficientes</div>';
             }
-        } catch(e) { console.error("Error graficando:", e); }
+        } catch (e) {
+            console.error('Error graficando:', e);
+        }
     });
 
-    window.updateLabel = function(v) {
-        const labels = {1: 'Pésimo', 2: 'Mal', 3: 'Normal', 4: 'Bien', 5: 'Excelente'};
-        const colors = {1: 'text-rose-600', 2: 'text-orange-500', 3: 'text-indigo-600', 4: 'text-blue-500', 5: 'text-emerald-600'};
+    // ================================
+    // 2. SLIDER DE VALENCIA
+    // ================================
+    window.updateLabel = function (v) {
+        const labels = {
+            1: 'Pésimo',
+            2: 'Mal',
+            3: 'Normal',
+            4: 'Bien',
+            5: 'Excelente'
+        };
+        const colors = {
+            1: 'text-rose-600',
+            2: 'text-orange-500',
+            3: 'text-indigo-600',
+            4: 'text-blue-500',
+            5: 'text-emerald-600'
+        };
+
         const display = document.getElementById('valDisplay');
-        display.innerText = `${v} - ${labels[v]}`;
-        display.className = `text-sm font-bold bg-white px-3 py-1.5 rounded-lg shadow-sm border border-slate-100 ${colors[v]}`;
-    }
+        if (!display) return;
 
-    window.triggerPanic = function() {
-        if(confirm("⚠ ALERTA DE EMERGENCIA\n\n¿Necesitas ayuda inmediata? Esto notificará a todo el equipo médico.")) {
-            fetch('/dashboard/monitoring/panic', { method: 'POST' })
-                .then(res => res.json())
-                .then(() => {
-                    alert("🚨 ALERTA ENVIADA. La ayuda está en camino.");
-                    window.location.reload();
-                })
-                .catch(() => alert("Error de conexión. Llama al 110."));
+        display.innerText = `${v} - ${labels[v] || ''}`;
+        display.className =
+            'text-sm font-bold bg-white px-3 py-1.5 rounded-lg shadow-sm border border-slate-100 ' +
+            (colors[v] || 'text-indigo-600');
+    };
+
+    // ================================
+    // 3. BOTÓN DE PÁNICO
+    // ================================
+    window.triggerPanic = async function () {
+        const ok = confirm(
+            '⚠ ALERTA DE EMERGENCIA\n\n¿Necesitas ayuda inmediata?'
+        );
+        if (!ok) return;
+
+        try {
+            const res = await fetch('/dashboard/monitoring/panic', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            });
+
+            const data = await res.json();
+
+            if (data && data.success) {
+                // Mostramos el modal de confirmación que ya tienes en el HTML
+                showPanicModal();
+            } else {
+                alert('No se pudo enviar la alerta. Intenta nuevamente.');
+            }
+        } catch (err) {
+            console.error('Error en triggerPanic:', err);
+            alert(
+                'Error de conexión. Si es una emergencia, llama al servicio local de urgencias.'
+            );
         }
+    };
+
+    function showPanicModal() {
+        const modal = document.getElementById('panic-confirm-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
     }
 
-    window.generatePDF = function() { alert("Generando PDF detallado..."); }
-    window.exportExcel = function() { alert("Generando Excel..."); }
+    window.hidePanicModal = function () {
+        const modal = document.getElementById('panic-confirm-modal');
+        if (!modal) return;
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    };
+
+    // ================================
+    // 4. EXPORTAR (PLACEHOLDERS)
+    // ================================
+    window.generatePDF = function () {
+        alert('Generando PDF detallado...');
+    };
+
+    window.exportExcel = function () {
+        alert('Generando Excel...');
+    };
 </script>

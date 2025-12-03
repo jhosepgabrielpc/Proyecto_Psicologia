@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const crypto = require('crypto');
 
 // ====================================================================
 // 1. DASHBOARD DE MONITOREO (CORE DEL SISTEMA)
@@ -205,44 +206,158 @@ const saveCheckin = async (req, res) => {
 // ====================================================================
 // 3. BOTÓN DE PÁNICO (S.O.S. TOTAL)
 // ====================================================================
+// ====================================================================
+// 3. BOTÓN DE PÁNICO (S.O.S. TOTAL) - VERSIÓN UX COMPLETA
+// ====================================================================
 const triggerPanic = async (req, res) => {
     const userId = req.session.user.id_usuario;
-    try {
-        const pRes = await db.query(`
-            SELECT p.id_paciente, p.id_terapeuta, u.nombre || ' ' || u.apellido as nombre 
-            FROM Pacientes p JOIN Usuarios u ON p.id_usuario = u.id_usuario 
-            WHERE p.id_usuario = $1`, [userId]);
-        
-        if (pRes.rows.length === 0) return res.status(404).json({ success: false });
-        const { id_paciente, id_terapeuta, nombre } = pRes.rows[0];
 
-        // 1. Incidencia Máxima
+    try {
+        await db.query('BEGIN');
+
+        // 1) Obtener paciente + terapeuta
+        const pRes = await db.query(`
+            SELECT 
+                p.id_paciente, 
+                p.id_terapeuta, 
+                u.nombre || ' ' || u.apellido AS nombre
+            FROM Pacientes p 
+            JOIN Usuarios u ON p.id_usuario = u.id_usuario 
+            WHERE p.id_usuario = $1
+        `, [userId]);
+
+        if (pRes.rows.length === 0) {
+            await db.query('ROLLBACK');
+            return res.status(404).json({
+                success: false,
+                message: 'No se encontró tu expediente de paciente.'
+            });
+        }
+
+        const { id_paciente, id_terapeuta, nombre } = pRes.rows[0];
+        const ahora = new Date();
+
+        // 2) Registrar INCIDENCIA CLÍNICA de pánico
+        const reportePanico = '🆘 BOTÓN S.O.S. ACTIVADO POR EL PACIENTE (alerta de pánico).';
         await db.query(`
-            INSERT INTO incidencias_clinicas (id_paciente, nivel_gravedad, reporte_inicial, estado)
-            VALUES ($1, 'PÁNICO', '🆘 BOTÓN S.O.S. ACTIVADO POR EL PACIENTE.', 'ESCALADO')
+            INSERT INTO incidencias_clinicas (id_paciente, nivel_gravedad, reporte_inicial, estado, fecha_creacion)
+            VALUES ($1, 'PÁNICO', $2, 'ESCALADO', NOW())
+        `, [id_paciente, reportePanico]);
+
+        // 3) Crear también un CHECK-IN crítico para que aparezca en el radar
+        await db.query(`
+            INSERT INTO checkins_emocionales (
+                id_paciente, valencia, activacion, emocion_principal, 
+                notas, requiere_atencion, horas_sueno, fecha_hora
+            )
+            VALUES ($1, 1, 5, 'Pánico / SOS',
+                    '🆘 BOTÓN S.O.S. ACTIVADO POR EL PACIENTE.',
+                    true, 0, NOW())
         `, [id_paciente]);
 
-        // 2. Notificar a Jimmy (Gestor Crisis) - Inmediato
-        const jimmyRes = await db.query("SELECT id_usuario FROM Usuarios JOIN Roles r ON Usuarios.id_rol = r.id_rol WHERE r.nombre_rol = 'GestorComunicacion' LIMIT 1");
-        if(jimmyRes.rows.length > 0) {
-            await db.query(`INSERT INTO Notificaciones (id_usuario, tipo, mensaje, enlace_accion, fecha_creacion) VALUES ($1, 'alerta_panico', '🆘 SOS: ${nombre} ACTIVÓ EL BOTÓN DE PÁNICO', '/dashboard/manager', NOW())`, [jimmyRes.rows[0].id_usuario]);
-        }
+        // 4) Intentar crear CITA DE CRISIS automática (30 min después)
+        let crisisCreated = false;
 
-        // 3. Notificar a Terapeuta - Inmediato
         if (id_terapeuta) {
-             const tUser = await db.query('SELECT id_usuario FROM Terapeutas WHERE id_terapeuta = $1', [id_terapeuta]);
-             if(tUser.rows.length > 0) {
-                 await db.query(`INSERT INTO Notificaciones (id_usuario, tipo, mensaje, enlace_accion, fecha_creacion) VALUES ($1, 'alerta_panico', '🆘 TU PACIENTE ${nombre} ACTIVÓ EL BOTÓN DE PÁNICO', '/reports/patient/${id_paciente}/view', NOW())`, [tUser.rows[0].id_usuario]);
-             }
+            const start = new Date(ahora.getTime() + 30 * 60000); // +30 min
+            const end = new Date(start.getTime() + 30 * 60000);   // cita de 30 min
+
+            // Comprobar si el terapeuta está libre en ese rango
+            const overlapRes = await db.query(`
+                SELECT 1 
+                FROM Citas 
+                WHERE id_terapeuta = $1
+                  AND estado = 'Programada'
+                  AND tsrange(fecha_hora_inicio, fecha_hora_fin)
+                      && tsrange($2, $3)
+            `, [id_terapeuta, start, end]);
+
+            if (overlapRes.rows.length === 0) {
+                await db.query(`
+                    INSERT INTO Citas (
+                        id_paciente, id_terapeuta,
+                        fecha_hora_inicio, fecha_hora_fin,
+                        modalidad, estado, enlace_reunion,
+                        notas_admin, fecha_creacion
+                    )
+                    VALUES (
+                        $1, $2, $3, $4,
+                        'Virtual', 'Programada', NULL,
+                        '[CRISIS] Cita generada automáticamente por alerta de pánico.',
+                        NOW()
+                    )
+                `, [id_paciente, id_terapeuta, start, end]);
+
+                crisisCreated = true;
+            }
         }
 
-        res.json({ success: true, message: 'Alerta total enviada. El equipo ha sido notificado.' });
+        // 5) Notificar a Jimmy (Gestor de Comunicación)
+        const jimmyRes = await db.query(`
+            SELECT u.id_usuario 
+            FROM Usuarios u
+            JOIN Roles r ON u.id_rol = r.id_rol 
+            WHERE r.nombre_rol = 'GestorComunicacion'
+            LIMIT 1
+        `);
+
+        if (jimmyRes.rows.length > 0) {
+            await db.query(`
+                INSERT INTO Notificaciones (
+                    id_usuario, tipo, mensaje, enlace_accion, fecha_creacion
+                )
+                VALUES (
+                    $1, 'alerta_panico',
+                    '🆘 SOS: ${nombre} ACTIVÓ EL BOTÓN DE PÁNICO',
+                    '/dashboard/manager', NOW()
+                )
+            `, [jimmyRes.rows[0].id_usuario]);
+        }
+
+        // 6) Notificar a Terapeuta
+        if (id_terapeuta) {
+            const tUser = await db.query(
+                'SELECT id_usuario FROM Terapeutas WHERE id_terapeuta = $1',
+                [id_terapeuta]
+            );
+
+            if (tUser.rows.length > 0) {
+                await db.query(`
+                    INSERT INTO Notificaciones (
+                        id_usuario, tipo, mensaje, enlace_accion, fecha_creacion
+                    )
+                    VALUES (
+                        $1, 'alerta_panico',
+                        '🆘 Tu paciente ${nombre} activó el BOTÓN DE PÁNICO',
+                        '/reports/patient/${id_paciente}/view',
+                        NOW()
+                    )
+                `, [tUser.rows[0].id_usuario]);
+            }
+        }
+
+        await db.query('COMMIT');
+
+        // 7) Respuesta JSON limpia para el front
+        return res.json({
+            success: true,
+            crisisCreated,
+            message: crisisCreated
+                ? 'Alerta enviada y cita de crisis creada automáticamente.'
+                : 'Alerta enviada. Tu terapeuta ha sido notificado.'
+        });
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false });
+        await db.query('ROLLBACK');
+        console.error('Error en triggerPanic:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error interno al enviar la alerta.'
+        });
     }
 };
+
+
 
 // Mantenemos esta función por compatibilidad, pero ya no es la vía principal
 const createIncident = async (req, res) => {

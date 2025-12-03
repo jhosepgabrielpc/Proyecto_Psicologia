@@ -48,6 +48,39 @@
         <% if (mensajeInfo) { %>
             <div class="mb-6 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl text-sm flex items-center gap-3">
                 <i class="fas fa-info-circle"></i>
+                        <% if (alertasRiesgo && alertasRiesgo.length > 0 && alertasRiesgo[0].notas && alertasRiesgo[0].notas.includes('BOTÓN S.O.S.')) { 
+               const alerta = alertasRiesgo[0]; %>
+            <div class="mb-6 rounded-2xl border border-rose-300 bg-gradient-to-r from-rose-600 via-rose-500 to-amber-500 text-white px-5 py-4 shadow-lg flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="flex items-start gap-3">
+                    <div class="mt-0.5">
+                        <i class="fas fa-exclamation-triangle text-2xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-black tracking-[0.15em] uppercase opacity-80">
+                            Alerta de pánico activa
+                        </p>
+                        <p class="text-sm md:text-base font-semibold">
+                            El paciente 
+                            <span class="font-black">
+                                <%= alerta.nombre %> <%= alerta.apellido %>
+                            </span>
+                            activó el botón de pánico hace 
+                            <%= new Date(alerta.fecha_hora).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) %>.
+                        </p>
+                        <p class="text-xs mt-1 opacity-90">
+                            Revisa su expediente y prioriza el contacto inmediato.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <a href="/reports/patient/<%= alerta.id_paciente %>/view"
+                       class="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/30 px-4 py-2 rounded-xl text-xs font-bold transition-colors">
+                        <i class="fas fa-folder-open"></i> Ver expediente
+                    </a>
+                </div>
+            </div>
+        <% } %>
+
                 <span><%= mensajeInfo %></span>
             </div>
         <% } %>
@@ -237,9 +270,28 @@
                                         <%= p.ultima_sesion ? new Date(p.ultima_sesion).toLocaleDateString() : 'Nunca' %>
                                     </td>
                                     <td class="px-6 py-4 text-right">
-                                        <a href="/reports/patient/<%= p.id_paciente %>/view" class="text-slate-400 hover:text-indigo-600 transition-colors p-2 rounded-full hover:bg-indigo-50">
-                                            <i class="fas fa-folder-open text-lg"></i>
-                                        </a>
+                                        <div class="flex justify-end items-center gap-2">
+                                            <!-- Ver expediente HTML -->
+                                            <a href="/reports/patient/<%= p.id_paciente %>/view"
+                                            class="text-slate-400 hover:text-indigo-600 transition-colors p-2 rounded-full hover:bg-indigo-50"
+                                            title="Ver expediente clínico">
+                                                <i class="fas fa-folder-open text-lg"></i>
+                                            </a>
+
+                                            <!-- Reporte PDF -->
+                                            <a href="/reports/patient/<%= p.id_paciente %>/pdf"
+                                            class="text-rose-500 hover:text-rose-600 transition-colors p-2 rounded-full hover:bg-rose-50"
+                                            title="Generar reporte PDF">
+                                                <i class="fas fa-file-pdf text-lg"></i>
+                                            </a>
+
+                                            <!-- Reporte Excel -->
+                                            <a href="/reports/patient/<%= p.id_paciente %>/excel"
+                                            class="text-emerald-500 hover:text-emerald-600 transition-colors p-2 rounded-full hover:bg-emerald-50"
+                                            title="Exportar reporte Excel">
+                                                <i class="fas fa-file-excel text-lg"></i>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             <% }); %>
