@@ -1,0 +1,900 @@
+<%- include('../partials/header', { title: 'Monitoreo Clínico Avanzado' }) %>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<%
+    // ------------------------------------------
+    // Normalización de datos del backend
+    // ------------------------------------------
+    const userSafe = user || {};
+    const kpisSafe = kpis || { total: 0, criticos: 0, sueno_bajo: 0, estables: 0 };
+    const checkinsSafe = Array.isArray(checkins) ? checkins : [];
+    const testsSafe = Array.isArray(tests) ? tests : [];
+    const patientsSafe = Array.isArray(patientsList) ? patientsList : [];
+    const filterDays = Number.isInteger(currentFilter) ? currentFilter : 7;
+    const msgSafe = typeof msg === 'string' ? msg : null;
+    const supportMessageSafe = typeof supportMessage === 'string' ? supportMessage : null;
+
+    const isSelectionMode = !viewingPatient && patientsSafe.length > 0 && userSafe.nombre_rol !== 'Paciente';
+    const isMonitoringMode = !!viewingPatient || userSafe.nombre_rol === 'Paciente';
+    const hasData = checkinsSafe.length > 0;
+
+    const baseUrl = '/dashboard/monitoring';
+    const patientQuery = viewingPatient ? ('&patient=' + viewingPatient.id_paciente) : '';
+    const link7Days = baseUrl + '?days=7' + patientQuery;
+    const link30Days = baseUrl + '?days=30' + patientQuery;
+
+    // KPIs de vista detallada (score general)
+    let avgValue = 0;
+    let avgDisplay = '0.0';
+    let widthPercent = 0;
+    let message = 'Esperando datos...';
+    let trendIcon = 'fa-minus';
+    let trendColor = 'text-slate-400';
+
+    if (hasData) {
+        const sum = checkinsSafe.reduce(function (acc, c) {
+            return acc + Number(c.valencia || 0);
+        }, 0);
+        avgValue = sum / checkinsSafe.length;
+        avgDisplay = avgValue.toFixed(1);
+        widthPercent = Math.round((avgValue / 5) * 100);
+
+        if (avgValue >= 4.2) {
+            message = 'Estado Óptimo 🌟';
+            trendIcon = 'fa-arrow-up';
+            trendColor = 'text-emerald-500';
+        } else if (avgValue >= 3.0) {
+            message = 'Estado Estable ✨';
+            trendIcon = 'fa-minus';
+            trendColor = 'text-amber-500';
+        } else {
+            message = 'Atención Requerida ⚠️';
+            trendIcon = 'fa-arrow-down';
+            trendColor = 'text-rose-500';
+        }
+    }
+%>
+
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-indigo-50 py-8 font-sans">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <% if (isSelectionMode) { %>
+            <!-- ========================
+                 1) MODO SELECCIÓN (LISTA)
+                 ======================== -->
+            <div class="mb-10 animate-fade-in-down">
+                <h1 class="text-2xl font-extrabold text-slate-900 mb-2 flex items-center gap-3">
+                    <span class="inline-flex h-10 w-10 rounded-2xl bg-indigo-600 text-white items-center justify-center shadow-md">
+                        <i class="fas fa-network-wired"></i>
+                    </span>
+                    Panel de Monitoreo de Casos
+                </h1>
+                <p class="text-sm text-slate-500">Resumen clínico en tiempo real de tu cartera de pacientes.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mt-6">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:border-indigo-200 transition-all">
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Pacientes</p>
+                            <p class="text-3xl font-black text-slate-800 mt-1"><%= kpisSafe.total %></p>
+                            <p class="text-[11px] text-slate-400 mt-1">Cartera clínica actual.</p>
+                        </div>
+                        <div class="h-10 w-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-rose-100 shadow-sm flex items-center justify-between relative overflow-hidden group hover:border-rose-200 transition-all">
+                        <% if (kpisSafe.criticos > 0) { %>
+                            <div class="absolute top-0 left-0 w-1 h-full bg-rose-500"></div>
+                        <% } %>
+                        <div>
+                            <p class="text-xs font-bold text-rose-400 uppercase tracking-wider">En Riesgo</p>
+                            <p class="text-3xl font-black text-rose-600 mt-1"><%= kpisSafe.criticos %></p>
+                            <p class="text-[11px] text-slate-400 mt-1">Requieren revisión prioritaria.</p>
+                        </div>
+                        <div class="h-10 w-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center <%= kpisSafe.criticos > 0 ? 'animate-pulse' : '' %>">
+                            <i class="fas fa-heartbeat"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between hover:border-indigo-200 transition-all">
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Sueño Irregular</p>
+                            <p class="text-3xl font-black text-indigo-900 mt-1"><%= kpisSafe.sueno_bajo %></p>
+                            <p class="text-[11px] text-slate-400 mt-1">Menos de 6h promedio.</p>
+                        </div>
+                        <div class="h-10 w-10 rounded-xl bg-indigo-900 text-indigo-200 flex items-center justify-center">
+                            <i class="fas fa-moon"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm flex items-center justify-between hover:border-emerald-200 transition-all">
+                        <div>
+                            <p class="text-xs font-bold text-emerald-400 uppercase tracking-wider">En Seguimiento</p>
+                            <p class="text-3xl font-black text-emerald-600 mt-1"><%= kpisSafe.estables %></p>
+                            <p class="text-[11px] text-slate-400 mt-1">Sin incidencias críticas recientes.</p>
+                        </div>
+                        <div class="h-10 w-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de pacientes -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-slide-up">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                        <i class="fas fa-folder-open text-indigo-400"></i>
+                        Expedientes activos
+                    </h3>
+                    <span class="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-500 shadow-sm">
+                        Vista global
+                    </span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-white text-slate-400 text-xs uppercase tracking-wider border-b border-slate-100">
+                                <th class="px-6 py-4 font-bold">Paciente</th>
+                                <th class="px-6 py-4 font-bold">Estado Clínico</th>
+                                <th class="px-6 py-4 font-bold">Último Registro</th>
+                                <th class="px-6 py-4 font-bold">Calidad de Sueño</th>
+                                <th class="px-6 py-4 font-bold text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
+                            <% patientsSafe.forEach(function (p) {
+                                const isCritical = p.ultima_valencia !== null && p.ultima_valencia <= 2;
+                                const moodLabel = p.ultima_valencia === null
+                                    ? 'Sin Datos'
+                                    : (isCritical
+                                        ? 'Riesgo Detectado'
+                                        : (Number(p.ultima_valencia) === 3 ? 'Estable' : 'Óptimo'));
+                                const badgeColor = isCritical
+                                    ? 'bg-rose-100 text-rose-700 border-rose-200'
+                                    : (p.ultima_valencia !== null
+                                        ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                                        : 'bg-slate-100 text-slate-500 border-slate-200');
+                                const sleepVal = p.ultimo_sueno || 0;
+                                const sleepColor = sleepVal < 6 ? 'text-rose-500' : 'text-slate-600';
+                            %>
+                            <tr class="hover:bg-slate-50/80 transition-colors group">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold border border-indigo-200 text-sm shadow-sm">
+                                            <%= p.nombre.charAt(0) %>
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-slate-800 text-sm">
+                                                <%= p.nombre %> <%= p.apellido %>
+                                            </p>
+                                            <p class="text-xs text-slate-400"><%= p.email %></p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold border <%= badgeColor %>">
+                                        <span class="w-1.5 h-1.5 rounded-full <%= isCritical ? 'bg-rose-500 animate-pulse' : (p.ultima_valencia !== null ? 'bg-emerald-500' : 'bg-slate-400') %>"></span>
+                                        <%= moodLabel %>
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <% if (p.ultimo_checkin) { %>
+                                        <p class="text-sm font-medium text-slate-700">
+                                            <%= new Date(p.ultimo_checkin).toLocaleDateString('es-BO') %>
+                                        </p>
+                                        <p class="text-xs text-slate-400">
+                                            <%= new Date(p.ultimo_checkin).toLocaleTimeString('es-BO', {hour:'2-digit', minute:'2-digit'}) %>
+                                        </p>
+                                    <% } else { %>
+                                        <span class="text-xs text-slate-400 italic">--</span>
+                                    <% } %>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-bed <%= sleepColor %>"></i>
+                                        <div class="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                            <div class="h-full rounded-full <%= sleepVal < 6 ? 'bg-rose-400' : 'bg-indigo-400' %>" style="width: <%= Math.min(100, (sleepVal/12)*100) %>%"></div>
+                                        </div>
+                                        <span class="text-xs font-bold <%= sleepColor %>"><%= sleepVal %>h</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <div class="flex justify-end gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                                        <!-- EXPEDIENTE HTML -->
+                                        <a
+                                            href="/reports/patient/<%= p.id_paciente %>/view"
+                                            class="bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1"
+                                            title="Ver expediente clínico completo">
+                                            <i class="fas fa-folder-open"></i> Expediente
+                                        </a>
+
+                                        <!-- PDF CLÍNICO -->
+                                        <a
+                                            href="/reports/patient/<%= p.id_paciente %>/pdf"
+                                            target="_blank"
+                                            class="bg-white text-rose-600 hover:bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1"
+                                            title="Descargar reporte clínico en PDF">
+                                            <i class="fas fa-file-pdf"></i> PDF
+                                        </a>
+
+                                        <!-- EXCEL CLÍNICO -->
+                                        <a
+                                            href="/reports/patient/<%= p.id_paciente %>/excel"
+                                            class="bg-white text-emerald-600 hover:bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1"
+                                            title="Descargar reporte clínico en Excel">
+                                            <i class="fas fa-file-excel"></i> Excel
+                                        </a>
+
+                                        <!-- IR AL PANEL DE MONITOREO -->
+                                        <a
+                                            href="/dashboard/monitoring?patient=<%= p.id_paciente %>"
+                                            class="bg-indigo-600 text-white hover:bg-indigo-700 border border-transparent px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md flex items-center gap-1">
+                                            <i class="fas fa-chart-line"></i> Ver
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        <% } else if (isMonitoringMode) { %>
+            <!-- ========================
+                 2) MODO DETALLE (PACIENTE)
+                 ======================== -->
+            <div class="flex flex-col xl:flex-row justify-between items-end mb-8 gap-6 animate-fade-in">
+                <div class="w-full xl:w-auto">
+                    <a href="/dashboard/monitoring"
+                       class="text-xs font-bold text-slate-400 hover:text-indigo-600 mb-3 inline-flex items-center gap-1 transition-colors <%= userSafe.nombre_rol === 'Paciente' ? 'hidden' : '' %>">
+                        <i class="fas fa-arrow-left"></i> Volver a la lista
+                    </a>
+                    <h1 class="text-3xl font-extrabold text-slate-900 leading-tight">
+                        <% if (viewingPatient) { %>
+                            Análisis Clínico:
+                            <span class="text-indigo-600">
+                                <%= viewingPatient.nombre %> <%= viewingPatient.apellido %>
+                            </span>
+                        <% } else { %>
+                            Tu Bienestar <span class="text-indigo-600">Emocional</span>
+                        <% } %>
+                    </h1>
+                    <p class="text-slate-500 text-sm mt-1">Correlación de horas de sueño y estado de ánimo.</p>
+                    <p class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
+                        <span class="inline-flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Panel en vivo ·
+                        <span id="lastSyncMonitoring" class="font-semibold"></span>
+                    </p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Selector 7 / 30 días -->
+                    <div class="bg-white p-1 rounded-xl border border-slate-200 flex shadow-sm">
+                        <a href="<%= link7Days %>"
+                           class="px-4 py-2 rounded-lg text-xs font-bold transition-all <%= filterDays === 7 ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700' %>">
+                            7 días
+                        </a>
+                        <a href="<%= link30Days %>"
+                           class="px-4 py-2 rounded-lg text-xs font-bold transition-all <%= filterDays === 30 ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-700' %>">
+                            30 días
+                        </a>
+                    </div>
+
+                    <% if (viewingPatient) { %>
+                        <!-- EXPEDIENTE HTML -->
+                        <a
+                            href="/reports/patient/<%= viewingPatient.id_paciente %>/view"
+                            class="bg-white text-slate-700 border border-slate-200 px-4 py-2.5 rounded-xl font-bold shadow-sm hover:bg-slate-50 transition-all text-sm flex items-center gap-2">
+                            <i class="fas fa-folder-open"></i> <span>Expediente</span>
+                        </a>
+
+                        <!-- PDF CLÍNICO PROFESIONAL -->
+                        <a
+                            href="/reports/patient/<%= viewingPatient.id_paciente %>/pdf"
+                            target="_blank"
+                            class="bg-white text-rose-600 border border-rose-200 px-4 py-2.5 rounded-xl font-bold shadow-sm hover:bg-rose-50 transition-all text-sm flex items-center gap-2">
+                            <i class="fas fa-file-pdf"></i> <span>PDF</span>
+                        </a>
+
+                        <!-- EXCEL CLÍNICO -->
+                        <a
+                            href="/reports/patient/<%= viewingPatient.id_paciente %>/excel"
+                            class="bg-white text-emerald-600 border border-emerald-200 px-4 py-2.5 rounded-xl font-bold shadow-sm hover:bg-emerald-50 transition-all text-sm flex items-center gap-2">
+                            <i class="fas fa-file-excel"></i> <span>Excel</span>
+                        </a>
+                    <% } %>
+
+                    <!-- Captura rápida del panel actual (html2pdf) -->
+                    <button
+                        type="button"
+                        id="btn-download-pdf"
+                        onclick="downloadPDF()"
+                        class="bg-white text-slate-700 border border-slate-200 px-5 py-2.5 rounded-xl font-bold shadow-sm hover:bg-slate-50 hover:text-indigo-600 transition-all text-sm flex items-center gap-2">
+                        <i class="fas fa-image"></i> <span>Captura del panel</span>
+                    </button>
+
+                    <% if (userSafe.nombre_rol === 'Paciente') { %>
+                        <button
+                            type="button"
+                            onclick="toggleModal('checkinModal')"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all transform active:scale-95">
+                            <i class="fas fa-plus"></i> <span>Registrar</span>
+                        </button>
+                    <% } %>
+                </div>
+            </div>
+
+            <div id="monitoring-content" class="space-y-8 animate-slide-up">
+                <!-- Gráficos -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
+                        <div class="flex justify-between items-start mb-6">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-lg">Correlación Sueño / Ánimo</h3>
+                                <p class="text-xs text-slate-400">Barras: horas de sueño · Línea: nivel de ánimo.</p>
+                            </div>
+                            <div class="flex items-center gap-2 px-3 py-1 bg-slate-50 rounded-lg border border-slate-100">
+                                <i class="fas <%= trendIcon %> <%= trendColor %> text-xs"></i>
+                                <span class="text-xs font-bold text-slate-600">Tendencia</span>
+                            </div>
+                        </div>
+                        <div class="relative h-72 w-full">
+                            <% if (hasData) { %>
+                                <canvas id="moodChart"></canvas>
+                            <% } else { %>
+                                <div class="h-full flex flex-col items-center justify-center text-slate-300 bg-slate-50/50 rounded-xl border-2 border-dashed border-slate-200">
+                                    <p class="font-medium text-xs">Aún no hay suficientes registros.</p>
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+                        <div class="mb-4">
+                            <h3 class="font-bold text-slate-800 text-lg">Perfil Emocional</h3>
+                            <p class="text-xs text-slate-400">Distribución ampliada de emociones predominantes.</p>
+                        </div>
+                        <div class="relative flex-1 flex items-center justify-center min-h-[250px]">
+                            <% if (hasData) { %>
+                                <canvas id="radarChart"></canvas>
+                            <% } else { %>
+                                <div class="text-center text-slate-300">
+                                    <p class="text-xs">Sin datos para graficar.</p>
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bitácora + Score + Tests -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                        <div class="px-6 py-4 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-list-ul text-indigo-400"></i>
+                                <h3 class="font-bold text-slate-800">Bitácora de registros</h3>
+                            </div>
+                            <span class="bg-white border border-slate-200 text-slate-600 text-[10px] font-bold px-2 py-1 rounded-md uppercase">
+                                Total: <%= checkinsSafe.length %>
+                            </span>
+                        </div>
+                        <div class="divide-y divide-slate-50 max-h-[400px] overflow-y-auto custom-scrollbar">
+                            <% if (hasData) { %>
+                                <% checkinsSafe.forEach(function (c) { %>
+                                    <div class="p-5 flex items-start justify-between hover:bg-slate-50 transition-colors group">
+                                        <div class="flex gap-4">
+                                            <div class="flex-shrink-0 h-12 w-12 rounded-2xl flex items-center justify-center text-2xl shadow-sm border border-slate-100 bg-white">
+                                                <%
+                                                    const emoRaw = c.emocion_principal || '';
+                                                    const emoLower = emoRaw.toLowerCase();
+                                                    const emoji =
+                                                        emoLower.includes('feliz')   ? '😄' :
+                                                        emoLower.includes('triste')  ? '😢' :
+                                                        emoLower.includes('ansio')   ? '😰' :
+                                                        emoLower.includes('enoj')    ? '😠' :
+                                                        emoLower.includes('cansad')  ? '😴' :
+                                                        emoLower.includes('calm')    ? '😌' : '😐';
+                                                %>
+                                                <%= emoji %>
+                                            </div>
+                                            <div>
+                                                <h4 class="text-sm font-bold text-slate-900"><%= c.emocion_principal || 'Registro' %></h4>
+                                                <p class="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
+                                                    <span><%= new Date(c.fecha_hora).toLocaleDateString('es-BO') %></span>
+                                                    <span class="text-indigo-500 bg-indigo-50 px-1.5 rounded font-bold">
+                                                        <i class="fas fa-bed text-[10px]"></i>
+                                                        <%= c.horas_sueno || 0 %>h
+                                                    </span>
+                                                </p>
+                                                <% if (c.notas) { %>
+                                                    <p class="text-xs text-slate-500 mt-2 italic">"<%= c.notas %>"</p>
+                                                <% } %>
+                                            </div>
+                                        </div>
+                                        <span class="text-lg font-extrabold text-indigo-600"><%= c.valencia %>/5</span>
+                                    </div>
+                                <% }); %>
+                            <% } else { %>
+                                <div class="p-12 text-center text-slate-500 text-sm">
+                                    No hay registros disponibles.
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+                            <div class="absolute top-0 right-0 -mr-6 -mt-6 w-32 h-32 bg-indigo-500 rounded-full blur-3xl opacity-25"></div>
+                            <h3 class="text-slate-400 text-xs font-bold uppercase mb-2 relative z-10">
+                                Score General
+                            </h3>
+                            <span class="text-5xl font-black tracking-tight relative z-10">
+                                <%= avgDisplay %>
+                            </span>
+                            <span class="text-slate-400 text-lg font-medium relative z-10">/ 5.0</span>
+                            <div class="mt-5 h-1.5 bg-white/10 rounded-full overflow-hidden relative z-10">
+                                <div class="bg-gradient-to-r from-indigo-500 to-emerald-400 h-full rounded-full" style="width: <%= widthPercent %>%"></div>
+                            </div>
+                            <p class="mt-4 text-sm font-medium pt-4 border-t border-white/10 relative z-10">
+                                <%= supportMessageSafe || message %>
+                            </p>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                            <h3 class="font-bold text-slate-800 mb-4 flex justify-between items-center">
+                                Evaluaciones
+                                <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold">
+                                    <%= testsSafe.length %>
+                                </span>
+                            </h3>
+                            <div class="space-y-3">
+                                <% if (testsSafe.length === 0) { %>
+                                    <p class="text-[11px] text-slate-400">
+                                        Aún no se han registrado resultados de tests psicológicos.
+                                    </p>
+                                <% } %>
+                                <% testsSafe.forEach(function (t, index) { %>
+                                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex justify-between items-center">
+                                        <div>
+                                            <p class="text-xs font-bold text-slate-900"><%= t.tipo_test %></p>
+                                            <p class="text-[10px] text-slate-400">
+                                                <%= new Date(t.fecha_realizacion).toLocaleDateString('es-BO') %>
+                                            </p>
+                                            <% if (t.severidad) { %>
+                                                <p class="text-[11px] text-indigo-600 font-semibold mt-0.5">
+                                                    Nivel: <%= t.severidad %>
+                                                </p>
+                                            <% } %>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onclick="showTestDetails(<%= index %>)"
+                                            class="text-[10px] font-bold text-indigo-600 hover:underline">
+                                            Ver detalle
+                                        </button>
+                                    </div>
+                                <% }); %>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        <% } else { %>
+            <!-- Fallback -->
+            <div class="min-h-[60vh] flex flex-col items-center justify-center text-center p-8">
+                <h2 class="text-2xl font-bold text-slate-800">Panel de Monitoreo</h2>
+                <p class="text-slate-500 mt-2">Seleccione una opción o espere a la carga de datos.</p>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<!-- MODAL CHECK-IN (PACIENTE) -->
+<% if (userSafe.nombre_rol === 'Paciente') { %>
+    <div id="checkinModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4 transition-all duration-300 opacity-0" style="opacity: 0;">
+        <div id="checkinModalContent" class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform scale-95 transition-all duration-300">
+            <div class="bg-indigo-600 px-6 py-5 text-white flex justify_between items-center">
+                <h3 class="text-lg font-bold">Registro diario</h3>
+                <button type="button" onclick="toggleModal('checkinModal')" class="text-white/60 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form action="/dashboard/monitoring/checkin" method="POST" class="p-6 space-y-6">
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="text-sm font-bold text-slate-700">Ánimo</label>
+                        <span id="moodText" class="text-indigo-600 font-bold text-lg">Normal</span>
+                    </div>
+                    <input type="range" name="valencia" min="1" max="5" step="1" value="3"
+                           class="w-full h-2 bg-slate-200 rounded-lg accent-indigo-600 cursor-pointer"
+                           oninput="updateMoodLabel(this.value)">
+                </div>
+
+                <div class="space-y-3 pt-2 border-t border-slate-100">
+                    <div class="flex justify-between items-end">
+                        <label class="text-sm font-bold text-slate-700">Sueño</label>
+                        <span id="sleepText" class="text-slate-600 font-bold text-lg">8h</span>
+                    </div>
+                    <input type="range" name="horas_sueno" min="0" max="12" step="1" value="8"
+                           class="w-full h-2 bg-slate-200 rounded-lg accent-indigo-400 cursor-pointer"
+                           oninput="document.getElementById('sleepText').innerText = this.value + 'h'">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-3">Emoción</label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <%
+                            const emojis = {
+                                Feliz: '😄',
+                                Calmado: '😌',
+                                Cansado: '😴',
+                                Ansioso: '😰',
+                                Triste: '😢',
+                                Enojado: '😠'
+                            };
+                            Object.keys(emojis).forEach(function (emo) {
+                        %>
+                        <label class="cursor-pointer group relative">
+                            <input type="radio" name="emocion" value="<%= emo %>" class="peer sr-only">
+                            <div class="peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 border border-slate-200 rounded-2xl p-3 text-center hover:border-indigo-300 transition-all shadow-sm">
+                                <div class="text-2xl mb-1"><%= emojis[emo] %></div>
+                                <span class="text-[10px] font-bold block opacity-70 peer-checked:opacity-100"><%= emo %></span>
+                            </div>
+                        </label>
+                        <% }); %>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Notas</label>
+                    <textarea name="notas" rows="2"
+                              class="w-full rounded-xl border-slate-200 text-sm focus:ring-2 resize-none p-3 bg-slate-50"></textarea>
+                </div>
+
+                <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl hover:bg-indigo-700 shadow-xl transition-all">
+                    Guardar
+                </button>
+            </form>
+        </div>
+    </div>
+<% } %>
+
+<!-- MODAL DETALLE TEST -->
+<div id="testDetailModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col animate-fade-in-up">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-2xl">
+            <h3 class="text-lg font-bold text-slate-800" id="testModalTitle">Resultados</h3>
+            <button type="button" onclick="toggleModal('testDetailModal')" class="text-slate-400 hover:text-slate-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="p-6 overflow-y-auto custom-scrollbar" id="testModalContent"></div>
+    </div>
+</div>
+
+<script>
+    // =========================
+    // Datos inyectados
+    // =========================
+    const checkinData = <%- JSON.stringify(checkinsSafe || []) %>.slice().reverse();
+    const testsData   = <%- JSON.stringify(testsSafe || []) %>;
+
+    // Mapa de emociones para el radar
+    const emotionMap = {
+        'Feliz': 0,
+        'Calmado': 0,
+        'Cansado': 0,
+        'Triste': 0,
+        'Ansioso': 0,
+        'Enojado': 0
+    };
+
+    checkinData.forEach(function (c) {
+        if (c.emocion_principal && Object.prototype.hasOwnProperty.call(emotionMap, c.emocion_principal)) {
+            emotionMap[c.emocion_principal]++;
+        }
+    });
+
+    // =========================
+    // Radar "caótico" (modo demo)
+    // =========================
+    function buildChaoticRadarValues(values) {
+        const n = values.length;
+        if (!n) return [];
+
+        const max = Math.max(...values);
+        const min = Math.min(...values);
+        const eps = 0.0001;
+
+        // Caso: todos casi iguales
+        if (max - min < eps) {
+            const base = (max + min) / 2 || 1;
+            return values.map(function (v, i) {
+                const angle = (i / n) * Math.PI * 2;
+                const wave = Math.sin(angle) * 1.2; // -1.2 a +1.2
+                const amplified = base + wave * (0.7 + base * 0.3);
+                return Math.max(0.3, Math.min(5, amplified));
+            });
+        }
+
+        // Caso: ya hay variación -> normalizamos y estiramos
+        return values.map(function (v, i) {
+            const norm = (v - min) / (max - min || 1); // 0-1
+            let stretched = 0.5 + norm * 4.3; // 0.5–4.8
+            const angle = (i / n) * Math.PI * 2;
+            const wave = Math.sin(angle * 1.5) * 0.5; // -0.5 a +0.5
+            stretched += wave;
+            return Math.max(0.3, Math.min(5, stretched));
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const syncLabel = document.getElementById('lastSyncMonitoring');
+        if (syncLabel) {
+            const now = new Date();
+            syncLabel.textContent = now.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // -------- Correlación Sueño / Ánimo --------
+        const ctxLine = document.getElementById('moodChart');
+        if (ctxLine && checkinData.length > 0) {
+            new Chart(ctxLine, {
+                type: 'bar',
+                data: {
+                    labels: checkinData.map(function (c) {
+                        return new Date(c.fecha_hora).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+                    }),
+                    datasets: [
+                        {
+                            type: 'line',
+                            label: 'Ánimo',
+                            data: checkinData.map(function (c) { return Number(c.valencia) || 0; }),
+                            borderColor: '#4f46e5',
+                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                            borderWidth: 3,
+                            tension: 0.4,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#4f46e5',
+                            yAxisID: 'y'
+                        },
+                        {
+                            type: 'bar',
+                            label: 'Sueño',
+                            data: checkinData.map(function (c) { return Number(c.horas_sueno) || 0; }),
+                            backgroundColor: 'rgba(148, 163, 184, 0.6)',
+                            borderRadius: 4,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: true } },
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 5,
+                            position: 'left',
+                            ticks: { stepSize: 1 }
+                        },
+                        y1: {
+                            min: 0,
+                            max: 12,
+                            position: 'right',
+                            grid: { display: false },
+                            ticks: { stepSize: 2 }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                });
+        }
+
+        // -------- Radar emocional amplificado --------
+        const ctxRadar = document.getElementById('radarChart');
+        if (ctxRadar && checkinData.length > 0) {
+            const labels = Object.keys(emotionMap);
+            const baseValues = labels.map(function (l) { return emotionMap[l] || 0; });
+            const chaoticValues = buildChaoticRadarValues(baseValues);
+
+            new Chart(ctxRadar, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Frecuencia (modo expandido)',
+                        data: chaoticValues,
+                        backgroundColor: 'rgba(79, 70, 229, 0.18)',
+                        borderColor: '#4f46e5',
+                        pointBackgroundColor: '#4f46e5',
+                        borderWidth: 2,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: true } },
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 5,
+                            grid: { color: '#e2e8f0' },
+                            angleLines: { color: '#e2e8f0' },
+                            ticks: {
+                                display: false,
+                                backdropColor: 'transparent'
+                            },
+                            pointLabels: {
+                                font: { size: 11 },
+                                color: '#64748b'
+                            }
+                        }
+                    }
+                });
+        }
+    });
+
+    function toggleModal(id) {
+        const modal = document.getElementById(id);
+        if (!modal) return;
+
+        if (id === 'checkinModal') {
+            const content = document.getElementById('checkinModalContent');
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                setTimeout(function () {
+                    modal.style.opacity = '1';
+                    if (content) content.classList.replace('scale-95', 'scale-100');
+                }, 10);
+            } else {
+                modal.style.opacity = '0';
+                if (content) content.classList.replace('scale-100', 'scale-95');
+                setTimeout(function () {
+                    modal.classList.add('hidden');
+                }, 300);
+            }
+        } else {
+            // Modales simples (detalle test, etc.)
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+    }
+
+    function updateMoodLabel(v) {
+        const map = {
+            1: 'Pésimo',
+            2: 'Mal',
+            3: 'Normal',
+            4: 'Bien',
+            5: 'Excelente'
+        };
+        const span = document.getElementById('moodText');
+        if (span) span.innerText = map[Number(v)] || 'Normal';
+    }
+
+    function showTestDetails(index) {
+        const t = testsData[index];
+        if (!t) return;
+
+        let respuestas = {};
+        try {
+            if (typeof t.respuestas_json === 'string') {
+                respuestas = JSON.parse(t.respuestas_json || '{}');
+            } else if (t.respuestas_json) {
+                respuestas = t.respuestas_json;
+            }
+        } catch (e) {
+            respuestas = {};
+        }
+
+        let html = `
+            <div class="mb-6 p-5 rounded-2xl bg-indigo-50 text-center">
+                <p class="text-3xl font-black text-indigo-700">${t.severidad || '—'}</p>
+                <p class="text-sm">Puntaje total: ${t.puntaje_total}</p>
+            </div>
+        `;
+
+        let contador = 1;
+        Object.keys(respuestas).forEach(function (key) {
+            const val = respuestas[key];
+            const label = key.startsWith('P') ? key : ('P' + contador);
+            html += `
+                <div class="flex justify-between py-2 border-b border-slate-100 text-sm">
+                    <span class="font-semibold text-xs bg-slate-200/70 px-2 rounded-md mr-4">
+                        ${label}
+                    </span>
+                    <span class="flex-1 text-right text-slate-700">${val}</span>
+                </div>
+            `;
+            contador++;
+        });
+
+        document.getElementById('testModalContent').innerHTML = html;
+        toggleModal('testDetailModal');
+    }
+
+    function downloadPDF() {
+        const el = document.getElementById('monitoring-content');
+        if (!el) return;
+        const btn = document.getElementById('btn-download-pdf');
+        if (!btn) return;
+
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> <span>Generando...</span>';
+        btn.disabled = true;
+
+        html2pdf()
+            .set({
+                margin: 0.4,
+                filename: 'Reporte_MindCare.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'letter' }
+            })
+            .from(el)
+            .save()
+            .then(function () {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            })
+            .catch(function () {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            });
+    }
+</script>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f5f9;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+    .animate-fade-in-down {
+        animation: fade-in-down 0.4s ease-out;
+    }
+    .animate-slide-up {
+        animation: slide-up 0.4s ease-out;
+    }
+    .animate-fade-in-up {
+        animation: fade-in-up 0.3s ease-out;
+    }
+    .animate-fade-in {
+        animation: fade-in 0.3s ease-out;
+    }
+    @keyframes fade-in-down {
+        from { opacity: 0; transform: translateY(-10px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slide-up {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fade-in-up {
+        from { opacity: 0; transform: translateY(12px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fade-in {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+</style>
+
+<%- include('../partials/footer') %>

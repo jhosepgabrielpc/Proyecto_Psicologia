@@ -1,0 +1,160 @@
+<%- include('../partials/header', { title: 'Editar Usuario' }) %>
+
+<div class="min-h-screen bg-slate-50 py-10">
+    <div class="max-w-2xl mx-auto px-4">
+        
+        <div class="mb-6 flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900">Editar Usuario</h1>
+                <p class="text-sm text-slate-500 mt-1">
+                    Actualiza la información de la cuenta seleccionada. Los cambios serán efectivos de inmediato.
+                </p>
+            </div>
+            <a href="/dashboard/admin" class="inline-flex items-center text-slate-600 hover:text-slate-900 text-sm font-medium">
+                <i class="fas fa-arrow-left mr-2"></i>Volver
+            </a>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-100">
+            <div class="bg-indigo-600 px-6 py-4">
+                <h2 class="text-white text-lg font-semibold">
+                    <%= editUser.nombre %> <%= editUser.apellido %> · <%= editUser.email %>
+                </h2>
+                <p class="text-indigo-100 text-xs mt-1">
+                    ID interno: <%= editUser.id_usuario %> · Rol actual: <%= editUser.nombre_rol || 'Sin rol' %>
+                </p>
+            </div>
+
+            <form action="/dashboard/admin/edit/<%= editUser.id_usuario %>" method="POST" class="p-6 space-y-6">
+                
+                <!-- Bloque de errores -->
+                <% if (typeof errors !== 'undefined' && errors && errors.length) { %>
+                    <div class="bg-rose-50 border-l-4 border-rose-500 text-rose-700 p-4 rounded-md text-sm mb-2">
+                        <p class="font-semibold mb-1">Revisa los siguientes campos:</p>
+                        <ul class="list-disc list-inside space-y-1">
+                            <% errors.forEach(function(e) { %>
+                                <li><%= e.msg %></li>
+                            <% }) %>
+                        </ul>
+                    </div>
+                <% } else if (error) { %>
+                    <div class="bg-rose-50 border-l-4 border-rose-500 text-rose-700 p-4 rounded-md text-sm mb-2">
+                        <%= error %>
+                    </div>
+                <% } %>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre</label>
+                        <input
+                            type="text"
+                            name="nombre"
+                            required
+                            value="<%= editUser.nombre || '' %>"
+                            class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2 bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Apellido</label>
+                        <input
+                            type="text"
+                            name="apellido"
+                            required
+                            value="<%= editUser.apellido || '' %>"
+                            class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2 bg-slate-50">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Correo Electrónico</label>
+                    <input
+                        type="email"
+                        name="email"
+                        required
+                        value="<%= editUser.email || '' %>"
+                        class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2 bg-slate-50">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Teléfono</label>
+                        <input
+                            type="tel"
+                            name="telefono"
+                            value="<%= editUser.telefono || '' %>"
+                            class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2 bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Nacimiento</label>
+                        <%
+                            let fechaISO = '';
+                            if (editUser.fecha_nacimiento) {
+                                if (editUser.fecha_nacimiento.toISOString) {
+                                    fechaISO = editUser.fecha_nacimiento.toISOString().substring(0, 10);
+                                } else if (typeof editUser.fecha_nacimiento === 'string') {
+                                    fechaISO = editUser.fecha_nacimiento.substring(0, 10);
+                                }
+                            }
+                        %>
+                        <input
+                            type="date"
+                            name="fecha_nacimiento"
+                            value="<%= fechaISO %>"
+                            class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2 bg-slate-50">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Rol del Usuario</label>
+                        <select
+                            name="rol"
+                            class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2 bg-white">
+                            <option value="Paciente" <%= editUser.nombre_rol === 'Paciente' ? 'selected' : '' %>>Paciente</option>
+                            <option value="Terapeuta" <%= editUser.nombre_rol === 'Terapeuta' ? 'selected' : '' %>>Terapeuta</option>
+                            <option value="Administrador" <%= editUser.nombre_rol && editUser.nombre_rol.includes('Admin') ? 'selected' : '' %>>Administrador</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Estado</label>
+                        <select
+                            name="estado"
+                            class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2 bg-white">
+                            <option value="true"  <%= editUser.estado ? 'selected' : '' %>>Activo</option>
+                            <option value="false" <%= !editUser.estado ? 'selected' : '' %>>Bloqueado</option>
+                        </select>
+                        <p class="text-xs text-slate-500 mt-1">
+                            Los usuarios bloqueados no podrán iniciar sesión en MindCare.
+                        </p>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Contraseña (opcional)</label>
+                    <input
+                        type="password"
+                        name="password"
+                        class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2 bg-slate-50"
+                        placeholder="Dejar en blanco para mantener la actual">
+                    <p class="text-xs text-slate-500 mt-1">
+                        Solo completa este campo si deseas actualizar la contraseña de este usuario.
+                    </p>
+                </div>
+
+                <div class="pt-4 flex justify-end gap-3">
+                    <a
+                        href="/dashboard/admin"
+                        class="px-5 py-2 rounded-xl border border-slate-300 text-slate-600 text-sm font-medium hover:bg-slate-100">
+                        Cancelar
+                    </a>
+                    <button
+                        type="submit"
+                        class="bg-indigo-600 text-white px-6 py-2 rounded-xl hover:bg-indigo-700 transition shadow-md text-sm font-semibold">
+                        <i class="fas fa-save mr-2"></i>Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

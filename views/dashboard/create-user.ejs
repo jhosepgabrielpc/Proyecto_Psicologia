@@ -1,0 +1,155 @@
+<%- include('../partials/header', { title: 'Nuevo Usuario' }) %>
+
+<div class="min-h-screen bg-slate-50 py-10">
+    <div class="max-w-2xl mx-auto px-4">
+
+        <!-- Título + botón volver -->
+        <div class="mb-6 flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900">Nuevo Usuario</h1>
+                <p class="text-sm text-slate-500 mt-1">
+                    Crea un nuevo usuario para la plataforma MindCare y asigna el rol correspondiente.
+                </p>
+            </div>
+            <a href="/dashboard/admin" class="inline-flex items-center text-slate-600 hover:text-slate-900 text-sm font-medium">
+                <i class="fas fa-arrow-left mr-2"></i>Volver
+            </a>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-100">
+            <div class="bg-indigo-600 px-6 py-4">
+                <h2 class="text-white text-lg font-semibold">
+                    Datos de registro
+                </h2>
+                <p class="text-indigo-100 text-xs mt-1">
+                    Completa la información básica del usuario. Podrás editarla más adelante desde el panel de administración.
+                </p>
+            </div>
+
+            <form action="/dashboard/admin/create" method="POST" class="p-6 space-y-6">
+                
+                <!-- Bloque de errores -->
+                <% if (typeof errors !== 'undefined' && errors && errors.length) { %>
+                    <div class="bg-rose-50 border-l-4 border-rose-500 text-rose-700 p-4 rounded-md text-sm mb-2">
+                        <p class="font-semibold mb-1">Revisa los siguientes campos:</p>
+                        <ul class="list-disc list-inside space-y-1">
+                            <% errors.forEach(function(e) { %>
+                                <li><%= e.msg %></li>
+                            <% }) %>
+                        </ul>
+                    </div>
+                <% } else if (error) { %>
+                    <div class="bg-rose-50 border-l-4 border-rose-500 text-rose-700 p-4 rounded-md text-sm mb-2">
+                        <%= error %>
+                    </div>
+                <% } %>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre</label>
+                        <input
+                            type="text"
+                            name="nombre"
+                            required
+                            value="<%= formData && formData.nombre ? formData.nombre : '' %>"
+                            class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2 bg-slate-50"
+                            placeholder="Ej. Ana María">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Apellido</label>
+                        <input
+                            type="text"
+                            name="apellido"
+                            required
+                            value="<%= formData && formData.apellido ? formData.apellido : '' %>"
+                            class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2 bg-slate-50"
+                            placeholder="Ej. Pérez">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Correo Electrónico</label>
+                    <input
+                        type="email"
+                        name="email"
+                        required
+                        value="<%= formData && formData.email ? formData.email : '' %>"
+                        class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2 bg-slate-50"
+                        placeholder="usuario@mindcare.com">
+                    <p class="text-xs text-slate-500 mt-1">
+                        Se utilizará para el acceso a la plataforma y comunicaciones importantes.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Contraseña</label>
+                        <input
+                            type="password"
+                            name="password"
+                            required
+                            minlength="8"
+                            class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2 bg-slate-50">
+                        <p class="text-xs text-slate-500 mt-1">
+                            Mínimo 8 caracteres, idealmente con mayúsculas, minúsculas, número y símbolo.
+                        </p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Teléfono (opcional)</label>
+                        <input
+                            type="tel"
+                            name="telefono"
+                            value="<%= formData && formData.telefono ? formData.telefono : '' %>"
+                            class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2 bg-slate-50"
+                            placeholder="Ej. 7xxxxxxx">
+                        <p class="text-xs text-slate-500 mt-1">
+                            Útil para contacto directo en casos necesarios.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Fecha de Nacimiento</label>
+                        <input
+                            type="date"
+                            name="fecha_nacimiento"
+                            value="<%= formData && formData.fecha_nacimiento ? formData.fecha_nacimiento : '' %>"
+                            class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2 bg-slate-50">
+                        <p class="text-xs text-slate-500 mt-1">
+                            Para validación de mayoría de edad y contexto clínico.
+                        </p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Rol del Usuario</label>
+                        <select
+                            name="rol"
+                            class="w-full rounded-xl border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2 bg-white">
+                            <option value="Paciente" <%= formData && formData.rol === 'Paciente' ? 'selected' : '' %>>Paciente</option>
+                            <option value="Terapeuta" <%= formData && formData.rol === 'Terapeuta' ? 'selected' : '' %>>Terapeuta</option>
+                            <option value="Administrador" <%= formData && formData.rol === 'Administrador' ? 'selected' : '' %>>Administrador</option>
+                        </select>
+                        <p class="text-xs text-slate-500 mt-1">
+                            El rol determina los permisos y el tipo de panel que verá en MindCare.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="pt-4 flex justify-end gap-3">
+                    <a
+                        href="/dashboard/admin"
+                        class="px-5 py-2 rounded-xl border border-slate-300 text-slate-600 text-sm font-medium hover:bg-slate-100">
+                        Cancelar
+                    </a>
+                    <button
+                        type="submit"
+                        class="bg-indigo-600 text-white px-6 py-2 rounded-xl hover:bg-indigo-700 transition shadow-md text-sm font-semibold">
+                        <i class="fas fa-save mr-2"></i>Crear Usuario
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

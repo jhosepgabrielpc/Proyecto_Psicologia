@@ -1,0 +1,673 @@
+<%- include('../partials/header', { title: 'Gestión de Agenda' }) %>
+
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+
+<%
+    const userSafe = user || {};
+    const isTherapistOrAdmin = userSafe && (userSafe.nombre_rol === 'Terapeuta' || userSafe.nombre_rol === 'Admin');
+    const isPatientRole = userSafe && userSafe.nombre_rol === 'Paciente';
+    const selfPatientId = userSafe && userSafe.id_paciente; // Debe ser seteado por backend para pacientes
+
+    const statsSafe = stats || { citas_futuras: 0 };
+    const patientsSafe = Array.isArray(patients) ? patients : [];
+    const therapistsSafe = Array.isArray(therapists) ? therapists : [];
+    const todaySafe = Array.isArray(todayAppointments) ? todayAppointments : [];
+
+    const msgSafe = typeof msg === 'string' ? msg : null;
+%>
+
+<style>
+    /* ESTILOS DE LOS RECUADROS (EVENTOS) */
+    .fc-event {
+        border: none !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+        padding: 4px 8px !important;
+        transition: all 0.2s ease-in-out !important;
+        cursor: pointer;
+    }
+    .fc-event:hover {
+        transform: scale(1.02) !important;
+        z-index: 50 !important;
+        filter: brightness(1.1);
+    }
+    .fc-event-title {
+        font-weight: 800 !important;
+        font-size: 0.9em !important;
+    }
+    .fc-event-time {
+        font-size: 0.8em !important;
+        opacity: 0.9;
+        margin-bottom: 2px;
+    }
+
+    /* Celdas y Grid */
+    .fc-timegrid-slot { height: 4em !important; }
+    .fc-col-header-cell { background-color: #f8fafc; padding: 10px 0 !important; }
+    .fc-theme-standard td, .fc-theme-standard th { border-color: #e2e8f0 !important; }
+    .fc-timegrid-now-indicator-line { border-color: #ef4444; border-width: 2px; }
+    .fc-timegrid-now-indicator-arrow { border-color: #ef4444; border-width: 6px; }
+
+    /* Botones FullCalendar */
+    .fc-button-primary {
+        background-color: #4f46e5 !important;
+        border-color: #4f46e5 !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        font-size: 0.75rem !important;
+        letter-spacing: 0.05em !important;
+        padding: 0.5rem 1rem !important;
+        border-radius: 0.5rem !important;
+    }
+    .fc-button-active { background-color: #4338ca !important; }
+    .fc-toolbar-title {
+        font-size: 1.5rem !important;
+        font-weight: 800 !important;
+        color: #1e293b;
+    }
+
+    /* Animaciones */
+    .animate-fade-in-down { animation: fade-in-down 0.5s ease-out; }
+    .animate-fade-in { animation: fade-in 0.5s ease-out; }
+    @keyframes fade-in-down {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fade-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+</style>
+
+<div class="min-h-screen bg-slate-100 py-8 font-sans">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+
+        <!-- HEADER -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-500/30">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-extrabold text-slate-800">Agenda Clínica</h1>
+                    <p class="text-sm text-slate-500">Gestión de sesiones presenciales y virtuales.</p>
+                </div>
+            </div>
+
+            <div class="flex gap-4 items-center">
+                <div class="hidden md:flex items-center gap-3 px-4 py-2 bg-indigo-50 rounded-xl border border-indigo-100">
+                    <div class="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs">
+                        <%= statsSafe.citas_futuras %>
+                    </div>
+                    <div class="text-xs text-indigo-900 font-bold uppercase text-right">
+                        Citas<br>Activas
+                    </div>
+                </div>
+
+                <button onclick="openCreateModal()" class="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-xl font-bold shadow-lg transition-all transform active:scale-95 flex items-center gap-2">
+                    <i class="fas fa-plus"></i> Nueva Cita
+                </button>
+            </div>
+        </div>
+
+        <!-- ALERTAS DE SISTEMA -->
+        <% if (msgSafe) { %>
+            <div class="mt-4 p-4 rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm animate-fade-in
+                <%= msgSafe.includes('success') ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-rose-100 text-rose-700 border border-rose-200' %>">
+                <% if (msgSafe === 'success_created') { %>
+                    <i class="fas fa-check-circle"></i> Cita guardada y agendada correctamente.
+                <% } %>
+                <% if (msgSafe === 'success_cancelled') { %>
+                    <i class="fas fa-trash-alt"></i> La cita ha sido eliminada de la agenda.
+                <% } %>
+                <% if (msgSafe === 'error_overlap') { %>
+                    <i class="fas fa-ban"></i> ERROR: El horario seleccionado ya está ocupado. Ajusta la hora o el terapeuta y vuelve a intentar.
+                <% } %>
+                <% if (msgSafe === 'success_notes') { %>
+                    <i class="fas fa-file-medical"></i> Nota clínica de la sesión guardada y cita marcada como completada.
+                <% } %>
+                <% if (msgSafe === 'error_notes') { %>
+                    <i class="fas fa-exclamation-triangle"></i> No se pudo guardar la nota de sesión. Inténtalo nuevamente.
+                <% } %>
+            </div>
+        <% } %>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+
+            <!-- CALENDARIO -->
+            <div class="lg:col-span-3 bg-white rounded-2xl shadow-lg border border-slate-200 p-6 h-[800px] relative">
+                <div id="calendar" class="h-full font-sans"></div>
+            </div>
+
+            <!-- PANEL LATERAL -->
+            <div class="space-y-6">
+                <!-- AGENDA HOY -->
+                <div class="bg-slate-900 rounded-2xl p-6 text-white shadow-lg">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold uppercase tracking-wider text-xs text-slate-400">Agenda de Hoy</h3>
+                        <span class="bg-white/10 px-2 py-1 rounded text-xs font-mono">
+                            <%= new Date().toLocaleDateString('es-ES') %>
+                        </span>
+                    </div>
+
+                    <div class="space-y-3 custom-scrollbar max-h-[400px] overflow-y-auto">
+                        <% if (todaySafe && todaySafe.length > 0) { %>
+                            <% todaySafe.forEach(cita => { %>
+                                <div class="bg-white/5 p-3 rounded-xl border border-white/10 hover:bg-white/10 transition cursor-pointer group">
+                                    <div class="flex justify-between items-start">
+                                        <span class="text-indigo-300 font-bold text-xs bg-indigo-500/20 px-2 py-0.5 rounded">
+                                            <%= new Date(cita.fecha_hora_inicio).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) %>
+                                        </span>
+                                        <% if (cita.modalidad === 'Virtual') { %>
+                                            <i class="fas fa-video text-xs text-emerald-400"></i>
+                                        <% } else { %>
+                                            <i class="fas fa-building text-xs text-amber-400"></i>
+                                        <% } %>
+                                    </div>
+                                    <p class="font-bold mt-2 text-sm text-white">
+                                        <%= cita.pac_nombre %> <%= cita.pac_apellido %>
+                                    </p>
+                                    <p class="text-xs text-slate-400">
+                                        Dr(a). <%= cita.doc_apellido %>
+                                    </p>
+
+                                    <% if (cita.enlace_reunion && cita.modalidad === 'Virtual') { %>
+                                        <a href="<%= cita.enlace_reunion %>" target="_blank"
+                                           class="mt-3 block w-full text-center bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2 rounded-lg transition">
+                                            Unirse
+                                        </a>
+                                    <% } %>
+                                </div>
+                            <% }) %>
+                        <% } else { %>
+                            <div class="text-center py-8 text-slate-500 text-sm italic">
+                                Agenda libre hoy.
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
+
+                <!-- AYUDA -->
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 text-xs text-indigo-800">
+                    <p class="font-bold mb-1">
+                        <i class="fas fa-mouse-pointer mr-1"></i> Interacción
+                    </p>
+                    <ul class="list-disc pl-4 space-y-1">
+                        <li>Clic en un espacio vacío para <b>crear</b> una cita.</li>
+                        <li>Clic en una cita para <b>ver detalles</b>, <b>videollamada</b> o <b>nota clínica</b>.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CREAR CITA -->
+<div id="createModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden transform transition-all">
+        <div class="bg-indigo-600 px-6 py-4 flex justify-between items-center">
+            <h3 class="text-white font-bold text-lg flex items-center gap-2">
+                <i class="far fa-calendar-plus"></i> Nueva Cita
+            </h3>
+            <button onclick="closeModal('createModal')" class="text-white/80 hover:text-white">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <form action="/dashboard/appointments/create" method="POST" class="p-6 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Paciente</label>
+
+                    <% if (isPatientRole && selfPatientId) { %>
+                        <!-- Modo Paciente: id fijo, no editable -->
+                        <input type="hidden" name="id_paciente" value="<%= selfPatientId %>">
+                        <div class="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-lg text-sm text-slate-700">
+                            <i class="fas fa-user mr-1 text-slate-400"></i>
+                            <span><%= userSafe.nombre %> <%= userSafe.apellido || '' %></span>
+                            <span class="ml-1 text-[10px] uppercase text-slate-400 font-bold">(Paciente)</span>
+                        </div>
+                    <% } else { %>
+                        <!-- Modo terapeuta/admin: se selecciona paciente -->
+                        <select name="id_paciente" required
+                                class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
+                            <option value="">Seleccionar...</option>
+                            <% if (patientsSafe && patientsSafe.length > 0) { patientsSafe.forEach(p => { %>
+                                <option value="<%= p.id_paciente %>"><%= p.nombre %> <%= p.apellido %></option>
+                            <% }); } %>
+                        </select>
+                    <% } %>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Terapeuta</label>
+                    <select name="id_terapeuta" required
+                            class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
+                        <option value="">Seleccionar...</option>
+                        <% if (therapistsSafe && therapistsSafe.length > 0) { therapistsSafe.forEach(t => { %>
+                            <option value="<%= t.id_terapeuta %>">
+                                Dr(a). <%= t.apellido %> (<%= t.especialidad %>)
+                            </option>
+                        <% }); } %>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha</label>
+                    <input type="date" name="fecha" id="modalDate" required
+                           class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Hora Inicio</label>
+                    <input type="time" name="hora" id="modalTime" required
+                           class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Duración</label>
+                    <select name="duracion"
+                            class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none">
+                        <option value="30">30 min</option>
+                        <option value="45">45 min</option>
+                        <option value="60" selected>60 min</option>
+                        <option value="90">90 min</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Modalidad</label>
+                    <div class="flex gap-2">
+                        <label class="flex items-center justify-center gap-2 cursor-pointer bg-indigo-50 px-2 py-2 rounded-lg border border-indigo-100 w-full hover:bg-indigo-100 transition">
+                            <input type="radio" name="modalidad" value="Virtual" checked class="accent-indigo-600">
+                            <span class="text-xs font-bold text-indigo-700">Virtual</span>
+                        </label>
+                        <label class="flex items-center justify-center gap-2 cursor-pointer bg-emerald-50 px-2 py-2 rounded-lg border border-emerald-100 w-full hover:bg-emerald-100 transition">
+                            <input type="radio" name="modalidad" value="Presencial" class="accent-emerald-600">
+                            <span class="text-xs font-bold text-emerald-700">Local</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Notas iniciales</label>
+                <textarea name="notas" rows="2"
+                          class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm resize-none focus:bg-white outline-none focus:ring-2 focus:ring-indigo-500"
+                          placeholder="Motivo de consulta o contexto inicial..."></textarea>
+            </div>
+
+            <div class="pt-2">
+                <button type="submit"
+                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg transition-all flex justify-center items-center gap-2">
+                    <i class="fas fa-save"></i> Guardar Cita
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL DETALLE CITA + NOTA CLÍNICA -->
+<div id="eventModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all">
+        <div class="bg-slate-800 px-6 py-4 flex justify-between items-center text-white">
+            <h3 class="font-bold text-lg">Detalles de la Cita</h3>
+            <button onclick="closeModal('eventModal')" class="text-white/70 hover:text-white">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-5">
+            <!-- Cabecera -->
+            <div class="flex items-center gap-4">
+                <div id="evtIcon"
+                     class="h-14 w-14 rounded-full bg-slate-100 flex items-center justify-center text-2xl border border-slate-200 shadow-sm text-slate-500">
+                </div>
+                <div>
+                    <h4 class="text-xl font-black text-slate-800 leading-tight" id="evtTitle">Paciente</h4>
+                    <p class="text-sm font-medium text-indigo-600" id="evtSubtitle">Doctor</p>
+                </div>
+            </div>
+
+            <!-- Info rápida -->
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Horario</p>
+                    <p class="font-bold text-slate-700 font-mono" id="evtTime">--:--</p>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Estado</p>
+                    <span id="evtStatus"
+                          class="text-xs font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-600">--</span>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Modalidad</p>
+                    <p id="evtModality" class="text-xs font-semibold text-slate-700">-</p>
+                </div>
+            </div>
+
+            <!-- Link videollamada -->
+            <div id="evtLinkContainer" class="hidden">
+                <a href="#" id="evtLink" target="_blank"
+                   class="block w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold py-3 rounded-xl text-center shadow-lg shadow-indigo-200 transition-all transform hover:-translate-y-0.5">
+                    <i class="fas fa-video mr-2"></i> Iniciar Videollamada
+                </a>
+            </div>
+
+            <!-- Notas existentes (administrativas / previas) -->
+            <div id="evtExistingNotes" class="hidden bg-slate-50 border border-slate-100 rounded-2xl p-3 text-xs text-slate-600">
+                <p class="font-bold text-[11px] text-slate-500 uppercase mb-1">
+                    Notas previamente registradas
+                </p>
+                <pre id="evtExistingNotesText"
+                     class="whitespace-pre-wrap font-sans text-[12px] leading-snug"></pre>
+            </div>
+
+            <hr class="border-slate-100">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Formulario Nota Clínica (solo roles clínicos) -->
+                <% if (isTherapistOrAdmin) { %>
+                    <div class="space-y-3">
+                        <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fas fa-file-medical text-indigo-500"></i>
+                            Nota clínica de la sesión
+                        </h4>
+
+                        <form action="/dashboard/appointments/session-notes" method="POST" class="space-y-2">
+                            <input type="hidden" name="id_cita" id="notesId">
+
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">
+                                    Motivo principal
+                                </label>
+                                <input type="text" name="motivo_sesion"
+                                       class="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">
+                                    Resumen clínico
+                                </label>
+                                <textarea name="resumen_sesion" rows="3"
+                                          class="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                                          placeholder="Puntos clave trabajados durante la sesión..."></textarea>
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">
+                                    Intervenciones realizadas
+                                </label>
+                                <div class="grid grid-cols-2 gap-1.5 text-[11px] text-slate-600">
+                                    <label class="flex items-center gap-1.5">
+                                        <input type="checkbox" name="intervenciones" value="Psicoeducación"
+                                               class="accent-indigo-600">
+                                        Psicoeducación
+                                    </label>
+                                    <label class="flex items-center gap-1.5">
+                                        <input type="checkbox" name="intervenciones" value="Reestructuración cognitiva"
+                                               class="accent-indigo-600">
+                                        Reestructuración cognitiva
+                                    </label>
+                                    <label class="flex items-center gap-1.5">
+                                        <input type="checkbox" name="intervenciones" value="Entrenamiento en habilidades"
+                                               class="accent-indigo-600">
+                                        Entrenamiento en habilidades
+                                    </label>
+                                    <label class="flex items-center gap-1.5">
+                                        <input type="checkbox" name="intervenciones" value="Trabajo con emociones"
+                                               class="accent-indigo-600">
+                                        Trabajo con emociones
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">
+                                        Nivel de riesgo
+                                    </label>
+                                    <select name="nivel_riesgo"
+                                            class="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-[11px] bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                                        <option value="">Seleccionar...</option>
+                                        <option value="Sin riesgo">Sin riesgo</option>
+                                        <option value="Bajo">Bajo</option>
+                                        <option value="Moderado">Moderado</option>
+                                        <option value="Alto">Alto</option>
+                                        <option value="Crisis">Crisis</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">
+                                        Plan próxima sesión
+                                    </label>
+                                    <input type="text" name="plan_proxima"
+                                           class="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-[11px] bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                                           placeholder="Ej: revisar tareas, aplicar test...">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">
+                                    Acuerdos / tareas para el paciente
+                                </label>
+                                <textarea name="acuerdos" rows="2"
+                                          class="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                                          placeholder="Ej: practicar ejercicio de respiración 3 veces al día..."></textarea>
+                            </div>
+
+                            <div class="pt-1">
+                                <button type="submit"
+                                        class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 rounded-xl shadow-md flex items-center justify-center gap-2">
+                                    <i class="fas fa-check-circle"></i>
+                                    Guardar nota y marcar como completada
+                                </button>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1">
+                                La nota se adjuntará al historial clínico de esta cita.
+                            </p>
+                        </form>
+                    </div>
+                <% } %>
+
+                <!-- Bloque Cancelación -->
+                <div class="space-y-3">
+                    <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        <i class="far fa-trash-alt text-rose-500"></i>
+                        Gestión de cita
+                    </h4>
+
+                    <form action="/dashboard/appointments/cancel" method="POST">
+                        <input type="hidden" name="id_cita" id="cancelId">
+
+                        <div id="cancelSection"
+                             class="hidden space-y-3 bg-rose-50 p-4 rounded-xl border border-rose-100">
+                            <label class="block text-xs font-bold text-rose-600 uppercase">
+                                Motivo de eliminación
+                            </label>
+                            <textarea name="motivo" required
+                                      class="w-full p-2 border border-rose-200 bg-white rounded-lg text-sm text-slate-700 resize-none focus:ring-2 focus:ring-rose-500 outline-none"
+                                      rows="2"
+                                      placeholder="Ej: cancelación del paciente, reprogramación, inasistencia..."></textarea>
+                            <button type="submit"
+                                    class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-lg shadow-md transition-all">
+                                Confirmar eliminación
+                            </button>
+                        </div>
+
+                        <button type="button" id="btnShowCancel" onclick="showCancelForm()"
+                                class="w-full text-rose-500 hover:bg-rose-50 font-bold text-sm py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+                            <i class="far fa-trash-alt"></i> Cancelar o eliminar cita
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'timeGridWeek',
+            locale: 'es',
+            firstDay: 1,
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            buttonText: { today: 'Hoy', month: 'Mes', week: 'Semana', day: 'Día' },
+            slotMinTime: '07:00:00',
+            slotMaxTime: '21:00:00',
+            allDaySlot: false,
+            height: '100%',
+            expandRows: true,
+            navLinks: true,
+            nowIndicator: true,
+
+            // API
+            events: '/dashboard/appointments/events',
+
+            // CLICK EN EVENTO
+            eventClick: function (info) {
+                const props = info.event.extendedProps || {};
+                const start = info.event.start;
+                const end = info.event.end || info.event.start;
+
+                // Título y subtítulo
+                document.getElementById('evtTitle').innerText = info.event.title || 'Paciente';
+                document.getElementById('evtSubtitle').innerText =
+                    (props.patient && props.patient !== info.event.title)
+                        ? props.patient
+                        : (props.doctor || '');
+
+                // Horario
+                const timeStr = `${start.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})} - ${end.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}`;
+                document.getElementById('evtTime').innerText = timeStr;
+
+                // Modalidad
+                document.getElementById('evtModality').innerText = props.modality || props.modalidad || '-';
+
+                // Estado
+                const statusBadge = document.getElementById('evtStatus');
+                const status = props.status || props.estado || '-';
+                statusBadge.innerText = status;
+
+                if (status === 'Programada') {
+                    statusBadge.className = 'text-xs font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 uppercase';
+                } else if (status === 'Completada') {
+                    statusBadge.className = 'text-xs font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-700 uppercase';
+                } else if (status === 'Crisis') {
+                    statusBadge.className = 'text-xs font-bold px-2 py-0.5 rounded bg-rose-100 text-rose-700 uppercase';
+                } else if (status === 'Cancelada') {
+                    statusBadge.className = 'text-xs font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-500 uppercase line-through';
+                } else {
+                    statusBadge.className = 'text-xs font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-700 uppercase';
+                }
+
+                // ID para cancelación y nota
+                document.getElementById('cancelId').value = info.event.id;
+                var notesIdInput = document.getElementById('notesId');
+                if (notesIdInput) notesIdInput.value = info.event.id;
+
+                // Icono + link
+                const iconContainer = document.getElementById('evtIcon');
+                const linkContainer = document.getElementById('evtLinkContainer');
+                const linkBtn = document.getElementById('evtLink');
+                const modality = props.modality || props.modalidad;
+
+                if (modality === 'Virtual') {
+                    iconContainer.innerHTML = '<i class="fas fa-video text-indigo-500"></i>';
+                    if (props.link && status !== 'Cancelada') {
+                        linkContainer.classList.remove('hidden');
+                        linkBtn.href = props.link;
+                    } else {
+                        linkContainer.classList.add('hidden');
+                    }
+                } else {
+                    iconContainer.innerHTML = '<i class="fas fa-hospital-user text-emerald-500"></i>';
+                    linkContainer.classList.add('hidden');
+                }
+
+                // Notas ya existentes
+                const existingContainer = document.getElementById('evtExistingNotes');
+                const existingText = document.getElementById('evtExistingNotesText');
+                const notes = props.notes || props.notas || '';
+                if (notes && notes.trim().length > 0) {
+                    existingContainer.classList.remove('hidden');
+                    existingText.innerText = notes;
+                } else {
+                    existingContainer.classList.add('hidden');
+                    existingText.innerText = '';
+                }
+
+                // Resetear form de cancelación
+                document.getElementById('cancelSection').classList.add('hidden');
+                document.getElementById('btnShowCancel').classList.remove('hidden');
+
+                openModal('eventModal');
+            },
+
+            // CLICK EN HUECO → CREAR
+            dateClick: function (info) {
+                document.getElementById('modalDate').value = info.dateStr.split('T')[0] || '';
+                if (info.dateStr.includes('T')) {
+                    const timePart = info.dateStr.split('T')[1].substring(0, 5);
+                    document.getElementById('modalTime').value = timePart;
+                }
+                openModal('createModal');
+            },
+
+            // RENDER PERSONALIZADO DEL EVENTO
+            eventContent: function (arg) {
+                let timeText = document.createElement('div');
+                timeText.className = 'fc-event-time';
+                timeText.innerHTML = arg.timeText;
+
+                let titleText = document.createElement('div');
+                titleText.className = 'fc-event-title';
+                titleText.innerHTML = arg.event.title;
+
+                let modalityIcon = document.createElement('i');
+                modalityIcon.className =
+                    (arg.event.extendedProps.modality || arg.event.extendedProps.modalidad) === 'Virtual'
+                        ? 'fas fa-video ml-1 opacity-50'
+                        : 'fas fa-building ml-1 opacity-50';
+
+                let container = document.createElement('div');
+                container.appendChild(timeText);
+                container.appendChild(titleText);
+                titleText.appendChild(modalityIcon);
+
+                return { domNodes: [container] };
+            }
+        });
+
+        calendar.render();
+    });
+
+    function openModal(id) {
+        document.getElementById(id).classList.remove('hidden');
+    }
+    function closeModal(id) {
+        document.getElementById(id).classList.add('hidden');
+    }
+    function openCreateModal() {
+        document.getElementById('createModal').classList.remove('hidden');
+    }
+    function showCancelForm() {
+        document.getElementById('cancelSection').classList.remove('hidden');
+        document.getElementById('btnShowCancel').classList.add('hidden');
+    }
+</script>
+
+<%- include('../partials/footer') %>

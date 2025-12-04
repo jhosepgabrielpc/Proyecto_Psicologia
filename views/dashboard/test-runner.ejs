@@ -1,0 +1,322 @@
+<%- include('../partials/header', { title: 'Centro de Evaluaciones Clínicas' }) %>
+
+<div class="min-h-screen bg-slate-50 font-sans pb-12">
+    
+    <!-- TOP BAR -->
+    <div class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <p class="text-[11px] font-semibold text-indigo-500 uppercase tracking-[0.25em] mb-1">
+                        MindCare • Test Runner
+                    </p>
+                    <h1 class="text-2xl font-extrabold text-slate-900">
+                        Evaluaciones de Pacientes
+                    </h1>
+                    <p class="text-sm text-slate-500 mt-1">
+                        Gestiona y dispara evaluaciones como PHQ-9 y GAD-7 para tus pacientes.
+                    </p>
+                </div>
+                <div class="flex flex-wrap gap-3 justify-end">
+                    <a href="/dashboard/therapist" class="bg-white border border-slate-300 text-slate-600 hover:text-indigo-600 hover:border-indigo-300 px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center gap-2">
+                        <i class="fas fa-arrow-left"></i> <span>Volver al Panel</span>
+                    </a>
+                    <a href="/dashboard/register-patient" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl text-sm font-bold transition-all shadow-lg hover:shadow-indigo-500/30 flex items-center gap-2">
+                        <i class="fas fa-user-plus"></i> <span>Nuevo Paciente</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTENIDO -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- KPIs DE EVALUACIONES -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between group hover:border-indigo-200 transition-colors relative overflow-hidden">
+                <div>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Pacientes Evaluables</p>
+                    <p class="text-3xl font-extrabold text-slate-800 mt-1"><%= stats.total %></p>
+                    <p class="text-xs text-slate-400 mt-1">Total de pacientes con acceso a evaluaciones.</p>
+                </div>
+                <div class="h-12 w-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between group hover:border-rose-200 transition-colors relative overflow-hidden">
+                <% if (stats.critical > 0) { %>
+                    <div class="absolute top-0 right-0 w-2 h-2 bg-rose-500 rounded-full animate-ping m-2"></div>
+                <% } %>
+                <div>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Resultados Críticos</p>
+                    <p class="text-3xl font-extrabold text-rose-600 mt-1"><%= stats.critical %></p>
+                    <p class="text-xs text-slate-400 mt-1">Pacientes con nivel emocional en zona de riesgo.</p>
+                </div>
+                <div class="h-12 w-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between group hover:border-emerald-200 transition-colors">
+                <div>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Estables por Evaluaciones</p>
+                    <p class="text-3xl font-extrabold text-emerald-600 mt-1"><%= stats.active %></p>
+                    <p class="text-xs text-slate-400 mt-1">Pacientes con resultados dentro del rango esperado.</p>
+                </div>
+                <div class="h-12 w-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACCIONES RÁPIDAS DE TEST -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="h-10 w-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                        <i class="fas fa-notes-medical"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-slate-800 text-sm">Iniciar PHQ-9</h2>
+                        <p class="text-xs text-slate-400">
+                            Cuestionario de depresión de 9 ítems.
+                        </p>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 mb-4">
+                    Puedes compartir el enlace con el paciente o aplicarlo en consultorio.
+                </p>
+                <button 
+                    type="button" 
+                    class="mt-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-all shadow-sm"
+                    onclick="alert('Aquí puedes enlazar la ruta para iniciar PHQ-9 (GET /dashboard/test/phq9)')"
+                >
+                    <i class="fas fa-play"></i> <span>Iniciar PHQ-9</span>
+                </button>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="h-10 w-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-slate-800 text-sm">Iniciar GAD-7</h2>
+                        <p class="text-xs text-slate-400">
+                            Escala de ansiedad generalizada de 7 ítems.
+                        </p>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 mb-4">
+                    Ideal para monitorear cambios en ansiedad a lo largo del tiempo.
+                </p>
+                <button 
+                    type="button" 
+                    class="mt-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 text-white text-xs font-bold hover:bg-sky-700 transition-all shadow-sm"
+                    onclick="alert('Aquí puedes enlazar la ruta para iniciar GAD-7 (GET /dashboard/test/gad7)')"
+                >
+                    <i class="fas fa-play"></i> <span>Iniciar GAD-7</span>
+                </button>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="h-10 w-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <i class="fas fa-sync-alt"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-slate-800 text-sm">Seguimiento y Re-test</h2>
+                        <p class="text-xs text-slate-400">
+                            Programa reevaluaciones según la evolución clínica.
+                        </p>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 mb-4">
+                    Define cada cuántas semanas quieres repetir las evaluaciones en pacientes críticos o en tratamiento activo.
+                </p>
+                <button 
+                    type="button" 
+                    class="mt-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-all shadow-sm"
+                    onclick="alert('Aquí puedes enlazar tu lógica de programación de re-tests.')"
+                >
+                    <i class="fas fa-calendar-alt"></i> <span>Configurar Re-tests</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- HEADER LISTA DE PACIENTES PARA TEST -->
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mt-4 mb-4">
+            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <i class="fas fa-users-cog text-indigo-500"></i>
+                Pacientes y Últimas Evaluaciones
+            </h2>
+
+            <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+                <div class="inline-flex rounded-xl bg-white border border-slate-200 p-1 text-xs font-bold text-slate-500 overflow-hidden" id="testFilters">
+                    <button type="button" data-filter="all" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white shadow-sm">
+                        Todos
+                    </button>
+                    <button type="button" data-filter="critical" class="px-3 py-1.5 rounded-lg hover:bg-slate-50">
+                        Críticos
+                    </button>
+                    <button type="button" data-filter="stable" class="px-3 py-1.5 rounded-lg hover:bg-slate-50">
+                        Estables
+                    </button>
+                </div>
+                <div class="relative">
+                    <i class="fas fa-search text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 text-xs"></i>
+                    <input 
+                        type="text" 
+                        id="testSearch"
+                        placeholder="Buscar paciente..."
+                        class="pl-8 pr-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 focus:outline-none mín-w-[220px] focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLA / CARDS PACIENTES -->
+        <% if (patients.length > 0) { %>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="testPatientsGrid">
+                <% patients.forEach(p => { %>
+                    <% 
+                        const isCritical = p.ultima_valencia && p.ultima_valencia <= 2;
+                        const statusTag = isCritical ? 'critical' : (p.ultima_valencia ? 'stable' : 'nodata');
+                        const sevColor = isCritical ? 'text-rose-600' : 'text-slate-700';
+                        const chipColor = isCritical 
+                            ? 'bg-rose-100 text-rose-700' 
+                            : (p.ultima_valencia ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500');
+                        const sevText = isCritical 
+                            ? 'Resultado crítico' 
+                            : (p.ultima_valencia ? 'Resultado estable' : 'Sin datos recientes');
+                    %>
+
+                    <div 
+                        class="test-patient-card bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-all p-5 flex flex-col gap-3"
+                        data-status="<%= statusTag %>"
+                        data-name="<%= (p.nombre + ' ' + p.apellido).toLowerCase() %>"
+                        data-email="<%= (p.email || '').toLowerCase() %>"
+                    >
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="h-11 w-11 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 font-bold text-lg border border-slate-200">
+                                    <%= p.nombre.charAt(0) %>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-slate-900 leading-tight">
+                                        <%= p.nombre %> <%= p.apellido %>
+                                    </p>
+                                    <p class="text-[11px] text-slate-400 mt-0.5 truncate max-w-[160px]">
+                                        <%= p.email %>
+                                    </p>
+                                </div>
+                            </div>
+                            <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase <%= chipColor %>">
+                                <%= sevText %>
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 text-[11px] mt-1">
+                            <div class="bg-slate-50 rounded-xl p-3">
+                                <p class="text-slate-400 font-bold uppercase tracking-wider text-[9px] mb-1">Último check-in</p>
+                                <p class="font-semibold text-slate-700">
+                                    <%= p.ultimo_checkin ? new Date(p.ultimo_checkin).toLocaleDateString() : '---' %>
+                                </p>
+                            </div>
+                            <div class="bg-slate-50 rounded-xl p-3 text-right">
+                                <p class="text-slate-400 font-bold uppercase tracking-wider text-[9px] mb-1">Nivel emocional</p>
+                                <% if (p.ultima_valencia) { %>
+                                    <p class="font-extrabold <%= sevColor %> text-sm">
+                                        <%= p.ultima_valencia %> / 5
+                                    </p>
+                                <% } else { %>
+                                    <p class="text-slate-400">Sin datos</p>
+                                <% } %>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-3 mt-1">
+                            <button 
+                                type="button"
+                                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-[10px] font-bold hover:bg-slate-800 transition-all"
+                                onclick="alert('Aquí puedes disparar una nueva evaluación PHQ-9/GAD-7 para este paciente.')"
+                            >
+                                <i class="fas fa-file-medical-alt"></i> Nueva Evaluación
+                            </button>
+                            <a 
+                                href="/dashboard/monitoring?patient=<%= p.id_paciente %>" 
+                                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 text-[10px] font-bold hover:bg-indigo-600 hover:text-white transition-all"
+                            >
+                                <i class="fas fa-chart-line"></i> Ver Historial
+                            </a>
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+        <% } else { %>
+            <div class="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
+                <div class="h-20 w-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 text-3xl">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-700">Sin pacientes para evaluar</h3>
+                <p class="text-slate-400 text-sm mt-2 max-w-sm mx-auto">
+                    Aún no tienes pacientes registrados o sin evaluaciones pendientes. Registra un paciente o asigna una evaluación desde su expediente.
+                </p>
+                <a href="/dashboard/register-patient" class="mt-6 inline-block bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all">
+                    Registrar Paciente
+                </a>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<script>
+    // Filtros + búsqueda en test-runner
+    const testFilterContainer = document.getElementById('testFilters');
+    const testCards = document.querySelectorAll('.test-patient-card');
+    const testSearchInput = document.getElementById('testSearch');
+
+    function applyTestFilters() {
+        const activeBtn = testFilterContainer?.querySelector('button.bg-indigo-600');
+        const filter = activeBtn ? activeBtn.getAttribute('data-filter') : 'all';
+        const query = (testSearchInput?.value || '').toLowerCase().trim();
+
+        testCards.forEach(card => {
+            const status = card.getAttribute('data-status');
+            const name = card.getAttribute('data-name') || '';
+            const email = card.getAttribute('data-email') || '';
+
+            let visible = true;
+
+            if (filter === 'critical' && status !== 'critical') visible = false;
+            if (filter === 'stable' && status !== 'stable') visible = false;
+
+            if (query) {
+                const matches = name.includes(query) || email.includes(query);
+                if (!matches) visible = false;
+            }
+
+            card.style.display = visible ? '' : 'none';
+        });
+    }
+
+    testFilterContainer?.addEventListener('click', (e) => {
+        if (e.target.tagName.toLowerCase() === 'button') {
+            testFilterContainer.querySelectorAll('button').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-sm');
+                btn.classList.add('hover:bg-slate-50');
+            });
+            e.target.classList.add('bg-indigo-600', 'text-white', 'shadow-sm');
+            e.target.classList.remove('hover:bg-slate-50');
+            applyTestFilters();
+        }
+    });
+
+    testSearchInput?.addEventListener('input', applyTestFilters);
+
+    applyTestFilters();
+</script>
+
+<%- include('../partials/footer') %>

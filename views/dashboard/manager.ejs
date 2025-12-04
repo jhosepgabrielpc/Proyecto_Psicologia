@@ -1,0 +1,269 @@
+<%- include('../partials/header', { title: 'Gestión de Crisis' }) %>
+
+<div class="min-h-screen bg-slate-100 py-8 font-sans">
+
+    <!-- BARRA SUPERIOR FIJA -->
+    <div class="bg-slate-900 text-white py-4 px-6 shadow-lg sticky top-0 z-30 mb-8">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="h-10 w-10 bg-indigo-500 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/50">
+                    <i class="fas fa-satellite-dish text-xl animate-pulse"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold leading-none">Centro de Comando</h1>
+                    <p class="text-xs text-slate-400">Gestión de incidencias clínicas en tiempo real</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden md:block">
+                    <p class="text-xs text-slate-400">Operador en línea</p>
+                    <p class="font-bold text-sm"><%= user.nombre %> <%= user.apellido %></p>
+                </div>
+                <a href="/dashboard/communication" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2">
+                    <i class="fas fa-comments"></i> <span class="hidden sm:inline">Chat global</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <!-- KPIs PRINCIPALES -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="bg-white p-5 rounded-xl border-l-4 border-rose-500 shadow-sm flex items-center justify-between relative overflow-hidden">
+                <% if (Array.isArray(incidents) && incidents.length > 0) { %>
+                    <div class="absolute top-0 right-0 w-3 h-3 bg-rose-500 rounded-full animate-ping m-2"></div>
+                <% } %>
+                <div>
+                    <p class="text-xs font-bold text-slate-400 uppercase">Incidencias pendientes</p>
+                    <p class="text-3xl font-black text-rose-600 mt-1"><%= stats.pendientes || 0 %></p>
+                    <p class="text-[11px] text-slate-400 mt-1">Casos en espera de triaje o derivación.</p>
+                </div>
+                <i class="fas fa-bell text-rose-200 text-3xl"></i>
+            </div>
+
+            <div class="bg-white p-5 rounded-xl border-l-4 border-emerald-500 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-bold text-slate-400 uppercase">Casos gestionados</p>
+                    <p class="text-3xl font-black text-emerald-600 mt-1"><%= stats.gestionados || 0 %></p>
+                    <p class="text-[11px] text-slate-400 mt-1">Incidencias escaladas y con flujo iniciado.</p>
+                </div>
+                <i class="fas fa-check-circle text-emerald-200 text-3xl"></i>
+            </div>
+
+            <div class="bg-white p-5 rounded-xl border-l-4 border-indigo-500 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-bold text-slate-400 uppercase">Equipo médico activo</p>
+                    <p class="text-3xl font-black text-indigo-900 mt-1"><%= stats.equipo_medico || 0 %></p>
+                    <p class="text-[11px] text-slate-400 mt-1">Profesionales disponibles para derivación.</p>
+                </div>
+                <i class="fas fa-user-md text-indigo-200 text-3xl"></i>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- COLUMNA PRINCIPAL: BANDEJA DE TRIAGE -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fas fa-inbox text-indigo-600"></i> Bandeja de triaje
+                    </h2>
+                    <span class="text-xs font-bold bg-slate-200 text-slate-600 px-2 py-1 rounded-md">
+                        Orden: más recientes
+                    </span>
+                </div>
+
+                <% if (Array.isArray(incidents) && incidents.length > 0) { %>
+                    <div class="space-y-4">
+                        <% incidents.forEach(inc => { %>
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative overflow-hidden transition-all hover:shadow-md group">
+                                <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-rose-500"></div>
+
+                                <div class="flex flex-col md:flex-row justify-between gap-6">
+                                    <!-- Datos de paciente y reporte -->
+                                    <div class="flex items-start gap-4 w-full">
+                                        <div class="relative flex-shrink-0">
+                                            <% if (inc.foto_perfil) { %>
+                                                <img src="<%= inc.foto_perfil %>" class="h-14 w-14 rounded-full object-cover border-2 border-slate-100">
+                                            <% } else { %>
+                                                <div class="h-14 w-14 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 border border-slate-200 text-lg">
+                                                    <%= inc.nombre ? inc.nombre.charAt(0) : '?' %><%= inc.apellido ? inc.apellido.charAt(0) : '' %>
+                                                </div>
+                                            <% } %>
+                                            <div class="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
+                                                <i class="fas fa-exclamation-triangle text-rose-500"></i>
+                                            </div>
+                                        </div>
+
+                                        <div class="w-full">
+                                            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                                                <div>
+                                                    <h3 class="font-bold text-lg text-slate-800 leading-tight">
+                                                        <%= inc.nombre %> <%= inc.apellido %>
+                                                    </h3>
+                                                    <p class="text-[10px] text-slate-400 font-mono uppercase mt-0.5">
+                                                        TICKET #<%= inc.id_incidencia %> · RECIBIDO: <%= new Date(inc.fecha_creacion).toLocaleTimeString('es-ES') %>
+                                                    </p>
+                                                </div>
+
+                                                <% 
+                                                    const nivelTexto = (inc.nivel_gravedad || '').toString();
+                                                    const nivel = nivelTexto.toUpperCase();
+                                                    let badgeColor = 'bg-slate-100 text-slate-600 border-slate-200';
+                                                    if (nivel.includes('CRIT')) {
+                                                        badgeColor = 'bg-rose-50 text-rose-700 border-rose-200';
+                                                    } else if (nivel.includes('ALTA')) {
+                                                        badgeColor = 'bg-orange-50 text-orange-700 border-orange-200';
+                                                    } else if (nivel.includes('MED')) {
+                                                        badgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
+                                                    }
+                                                %>
+
+                                                <div class="flex flex-wrap items-center justify-end gap-2">
+                                                    <% if (nivelTexto) { %>
+                                                        <span class="px-2 py-1 rounded-full border text-[10px] font-bold uppercase <%= badgeColor %>">
+                                                            <i class="fas fa-thermometer-half mr-1"></i>
+                                                            <%= nivelTexto %>
+                                                        </span>
+                                                    <% } %>
+                                                    <span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded border border-slate-200">
+                                                        Monitor: Jhosep
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 mt-3 text-sm text-slate-700 font-medium font-mono whitespace-pre-line shadow-inner">
+                                                <%= inc.reporte_inicial %>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Columna de acciones -->
+                                    <div class="flex flex-col justify-between items-end min-w-[180px] border-l border-slate-100 pl-4 md:pl-6">
+                                        <div class="text-right w-full">
+                                            <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Médico asignado</p>
+                                            <% if (inc.doc_nombre) { %>
+                                                <div class="flex items-center justify-end gap-2">
+                                                    <p class="text-sm font-bold text-indigo-900">Dr. <%= inc.doc_apellido %></p>
+                                                    <i class="fas fa-user-check text-emerald-500 text-xs"></i>
+                                                </div>
+                                            <% } else { %>
+                                                <div class="inline-flex items-center gap-1 bg-rose-50 text-rose-600 px-2 py-1 rounded text-xs font-bold border border-rose-200">
+                                                    <i class="fas fa-user-times text-[10px]"></i> Sin asignar
+                                                </div>
+                                            <% } %>
+                                        </div>
+
+                                        <form action="/dashboard/manager/escalate" method="POST" class="mt-4 w-full">
+                                            <input type="hidden" name="id_incidencia" value="<%= inc.id_incidencia %>">
+                                            <input type="hidden" name="id_terapeuta_user" value="<%= inc.id_terapeuta_user %>">
+                                            <input type="hidden" name="reporte_paciente" value="<%= inc.reporte_inicial %>">
+                                            <input type="hidden" name="nombre_paciente" value="<%= inc.nombre %> <%= inc.apellido %>">
+
+                                            <% if (inc.id_terapeuta_user) { %>
+                                                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 transition-all transform active:scale-95 group-hover:bg-indigo-700">
+                                                    <i class="fas fa-share-square"></i> Notificar Dr. & Alan
+                                                </button>
+                                                <p class="text-[9px] text-slate-400 mt-2 text-center">
+                                                    <i class="fas fa-info-circle"></i> Envía un resumen clínico al terapeuta y una solicitud de cita prioritaria a Alan.
+                                                </p>
+                                            <% } else { %>
+                                                <a href="/dashboard/admin" class="w-full block text-center bg-amber-100 hover:bg-amber-200 text-amber-800 px-4 py-2 rounded-lg font-bold text-xs transition-colors">
+                                                    <i class="fas fa-user-plus"></i> Asignar terapeuta primero
+                                                </a>
+                                            <% } %>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                <% } else { %>
+                    <div class="flex flex-col items-center justify-center h-96 bg-white rounded-2xl border-2 border-dashed border-slate-200 text-center p-8">
+                        <div class="h-24 w-24 bg-emerald-50 rounded-full flex items-center justify-center mb-4 animate-pulse">
+                            <i class="fas fa-clipboard-check text-4xl text-emerald-500"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-700">Bandeja limpia</h3>
+                        <p class="text-slate-500 mt-2 max-w-xs mx-auto">
+                            No hay incidencias pendientes. El flujo de monitoreo clínico está al día.
+                        </p>
+                    </div>
+                <% } %>
+            </div>
+
+            <!-- COLUMNA DERECHA: ESTADO DE RED + PROTOCOLO -->
+            <div class="space-y-6">
+
+                <!-- Estado de Red -->
+                <div class="bg-slate-800 rounded-xl p-6 text-white shadow-lg">
+                    <div class="flex items-center justify-between mb-4 border-b border-slate-700 pb-4">
+                        <h3 class="font-bold text-sm uppercase text-slate-400">Estado de red</h3>
+                        <span class="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-1 rounded font-mono flex items-center gap-1">
+                            <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span> ONLINE
+                        </span>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                                <p class="text-sm font-medium">Monitoreo (Jhosep)</p>
+                            </div>
+                            <i class="fas fa-wifi text-xs text-slate-500"></i>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="h-2 w-2 rounded-full bg-emerald-400"></div>
+                                <p class="text-sm font-medium">Gestión de citas (Alan)</p>
+                            </div>
+                            <i class="fas fa-link text-xs text-slate-500"></i>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="h-2 w-2 rounded-full bg-emerald-400"></div>
+                                <p class="text-sm font-medium">Base de datos</p>
+                            </div>
+                            <i class="fas fa-database text-xs text-slate-500"></i>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-slate-700 text-center">
+                        <p class="text-[10px] text-slate-500 font-mono">MindCare Crisis Hub v2.1</p>
+                    </div>
+                </div>
+
+                <!-- Recordatorio de Protocolo -->
+                <div class="bg-indigo-50 rounded-xl p-5 border border-indigo-100 text-indigo-900 text-sm">
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-lightbulb text-indigo-500 mt-1"></i>
+                        <div>
+                            <p class="font-bold mb-1">Protocolo de acción</p>
+                            <p class="opacity-80 text-xs sm:text-sm">
+                                Al hacer clic en "Notificar Dr. & Alan", el sistema:
+                            </p>
+                            <ul class="mt-2 text-xs sm:text-sm opacity-90 list-disc list-inside space-y-1">
+                                <li>Envía un mensaje clínico detallado al terapeuta responsable.</li>
+                                <li>Notifica a Alan (Gestión de citas) para priorizar una nueva sesión.</li>
+                                <li>Actualiza el estado de la incidencia a "ESCALADO" en la base de datos.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nota de seguridad -->
+                <div class="bg-white rounded-xl p-4 border border-slate-200 text-xs text-slate-500">
+                    <div class="flex items-start gap-2">
+                        <i class="fas fa-shield-alt text-slate-400 mt-0.5"></i>
+                        <p>
+                            Este módulo está diseñado para apoyar la toma de decisiones, pero no reemplaza el criterio clínico profesional. 
+                            Ante cualquier emergencia vital, se debe activar el protocolo local de urgencias fuera de la plataforma.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
